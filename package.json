@@ -3,7 +3,6 @@
   "version": "0.0.2",
   "description": "An open source build scaffolding utility for web apps.",
   "repository": "https://github.com/patternfly/patternfly-react-seed.git",
-  "homepage": "https://maryshak1996.github.io/HCC-cursor-seed",
   "license": "MIT",
   "private": true,
   "scripts": {

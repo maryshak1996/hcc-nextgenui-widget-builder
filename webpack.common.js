@@ -105,6 +105,8 @@ export default (env) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve('./src', 'index.html'),
+        inject: 'body',
+        publicPath: '/',        // ensures paths like /main.bundle.js not /HCC-cursor-seed/...
       }),
       new Dotenv({
         systemvars: true,
