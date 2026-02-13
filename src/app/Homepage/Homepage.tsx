@@ -159,7 +159,10 @@ const DraggableBankWidget: React.FC<DraggableBankWidgetProps> = ({ widget }) => 
 // Sortable Widget Card Component with Resizable
 interface SortableWidgetCardProps {
   widget: Widget;
-  children: React.ReactNode;
+  children: React.ReactElement<{
+    dragHandleProps?: Record<string, unknown>;
+    onRemove?: () => void;
+  }>;
   onSizeChange: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => void;
   onRemove: (id: string) => void;
   gridWidth: number;
@@ -320,10 +323,10 @@ const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, childre
         <div className={`resize-preview-indicator ${isResizing ? 'visible' : ''}`}>
           {previewColSpan}×{previewRowSpan}
         </div>
-        {React.cloneElement(children as React.ReactElement, {
+        {React.cloneElement(children, {
           dragHandleProps: { ...attributes, ...listeners },
           onRemove: () => onRemove(widget.id),
-        })}
+        } as { dragHandleProps: Record<string, unknown>; onRemove: () => void })}
       </Resizable>
     </div>
   );
