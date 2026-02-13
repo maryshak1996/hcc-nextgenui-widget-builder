@@ -267,47 +267,7 @@ const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, childre
 
   return (
     <div ref={setNodeRef} style={style} className={`widget-wrapper`}>
-      <Resizable
-        size={{
-          width: currentWidth,
-          height: currentHeight,
-        }}
-        minWidth={columnWidth}
-        maxWidth={gridWidth}
-        minHeight={ROW_HEIGHT}
-        maxHeight={getHeightForSpan(6)}
-        onResizeStart={handleResizeStart}
-        onResize={handleResize}
-        onResizeStop={handleResizeStop}
-        enable={{
-          top: false,
-          right: true,
-          bottom: true,
-          left: false,
-          topRight: false,
-          bottomRight: true,
-          bottomLeft: false,
-          topLeft: false,
-        }}
-        handleStyles={{
-          right: {
-            width: '12px',
-            right: '-6px',
-            cursor: 'ew-resize',
-          },
-          bottom: {
-            height: '12px',
-            bottom: '-6px',
-            cursor: 'ns-resize',
-          },
-          bottomRight: {
-            width: '20px',
-            height: '20px',
-            right: '-6px',
-            bottom: '-6px',
-            cursor: 'nwse-resize',
-          },
-        }}
+        <Resizable
         handleClasses={{
           right: 'resize-handle resize-handle-right',
           bottom: 'resize-handle resize-handle-bottom',
@@ -323,10 +283,20 @@ const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, childre
         <div className={`resize-preview-indicator ${isResizing ? 'visible' : ''}`}>
           {previewColSpan}×{previewRowSpan}
         </div>
-        {React.cloneElement(children, {
-          dragHandleProps: { ...attributes, ...listeners },
-          onRemove: () => onRemove(widget.id),
-        } as { dragHandleProps: Record<string, unknown>; onRemove: () => void })}
+
+        {(() => {
+          type InjectedChildProps = {
+            dragHandleProps?: Record<string, unknown>;
+            onRemove?: () => void;
+          };
+
+          return React.isValidElement<InjectedChildProps>(children)
+            ? React.cloneElement(children, {
+                dragHandleProps: { ...attributes, ...listeners },
+                onRemove: () => onRemove(widget.id),
+              })
+            : children;
+        })()}
       </Resizable>
     </div>
   );
