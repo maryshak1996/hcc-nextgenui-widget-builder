@@ -6,7 +6,7 @@ import CopyPlugin from 'copy-webpack-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import Dotenv from 'dotenv-webpack';
 const BG_IMAGES_DIRNAME = 'bgimages';
-const ASSET_PATH = process.env.ASSET_PATH || '/HCC-cursor-seed/';
+const ASSET_PATH = process.env.ASSET_PATH || '/';
 
 export default (env) => {
   return {
