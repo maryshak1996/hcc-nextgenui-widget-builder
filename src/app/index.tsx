@@ -6,7 +6,7 @@ import { AppRoutes } from '@app/routes';
 import '@app/app.css';
 
 const App: React.FunctionComponent = () => (
-  <Router basename={process.env.NODE_ENV === 'production' ? '/HCC-cursor-seed' : ''}>
+  <Router>
     <AppLayout>
       <AppRoutes />
     </AppLayout>
