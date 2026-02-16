@@ -9,8 +9,12 @@ import TerserJSPlugin from 'terser-webpack-plugin';
 
 export default merge(common('production'), {
   mode: 'production',
-  devtool: 'source-map',
+  devtool: 'hidden-source-map',
   optimization: {
+    splitChunks: {
+      chunks: 'all',
+    },
+    runtimeChunk: 'single',
     minimizer: [
       new TerserJSPlugin({}),
       new CssMinimizerPlugin({
@@ -22,8 +26,8 @@ export default merge(common('production'), {
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: '[name].css',
-      chunkFilename: '[name].bundle.css',
+      filename: '[name].[contenthash].css',
+      chunkFilename: '[name].[contenthash].css',
     }),
   ],
   module: {
