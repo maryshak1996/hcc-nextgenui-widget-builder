@@ -1,117 +1,107 @@
-# Patternfly Seed
+# HCC AI Widget Builder
 
-Patternfly Seed is an open source build scaffolding utility for web apps. The primary purpose of this project is to give developers a jump start when creating new projects that will use patternfly. A secondary purpose of this project is to serve as a reference for how to configure various aspects of an application that uses patternfly, webpack, react, typescript, etc.
+An internal UX prototype used to explore and demonstrate UI/UX design concepts for AI-powered dashboard and widget-building experiences.
 
-Out of the box you'll get an app layout with chrome (header/sidebar), routing, build pipeline, test suite, and some code quality tools. Basically, all the essentials.
+🔗 **Live Demo:**  
+https://hcc-ai-widget-builder.vercel.app/
 
-<img width="1058" alt="Out of box dashboard view of patternfly seed" src="https://github.com/user-attachments/assets/0227b366-67f1-4df8-8d92-e8e95d6e08b3" />
+---
 
-## Quick-start
+## 🎯 Purpose
+
+This application is a working prototype designed for:
+
+- Stakeholder demos  
+- UX concept validation  
+- Interaction exploration  
+- Layout and widget experimentation  
+- Rapid iteration on dashboard builder ideas  
+
+This is not a production product — it is a design exploration environment.
+
+---
+
+## 🧱 Tech Stack
+
+- **React 18**
+- **TypeScript**
+- **PatternFly 6**
+- **Webpack 5**
+- **Vercel (static deployment)**
+
+---
+
+## 🚀 Deployment
+
+This project auto-deploys to Vercel whenever changes are pushed to the `main` branch.
+
+See:
+
+👉 [`DEPLOYING.md`](./DEPLOYING.md)
+
+for full deployment workflow instructions.
+
+---
+
+## 🛠 Local Development
+
+Install dependencies:
 
 ```bash
-git clone https://github.com/patternfly/patternfly-react-seed
-cd patternfly-react-seed
-npm install && npm run start:dev
-```
-## Development scripts
-```sh
-# Install development/build dependencies
 npm install
+```
 
-# Start the development server
+Run development server:
+
+```bash
 npm run start:dev
+```
 
-# Run a production build (outputs to "dist" dir)
+Build production bundle:
+
+```bash
 npm run build
-
-# Run the test suite
-npm run test
-
-# Run the test suite with coverage
-npm run test:coverage
-
-# Run the linter
-npm run lint
-
-# Run the code formatter
-npm run format
-
-# Launch a tool to inspect the bundle size
-npm run bundle-profile:analyze
-
-# Start the express server (run a production build first)
-npm run start
 ```
 
-## Configurations
-* [TypeScript Config](./tsconfig.json)
-* [Webpack Config](./webpack.common.js)
-* [Jest Config](./jest.config.js)
-* [Editor Config](./.editorconfig)
+Preview production build locally:
 
-## Raster image support
-
-To use an image asset that's shipped with PatternFly core, you'll prefix the paths with "@assets". `@assets` is an alias for the PatternFly assets directory in node_modules.
-
-For example:
-```js
-import imgSrc from '@assets/images/g_sizing.png';
-<img src={imgSrc} alt="Some image" />
+```bash
+npx sirv dist --single --cors --host --port 8080
 ```
 
-You can use a similar technique to import assets from your local app, just prefix the paths with "@app". `@app` is an alias for the main src/app directory.
+---
 
-```js
-import loader from '@app/assets/images/loader.gif';
-<img src={loader} alt="Content loading" />
+## 🧠 Architecture Notes
+
+- Uses content-hashed asset filenames to prevent stale caching.
+- SPA routing handled via `vercel.json` rewrites.
+- React Router runs at root (`/`) — no GitHub Pages basename.
+- Production builds use `hidden-source-map`.
+
+---
+
+## 📁 Project Structure (Simplified)
+
+```
+src/
+  app/
+    AppLayout/
+    Homepage/
+    routes.tsx
+  index.tsx
+webpack.common.js
+webpack.prod.js
+vercel.json
 ```
 
-## Vector image support
-Inlining SVG in the app's markup is also possible.
+---
 
-```js
-import logo from '@app/assets/images/logo.svg';
-<span dangerouslySetInnerHTML={{__html: logo}} />
-```
+## ⚠️ Disclaimer
 
-You can also use SVG when applying background images with CSS. To do this, your SVG's must live under a `bgimages` directory (this directory name is configurable in [webpack.common.js](./webpack.common.js#L5)). This is necessary because you may need to use SVG's in several other context (inline images, fonts, icons, etc.) and so we need to be able to differentiate between these usages so the appropriate loader is invoked.
-```css
-body {
-  background: url(./assets/bgimages/img_avatar.svg);
-}
-```
+This repository is for internal UX exploration and demo purposes only.
 
-## Adding custom CSS
-When importing CSS from a third-party package for the first time, you may encounter the error `Module parse failed: Unexpected token... You may need an appropriate loader to handle this file typ...`. You need to register the path to the stylesheet directory in [stylePaths.js](./stylePaths.js). We specify these explicitly for performance reasons to avoid webpack needing to crawl through the entire node_modules directory when parsing CSS modules.
+---
 
-## Code quality tools
-* For accessibility compliance, we use [react-axe](https://github.com/dequelabs/react-axe)
-* To keep our bundle size in check, we use [webpack-bundle-analyzer](https://github.com/webpack-contrib/webpack-bundle-analyzer)
-* To keep our code formatting in check, we use [prettier](https://github.com/prettier/prettier)
-* To keep our code logic and test coverage in check, we use [jest](https://github.com/facebook/jest)
-* To ensure code styles remain consistent, we use [eslint](https://eslint.org/)
+## ✨ Maintained By
 
-## AI Documentation & Development Rules
-
-This project includes an [`ai-documentation`](./ai-documentation/README.md) directory designed primarily for use by AI agents in AI-enabled IDEs (such as Cursor, Claude, and others). These files provide essential rules, guidelines, and best practices for building web applications with PatternFly React, enabling AI coding assistants to:
-
-- Offer context-aware suggestions and enforce consistent component architecture and styling standards
-- Guide developers to use PatternFly v6 components and utility classes
-- Promote accessibility and state management best practices
-- Reference troubleshooting tips and specialized rules (charts, chatbot, etc.)
-
-**How to use:**
-If you are using an AI-enabled IDE, the AI agent will automatically leverage the [AI Documentation & Rules](./ai-documentation/README.md) to assist you as you develop.
-
-By following these rules—either directly or via your AI assistant—you'll ensure your app is maintainable, accessible, and consistent with PatternFly best practices.
-
-## Multi environment configuration
-This project uses [dotenv-webpack](https://www.npmjs.com/package/dotenv-webpack) for exposing environment variables to your code. Either export them at the system level like `export MY_ENV_VAR=http://dev.myendpoint.com && npm run start:dev` or simply drop a `.env` file in the root that contains your key-value pairs like below:
-
-```sh
-ENV_1=http://1.myendpoint.com
-ENV_2=http://2.myendpoint.com
-```
-
-
-With that in place, you can use the values in your code like `console.log(process.env.ENV_1);`
+Mary Shakshober
