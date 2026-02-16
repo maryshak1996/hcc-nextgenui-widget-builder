@@ -2,10 +2,12 @@
 
 An internal UX prototype used to explore and demonstrate UI/UX design concepts for AI-powered dashboard and widget-building experiences.
 
-## 🔗 Experience & Design
-
-**Live Prototype:**  
+## 🔗 Live Prototype
 https://hcc-ai-widget-builder.vercel.app/
+
+### 🎨 Design Preview
+
+[![NextGenUI Dashboard Design Preview](./assets/figma-preview.png)](https://www.figma.com/design/c1GHDIdhEGkwVZ0jt65q9q/NextGenUI-Dashboard-Widgets?node-id=0-1&t=KZCfD9CcCWUCEmvo-1)
 
 **Figma Working Design File:**  
 https://www.figma.com/design/c1GHDIdhEGkwVZ0jt65q9q/NextGenUI-Dashboard-Widgets?node-id=0-1&t=KZCfD9CcCWUCEmvo-1
