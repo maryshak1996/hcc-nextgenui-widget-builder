@@ -98,9 +98,11 @@ export default (env) => {
       ],
     },
     output: {
-      filename: '[name].bundle.js',
+      filename: '[name].[contenthash].js',
+      chunkFilename: '[name].[contenthash].js',
       path: path.resolve('./dist'),
-      publicPath: ASSET_PATH,
+      publicPath: '/',
+      clean: true,
     },
     plugins: [
       new HtmlWebpackPlugin({
