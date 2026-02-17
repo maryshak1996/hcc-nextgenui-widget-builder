@@ -13,9 +13,7 @@ import {
   DropdownItem,
   DropdownList,
   EmptyState,
-  EmptyStateActions,
   EmptyStateBody,
-  EmptyStateFooter,
   Flex,
   FlexItem,
   Icon,
@@ -133,16 +131,16 @@ const DraggableBankWidget: React.FC<DraggableBankWidgetProps> = ({ widget }) => 
         <CardBody>
           <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
             <FlexItem flex={{ default: 'flex_1' }}>
-              <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsXs' }}>
-                <FlexItem>
-                  <Title headingLevel="h4" size="md">{widget.title}</Title>
-                </FlexItem>
-                <FlexItem>
-                  <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                    Drag to add to dashboard
-                  </Content>
-                </FlexItem>
-              </Flex>
+              <Content
+                component="p"
+                style={{
+                  fontSize: 'var(--pf-v6-global--FontSize--sm)',
+                  fontWeight: 'var(--pf-t--global--font--weight--body--bold)',
+                  margin: 0,
+                }}
+              >
+                {widget.title}
+              </Content>
             </FlexItem>
             <FlexItem>
               <div style={{ cursor: 'grab', padding: '8px' }}>
@@ -558,6 +556,7 @@ const Homepage: React.FunctionComponent = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isWidgetDrawerOpen, setIsWidgetDrawerOpen] = useState(false);
   const [removedWidgets, setRemovedWidgets] = useState<Widget[]>([]);
+  const [selectedBuilderOption, setSelectedBuilderOption] = useState<string>('ai-generate');
 
   const toggleWidgetDrawer = () => {
     setIsWidgetDrawerOpen(!isWidgetDrawerOpen);
@@ -1241,7 +1240,7 @@ const Homepage: React.FunctionComponent = () => {
     .widget-drawer.open {
       display: block;
       opacity: 1;
-      margin-bottom: 16px;
+      margin-bottom: 0;
       animation: slideDown 0.3s ease-out;
     }
     
@@ -1257,14 +1256,54 @@ const Homepage: React.FunctionComponent = () => {
     }
     
     .widget-drawer-panel {
-      background-color: var(--pf-v6-global--BackgroundColor--200);
-      border-radius: 8px;
+      background-color: var(--pf-t--global--background--color--secondary--default);
+      border: none;
+      border-radius: var(--pf-v6-c-card--BorderRadius, var(--pf-t--global--border--radius--medium, 8px));
+      overflow: hidden;
       position: relative;
       z-index: 100;
+      min-height: 0;
     }
     
     .widget-drawer-panel .pf-v6-c-panel__main-body {
       padding: 24px;
+      min-height: 0;
+    }
+    
+    .widget-drawer-panel .pf-v6-c-panel__main {
+      min-height: 0;
+    }
+    
+    .widget-drawer-section-card {
+      --pf-v6-c-card--BorderColor: transparent !important;
+      --pf-v6-c-card--BorderWidth: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    /* Restore default PatternFly styling for selectable cards inside section cards */
+    .widget-drawer-section-card .pf-v6-c-card.pf-m-selectable {
+      --pf-v6-c-card--BorderColor: var(--pf-t--global--border--color--default, #c7c7c7);
+      --pf-v6-c-card--BorderWidth: 1px;
+      cursor: pointer;
+    }
+    
+    .widget-drawer-section-card .pf-v6-c-card.pf-m-selectable:hover {
+      --pf-v6-c-card--BorderColor: var(--pf-t--global--border--color--hover, #4394e5);
+    }
+    
+    .widget-drawer-section-card .pf-v6-c-card.pf-m-selectable.pf-m-selected {
+      --pf-v6-c-card--BorderColor: var(--pf-t--global--border--color--clicked, #0066cc);
+      --pf-v6-c-card--BorderWidth: 2px;
+    }
+    
+    /* Ensure radio inputs in selectable cards display as proper radio buttons */
+    .widget-drawer-section-card .pf-v6-c-card.pf-m-selectable .pf-v6-c-radio__input {
+      appearance: auto;
+      -webkit-appearance: radio;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
     }
     
     .removed-widgets-grid {
@@ -1314,8 +1353,8 @@ const Homepage: React.FunctionComponent = () => {
       <style>{gridStyles}</style>
       <PageSection>
         {/* Header Section */}
-        <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }}>
-          <FlexItem>
+        <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsLg' }} alignItems={{ default: 'alignItemsFlexStart' }}>
+          <FlexItem style={{ width: '100%' }}>
             <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}>
               <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsFlexStart' }}>
                 <FlexItem flex={{ default: 'flex_1' }}>
@@ -1353,13 +1392,6 @@ const Homepage: React.FunctionComponent = () => {
             </div>
           </FlexItem>
           
-          {/* Divider */}
-          <FlexItem>
-            <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}>
-              <Divider />
-            </div>
-          </FlexItem>
-          
           {/* DndContext wraps both drawer and dashboard for drag between them */}
           <DndContext
             sensors={sensors}
@@ -1368,42 +1400,151 @@ const Homepage: React.FunctionComponent = () => {
             onDragEnd={handleDragEnd}
           >
             {/* Widget Drawer */}
-            <FlexItem>
+            <FlexItem style={{ width: '100%' }}>
               <div 
                 className={`widget-drawer ${isWidgetDrawerOpen ? 'open' : ''}`}
                 style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}
               >
-                <Panel variant="bordered" className="widget-drawer-panel">
+                <Panel className="widget-drawer-panel">
                   <PanelMain>
                     <PanelMainBody>
-                      <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          <Title headingLevel="h3" size="lg">Available Widgets</Title>
+                      <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }} alignItems={{ default: 'alignItemsFlexStart' }}>
+                        <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} style={{ width: '100%' }}>
+                          <FlexItem>
+                            <Title headingLevel="h3" size="lg">Add widgets</Title>
+                          </FlexItem>
+                          <FlexItem>
+                            <Button variant="plain" aria-label="Close drawer" onClick={toggleWidgetDrawer}>
+                              <TimesIcon />
+                            </Button>
+                          </FlexItem>
+                        </Flex>
+                        <Flex direction={{ default: 'row' }} spaceItems={{ default: 'spaceItemsMd' }} alignItems={{ default: 'alignItemsStretch' }} style={{ width: '100%' }}>
+                        <FlexItem style={{ flex: '0 0 25%', minWidth: 0 }}>
+                          <Card isFullHeight className="widget-drawer-section-card">
+                            <CardHeader>
+                              <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsXs' }}>
+                                <FlexItem>
+                                  <Title headingLevel="h4" size="md">Pre-configured widgets</Title>
+                                </FlexItem>
+                                {removedWidgets.length > 0 && (
+                                  <FlexItem>
+                                    <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
+                                      Drag these directly into your dashboard.
+                                    </Content>
+                                  </FlexItem>
+                                )}
+                              </Flex>
+                            </CardHeader>
+                            <CardBody>
+                              {removedWidgets.length === 0 ? (
+                                <EmptyState
+                                  variant="xs"
+                                  headingLevel="h4"
+                                  titleText="No widgets available"
+                                  icon={CubesIcon}
+                                >
+                                  <EmptyStateBody>
+                                    All available pre-configured widgets are already displayed in your dashboard.
+                                  </EmptyStateBody>
+                                </EmptyState>
+                              ) : (
+                                <div className="removed-widgets-grid">
+                                  {removedWidgets.map((widget) => (
+                                    <DraggableBankWidget key={widget.id} widget={widget} />
+                                  ))}
+                                </div>
+                              )}
+                            </CardBody>
+                          </Card>
                         </FlexItem>
-                        <FlexItem>
-                          <Button variant="plain" aria-label="Close drawer" onClick={toggleWidgetDrawer}>
-                            <TimesIcon />
-                          </Button>
+                        <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: 0, flex: '1 1 0%' }}>
+                          <Card isFullHeight className="widget-drawer-section-card">
+                            <CardHeader>
+                              <Title headingLevel="h4" size="md">Widget builder</Title>
+                            </CardHeader>
+                            <CardBody>
+                              <Flex direction={{ default: 'row' }} spaceItems={{ default: 'spaceItemsMd' }} flexWrap={{ default: 'nowrap' }}>
+                                {/* Builder options - 50% */}
+                                <FlexItem style={{ flex: '1 1 0%', minWidth: 0 }}>
+                                  <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }}>
+                                    <FlexItem>
+                                      <Card
+                                        isSelectable
+                                        isCompact
+                                        isSelected={selectedBuilderOption === 'ai-generate'}
+                                      >
+                                        <CardHeader
+                                          selectableActions={{
+                                            selectableActionId: 'ai-generate-option',
+                                            selectableActionAriaLabelledby: 'ai-generate-title',
+                                            name: 'widget-builder-option',
+                                            variant: 'single',
+                                            onChange: (_event, checked) => {
+                                              if (checked) setSelectedBuilderOption('ai-generate');
+                                            },
+                                          }}
+                                        >
+                                          <Title headingLevel="h5" size="md" id="ai-generate-title">
+                                            Use generative AI to create one for you
+                                          </Title>
+                                        </CardHeader>
+                                        <CardBody>
+                                          <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
+                                            Describe the widget you want and AI will generate it for you.
+                                          </Content>
+                                        </CardBody>
+                                      </Card>
+                                    </FlexItem>
+                                    <FlexItem>
+                                      <Card
+                                        isSelectable
+                                        isCompact
+                                        isSelected={selectedBuilderOption === 'static-markdown'}
+                                      >
+                                        <CardHeader
+                                          selectableActions={{
+                                            selectableActionId: 'static-markdown-option',
+                                            selectableActionAriaLabelledby: 'static-markdown-title',
+                                            name: 'widget-builder-option',
+                                            variant: 'single',
+                                            onChange: (_event, checked) => {
+                                              if (checked) setSelectedBuilderOption('static-markdown');
+                                            },
+                                          }}
+                                        >
+                                          <Title headingLevel="h5" size="md" id="static-markdown-title">
+                                            Create a static widget with markdown
+                                          </Title>
+                                        </CardHeader>
+                                        <CardBody>
+                                          <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
+                                            Write your own content using markdown formatting.
+                                          </Content>
+                                        </CardBody>
+                                      </Card>
+                                    </FlexItem>
+                                  </Flex>
+                                </FlexItem>
+                                {/* Widget preview canvas - 50% */}
+                                <FlexItem style={{ flex: '1 1 0%', minWidth: 0 }}>
+                                  <Card isFullHeight variant="secondary">
+                                    <CardHeader>
+                                      <Title headingLevel="h5" size="md">Widget preview</Title>
+                                    </CardHeader>
+                                    <CardBody>
+                                      <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)', textAlign: 'center' }}>
+                                        Your widget preview will appear here.
+                                      </Content>
+                                    </CardBody>
+                                  </Card>
+                                </FlexItem>
+                              </Flex>
+                            </CardBody>
+                          </Card>
                         </FlexItem>
+                        </Flex>
                       </Flex>
-                      <Divider style={{ margin: '16px 0' }} />
-                      {removedWidgets.length === 0 ? (
-                        <EmptyState 
-                          headingLevel="h4" 
-                          titleText="No widgets available"
-                          icon={CubesIcon}
-                        >
-                          <EmptyStateBody>
-                            Remove widgets from your dashboard to see them here. You can then add them back anytime.
-                          </EmptyStateBody>
-                        </EmptyState>
-                      ) : (
-                        <div className="removed-widgets-grid">
-                          {removedWidgets.map((widget) => (
-                            <DraggableBankWidget key={widget.id} widget={widget} />
-                          ))}
-                        </div>
-                      )}
                     </PanelMainBody>
                   </PanelMain>
                 </Panel>
@@ -1411,7 +1552,7 @@ const Homepage: React.FunctionComponent = () => {
             </FlexItem>
             
             {/* Service Cards Section */}
-            <FlexItem>
+            <FlexItem style={{ width: '100%' }}>
               <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }} ref={gridRef}>
                 <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
                   <div className="widgets-grid">
@@ -1461,7 +1602,7 @@ const Homepage: React.FunctionComponent = () => {
           </DndContext>
           
           {/* Bottom Action Section */}
-          <FlexItem>
+          <FlexItem style={{ width: '100%' }}>
             <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}>
               <div style={{ textAlign: 'center', marginTop: '32px' }}>
                 <Button variant="secondary" onClick={() => navigate('/all-services')} size="lg">
