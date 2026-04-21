@@ -3,6 +3,8 @@ import { Route, Routes } from 'react-router-dom';
 import { Homepage } from '@app/Homepage/Homepage';
 import { AllServices } from '@app/AllServices/AllServices';
 import { Dashboard } from '@app/Dashboard/Dashboard';
+import { DashboardHub } from '@app/DashboardHub/DashboardHub';
+import { EditableDashboard } from '@app/DashboardHub/EditableDashboard';
 import { AlertManager } from '@app/AlertManager/AlertManager';
 import { RoleDeleted } from '@app/AlertManager/RoleDeleted';
 import { AuthenticationPolicy } from '@app/AuthenticationPolicy/AuthenticationPolicy';
@@ -59,6 +61,24 @@ const routes: AppRouteConfig[] = [
     label: 'Overview',
     path: '/overview',
     title: 'Overview | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <DashboardHub />,
+    exact: true,
+    label: 'Dashboard Hub',
+    path: '/dashboard-hub',
+    title: 'Dashboard Hub | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <DashboardHub />,
+    exact: true,
+    path: '/dashboard',
+    title: 'Dashboard Hub | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <EditableDashboard />,
+    path: '/dashboard-hub/:dashboardId',
+    title: 'Edit dashboard | Red Hat Hybrid Cloud Console',
   },
   {
     element: <AlertManager />,
@@ -197,7 +217,7 @@ const AppRoutes = (): React.ReactElement => (
     {flattenedRoutes.map(({ path, element }, idx) => (
       <Route path={path} element={element} key={idx} />
     ))}
-    <Route element={<NotFound />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 

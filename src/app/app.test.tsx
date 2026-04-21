@@ -34,6 +34,12 @@ describe('App tests', () => {
     expect(screen.queryByRole('navigation', { name: 'Global' })).not.toBeInTheDocument();
   });
 
+  it('should render Dashboard Hub page content', () => {
+    window.history.pushState({}, 'Test page', '/dashboard-hub');
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Dashboard Hub' })).toBeInTheDocument();
+  });
+
   it('should expand the sidebar on larger viewports', () => {
     window.history.pushState({}, 'Test page', '/overview');
     render(<App />);

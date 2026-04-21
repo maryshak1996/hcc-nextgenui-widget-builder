@@ -4,6 +4,18 @@ body,
   height: 100%;
 }
 
+/*
+ * AppLayout nests two inline Drawers around route content. PatternFly’s drawer CSS sets
+ * flex-shrink: 1 on .pf-v6-c-drawer__content at md+ breakpoints, which can collapse the
+ * primary content column to zero width so the page chrome stays visible but the main
+ * area looks empty. Keep the route slot able to grow and avoid shrinking it away.
+ */
+#primary-app-container .pf-v6-c-drawer__main > .pf-v6-c-drawer__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
 .pf-v6-c-content {
   --pf-v6-c-content--small--Color: var(--pf-t--global--color--status--danger--default); /* changes all <small> color to the semantic token for danger */
   --pf-v6-c-content--blockquote--BorderLeftColor: var(--pf-t--global--color--nonstatus--purple--default); /* changes all <blockquote> left border color to the semantic token for non-status (purple) */

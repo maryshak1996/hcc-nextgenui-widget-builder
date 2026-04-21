@@ -1538,7 +1538,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     const currentPath = location.pathname;
     
     // Settings bundle pages
-    if (['/overview', '/alert-manager', '/data-integration', '/event-log', '/learning-resources'].includes(currentPath)) {
+    const settingsPaths = [
+      '/overview',
+      '/dashboard',
+      '/dashboard-hub',
+      '/alert-manager',
+      '/data-integration',
+      '/event-log',
+      '/learning-resources'
+    ];
+    if (settingsPaths.includes(currentPath) || currentPath.startsWith('/dashboard-hub/')) {
       return 'Settings';
     }
     
@@ -1560,6 +1569,13 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const mockSearchData = [
     // Main Settings Bundle Pages
     { id: '1', title: 'Overview', description: 'View system overview and general information', category: 'Settings', route: '/overview' },
+    {
+      id: '19',
+      title: 'Dashboard Hub',
+      description: 'Browse, create, and organize dashboards for your workspace',
+      category: 'Settings',
+      route: '/dashboard-hub'
+    },
     { id: '2', title: 'Alert Manager', description: 'Configure and manage system alerts and notifications', category: 'Settings', route: '/alert-manager' },
     { id: '3', title: 'Data Integration', description: 'Manage data integration workflows, connectors, and synchronization settings', category: 'Settings', route: '/data-integration' },
     { id: '4', title: 'Event Log', description: 'View and configure system event logging and monitoring', category: 'Settings', route: '/event-log' },
@@ -4614,12 +4630,17 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   );
 
   const renderNavItem = (route: IAppRoute, index: number) => (
-    <NavItem key={`${route.label}-${index}`} id={`${route.label}-${index}`} isActive={route.path === location.pathname}>
-      <NavLink
-        to={route.path}
-      >
-        {route.label}
-      </NavLink>
+    <NavItem
+      key={`${route.label}-${index}`}
+      id={`${route.label}-${index}`}
+      isActive={
+        route.label === 'Dashboard Hub'
+          ? ['/dashboard-hub', '/dashboard'].includes(location.pathname) ||
+            location.pathname.startsWith('/dashboard-hub/')
+          : route.path === location.pathname
+      }
+    >
+      <NavLink to={route.path}>{route.label}</NavLink>
     </NavItem>
   );
 
@@ -4635,14 +4656,22 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   );
 
   // Define navigation groups
-  const primaryNavPages = ['/overview', '/alert-manager', '/data-integration', '/event-log', '/learning-resources'];
+  const primaryNavPages = [
+    '/overview',
+    '/dashboard',
+    '/dashboard-hub',
+    '/alert-manager',
+    '/data-integration',
+    '/event-log',
+    '/learning-resources'
+  ];
   const secondaryNavPages = ['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'];
 
   // Determine which navigation structure to show
   const getNavigationType = () => {
     const currentPath = location.pathname;
     
-    if (primaryNavPages.includes(currentPath)) {
+    if (primaryNavPages.includes(currentPath) || currentPath.startsWith('/dashboard-hub/')) {
       return 'primary';
     } else if (secondaryNavPages.includes(currentPath)) {
       return 'secondary';
@@ -4655,7 +4684,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Primary navigation structure (current navigation)
   const primaryNavRoutes = routes.filter((route): route is IAppRoute => {
     // Only individual routes, no expandable groups
-    return !route.routes && !!route.label && ['Overview', 'Alert Manager', 'Data Integration', 'Event Log', 'Learning Resources'].includes(route.label);
+    return !route.routes && !!route.label && ['Overview', 'Dashboard Hub', 'Alert Manager', 'Data Integration', 'Event Log', 'Learning Resources'].includes(route.label);
   });
 
   // Secondary navigation structure (IAM bundle)
@@ -5693,6 +5722,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
+                                            'console-dashboard-hub': {
+                                              name: 'Dashboard Hub',
+                                              description: 'Browse, create, and organize dashboards for your workspace',
+                                              category: 'Console Settings',
+                                              onClick: () => {
+                                                navigate('/dashboard-hub');
+                                                setIsLogoDropdownOpen(false);
+                                              }
+                                            },
                                             // Additional items from default System Configuration menu
                                             'rhel-insights': {
                                               name: 'Red Hat Insights',
@@ -6324,6 +6362,32 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           }
                                         >
                                           Data Integration
+                                        </MenuItem>
+                                        <MenuItem
+                                          itemId="console-dashboard-hub"
+                                          description="Browse, create, and organize dashboards for your workspace"
+                                          onClick={() => {
+                                            navigate('/dashboard-hub');
+                                            setIsLogoDropdownOpen(false);
+                                          }}
+                                          actions={
+                                            <MenuItemAction
+                                              icon={<StarIcon />}
+                                              actionId="favorite"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleFavorite('console-dashboard-hub');
+                                              }}
+                                              isFavorited={favoritedItems.has('console-dashboard-hub')}
+                                              aria-label={
+                                                favoritedItems.has('console-dashboard-hub')
+                                                  ? 'Remove from favorites'
+                                                  : 'Add to favorites'
+                                              }
+                                            />
+                                          }
+                                        >
+                                          Dashboard Hub
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>

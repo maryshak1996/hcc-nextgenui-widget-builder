@@ -738,8 +738,8 @@ const Homepage: React.FunctionComponent = () => {
               <FlexItem flex={{ default: 'flex_1' }}>
                 <List isPlain>
                   <ListItem>
-                    <Button variant="link" onClick={() => navigate('/dashboard')}>
-                      Dashboard
+                    <Button variant="link" onClick={() => navigate('/dashboard-hub')}>
+                      Dashboard Hub
                     </Button>
                   </ListItem>
                   <ListItem>
