@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
+import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import CommentIcon from '@app/bgimages/comment-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
@@ -1537,17 +1538,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const getCurrentBundle = () => {
     const currentPath = location.pathname;
     
-    // Settings bundle pages
+    // Settings bundle pages (Dashboard Hub is standalone — no bundle)
     const settingsPaths = [
       '/overview',
-      '/dashboard',
-      '/dashboard-hub',
       '/alert-manager',
       '/data-integration',
       '/event-log',
       '/learning-resources'
     ];
-    if (settingsPaths.includes(currentPath) || currentPath.startsWith('/dashboard-hub/')) {
+    if (settingsPaths.includes(currentPath)) {
       return 'Settings';
     }
     
@@ -1562,8 +1561,13 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   
   const currentBundle = getCurrentBundle();
   
-  // Check if we're on a page without navigation (homepage or all services)
-  const isPageWithoutNav = location.pathname === '/' || location.pathname === '/all-services';
+  // No app sidebar or masthead nav toggle: homepage, all services, or standalone Dashboard Hub
+  const isPageWithoutNav =
+    location.pathname === '/' ||
+    location.pathname === '/all-services' ||
+    location.pathname === '/dashboard-hub' ||
+    location.pathname === '/dashboard' ||
+    location.pathname.startsWith('/dashboard-hub/');
 
   // Mock search data
   const mockSearchData = [
@@ -1573,7 +1577,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       id: '19',
       title: 'Dashboard Hub',
       description: 'Browse, create, and organize dashboards for your workspace',
-      category: 'Settings',
+      category: 'Dashboard Hub',
       route: '/dashboard-hub'
     },
     { id: '2', title: 'Alert Manager', description: 'Configure and manage system alerts and notifications', category: 'Settings', route: '/alert-manager' },
@@ -4214,6 +4218,23 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         }
         
         // Check if this is the Slack notifications quick start tab
+        if (tab.title === 'Dashboard widgets') {
+          return (
+            <div style={{ padding: '24px' }}>
+              <Content>
+                <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
+                  Dashboard widgets
+                </Title>
+                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73' }}>
+                  Browse all widgets you can add to your dashboard: pre-configured options, AI-generated widgets, and
+                  static markdown. Use the widget bank to add tiles to your layout and customize what you see on your
+                  home page.
+                </p>
+              </Content>
+            </div>
+          );
+        }
+
         if (tab.title === 'Configuring console event notifications in Slack') {
           return (
             <div style={{ padding: '24px' }}>
@@ -4566,7 +4587,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                     aria-label="User menu"
                     icon={<UserIcon />}
                   >
-                    Ned Username
+                    {MASTHEAD_USER_DISPLAY_NAME}
                   </MenuToggle>
                 )}
                 shouldFocusToggleOnSelect
@@ -4576,7 +4597,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   <DescriptionList isCompact>
                     <DescriptionListGroup>
                       <DescriptionListTerm>Username:</DescriptionListTerm>
-                      <DescriptionListDescription>Ned Username</DescriptionListDescription>
+                      <DescriptionListDescription>
+                        {MASTHEAD_USER_DISPLAY_NAME}
+                      </DescriptionListDescription>
                     </DescriptionListGroup>
                     <DescriptionListGroup>
                       <DescriptionListTerm>Account number:</DescriptionListTerm>
@@ -4633,12 +4656,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     <NavItem
       key={`${route.label}-${index}`}
       id={`${route.label}-${index}`}
-      isActive={
-        route.label === 'Dashboard Hub'
-          ? ['/dashboard-hub', '/dashboard'].includes(location.pathname) ||
-            location.pathname.startsWith('/dashboard-hub/')
-          : route.path === location.pathname
-      }
+      isActive={route.path === location.pathname}
     >
       <NavLink to={route.path}>{route.label}</NavLink>
     </NavItem>
@@ -4658,8 +4676,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Define navigation groups
   const primaryNavPages = [
     '/overview',
-    '/dashboard',
-    '/dashboard-hub',
     '/alert-manager',
     '/data-integration',
     '/event-log',
@@ -4671,7 +4687,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const getNavigationType = () => {
     const currentPath = location.pathname;
     
-    if (primaryNavPages.includes(currentPath) || currentPath.startsWith('/dashboard-hub/')) {
+    if (primaryNavPages.includes(currentPath)) {
       return 'primary';
     } else if (secondaryNavPages.includes(currentPath)) {
       return 'secondary';
@@ -4684,7 +4700,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Primary navigation structure (current navigation)
   const primaryNavRoutes = routes.filter((route): route is IAppRoute => {
     // Only individual routes, no expandable groups
-    return !route.routes && !!route.label && ['Overview', 'Dashboard Hub', 'Alert Manager', 'Data Integration', 'Event Log', 'Learning Resources'].includes(route.label);
+    return !route.routes && !!route.label && ['Overview', 'Alert Manager', 'Data Integration', 'Event Log', 'Learning Resources'].includes(route.label);
   });
 
   // Secondary navigation structure (IAM bundle)

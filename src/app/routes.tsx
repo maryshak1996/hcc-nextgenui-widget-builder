@@ -65,7 +65,6 @@ const routes: AppRouteConfig[] = [
   {
     element: <DashboardHub />,
     exact: true,
-    label: 'Dashboard Hub',
     path: '/dashboard-hub',
     title: 'Dashboard Hub | Red Hat Hybrid Cloud Console',
   },

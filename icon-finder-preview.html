@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Finder – Results</title>
+  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6/patternfly.min.css">
+  <style>
+    .icon-finder-page { padding: var(--pf-t--global--spacer--xl); }
+    .icon-finder-header { margin-bottom: var(--pf-t--global--spacer--lg); }
+    .icon-card { text-align: center; }
+    .icon-variants { display: flex; justify-content: center; gap: var(--pf-t--global--spacer--md); margin-bottom: var(--pf-t--global--spacer--sm); }
+    .icon-variant { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit; cursor: pointer; }
+    .icon-variant img { width: 40px; height: 40px; }
+    .icon-variant span { font-size: var(--pf-t--global--font--size--xs); color: var(--pf-t--global--text--color--link--default); text-decoration: underline; margin-top: var(--pf-t--global--spacer--xs); }
+    .icon-variant:hover img { transform: scale(1.15); }
+    .icon-variant:hover span { color: var(--pf-t--global--text--color--link--hover); }
+    .icon-name { font-weight: var(--pf-t--global--font--weight--body--bold); font-size: var(--pf-t--global--font--size--sm); word-break: break-word; }
+    .icon-hint { font-size: var(--pf-t--global--font--size--xs); margin-top: var(--pf-t--global--spacer--xs); }
+    .icon-finder-footer { margin-top: var(--pf-t--global--spacer--xl); }
+  </style>
+</head>
+<body>
+  <div class="icon-finder-page">
+    <div class="icon-finder-header pf-v6-c-content">
+      <h1>Icon Finder Results</h1>
+      <p>From <a href="https://github.com/RedHat-UX/red-hat-icons">@rhds/icons</a> (set: UI)</p>
+      <p><strong>Prompt:</strong> find me icons to indicate AI</p>
+      <p><strong>Search terms:</strong> ai, artificial intelligence, machine learning, bot, robot, automation</p>
+    </div>
+    <div class="pf-v6-l-gallery pf-m-gutter" style="--pf-v6-l-gallery--GridTemplateColumns--min: 160px;">
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-experience.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-experience.svg" alt="ai-experience">
+              <span>outline</span>
+            </a>
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-experience-fill.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-experience-fill.svg" alt="ai-experience-fill">
+              <span>fill</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-experience</div>
+          <div class="icon-hint">UI context: <em>AI-powered feature badges, smart assistant indicators, AI mode toggles</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-model.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-model.svg" alt="ai-model">
+              <span>outline</span>
+            </a>
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-model-fill.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-model-fill.svg" alt="ai-model-fill">
+              <span>fill</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-model</div>
+          <div class="icon-hint">UI context: <em>Model selection dropdowns, ML model cards, model management pages</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-chat.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-chat.svg" alt="ai-chat">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-chat</div>
+          <div class="icon-hint">UI context: <em>Chatbot launchers, AI assistant buttons, conversational UI triggers</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-create.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-create.svg" alt="ai-create">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-create</div>
+          <div class="icon-hint">UI context: <em>AI content generation buttons, auto-generate actions, smart compose features</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-edit.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-edit.svg" alt="ai-edit">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-edit</div>
+          <div class="icon-hint">UI context: <em>AI-assisted editing, smart rewrite buttons, AI refinement actions</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-enhance.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-enhance.svg" alt="ai-enhance">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-enhance</div>
+          <div class="icon-hint">UI context: <em>AI improvement actions, smart optimization buttons, quality enhancement features</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-search.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-search.svg" alt="ai-search">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-search</div>
+          <div class="icon-hint">UI context: <em>Semantic search inputs, AI-powered search bars, intelligent query features</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-filter.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-filter.svg" alt="ai-filter">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-filter</div>
+          <div class="icon-hint">UI context: <em>Smart filtering, AI-suggested filters, intelligent data refinement</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-troubleshoot.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-troubleshoot.svg" alt="ai-troubleshoot">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-troubleshoot</div>
+          <div class="icon-hint">UI context: <em>AI diagnostics, smart debugging tools, automated issue detection</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-info.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-info.svg" alt="ai-info">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-info</div>
+          <div class="icon-hint">UI context: <em>AI feature explanations, ML insights tooltips, AI capability descriptions</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/ai-error.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/ai-error.svg" alt="ai-error">
+              <span>outline</span>
+            </a>
+          </div>
+          <div class="icon-name">ai-error</div>
+          <div class="icon-hint">UI context: <em>AI failure states, model error alerts, AI service unavailable messages</em></div>
+        </div>
+      </div>
+
+      <div class="pf-v6-c-card icon-card">
+        <div class="pf-v6-c-card__body">
+          <div class="icon-variants">
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/robot.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/robot.svg" alt="robot">
+              <span>outline</span>
+            </a>
+            <a class="icon-variant" href="https://github.com/RedHat-UX/red-hat-icons/blob/main/src/ui/robot-fill.svg" target="_blank">
+              <img src="https://raw.githubusercontent.com/RedHat-UX/red-hat-icons/main/src/ui/robot-fill.svg" alt="robot-fill">
+              <span>fill</span>
+            </a>
+          </div>
+          <div class="icon-name">robot</div>
+          <div class="icon-hint">UI context: <em>Bot indicators, automation agents, virtual assistant avatars</em></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="icon-finder-footer pf-v6-c-content">
+      <p>Don't see what you need? <a href="https://docs.google.com/forms/d/e/1FAIpQLSfXbS0o6oeMA86CpmuTKIoZrrKVhbjKboBrHl2jIPJDfkt_MQ/viewform" target="_blank">Submit a custom icon request</a>.</p>
+    </div>
+  </div>
+</body>
+</html>

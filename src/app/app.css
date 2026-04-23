@@ -13,7 +13,143 @@ body,
 #primary-app-container .pf-v6-c-drawer__main > .pf-v6-c-drawer__content {
   flex: 1 1 auto;
   min-width: 0;
+  /* Allow the main column to shrink with the viewport; route content should use min-width:0 where needed */
+  flex-shrink: 1;
+}
+
+/* Editable dashboard: toolbar must never widen the page past the main column */
+.editable-dashboard-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.editable-dashboard-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .editable-dashboard-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+}
+
+/* Name field row + optional validation helper below */
+.editable-dashboard-name-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  width: max-content;
+}
+
+/* Keep name + inline actions on one line; don’t let the field span the full grid cell */
+.editable-dashboard-name-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--xs);
+  min-width: 0;
+  max-width: 100%;
+  width: max-content;
+}
+
+.editable-dashboard-name-input-wrap {
+  position: relative;
+  min-width: 6rem;
+  /* ~22 characters; enough for a title without eating the whole toolbar column */
+  width: 14rem;
+  max-width: min(16rem, 100%);
+  flex: 0 0 auto;
+}
+
+.editable-dashboard-name-input-wrap--home .editable-dashboard-name-input {
+  /* Reserve space for the in-field home icon (right) */
+  padding-inline-end: calc(
+    var(--pf-t--global--spacer--2xl) + var(--pf-t--global--spacer--md)
+  );
+  text-align: start;
+}
+
+.editable-dashboard-name-input__home-icon {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 50%;
+  inset-inline-end: var(--pf-t--global--spacer--md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--pf-t--global--icon--Color--200);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.editable-dashboard-name-input {
+  min-width: 0;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.editable-dashboard-toolbar__actions {
+  min-width: 0;
+  max-width: 100%;
+  justify-self: stretch;
+}
+
+@media (min-width: 768px) {
+  .editable-dashboard-toolbar__actions {
+    justify-self: end;
+  }
+}
+
+/* Home route: top hero (greeting + homepage menu), full main width */
+.homepage-hero-header {
+  max-width: 100%;
+}
+
+.homepage-hero-header__inner {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.homepage-hero-greeting__icon {
+  display: flex;
   flex-shrink: 0;
+  color: var(--pf-t--global--icon--Color--200);
+  /* Scale with 4xl hero title */
+  font-size: clamp(1.5rem, 0.4rem + 2.5vw, 2.25rem);
+  line-height: 1;
+}
+
+.homepage-hero-greeting__icon svg {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+}
+
+/* Full-width line under the home hero (spans the main column) */
+.homepage-hero-separator {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 0;
+  border: 0;
+  border-top: 1px solid var(--pf-t--global--border--color--default, #c7c7c7);
+  margin: var(--pf-t--global--spacer--lg) 0 0;
+  flex: none;
+  align-self: stretch;
 }
 
 .pf-v6-c-content {

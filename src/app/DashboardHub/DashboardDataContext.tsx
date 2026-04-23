@@ -1,20 +1,60 @@
 import * as React from 'react';
+import {
+  Alert,
+  AlertActionCloseButton,
+  Button
+} from '@patternfly/react-core';
+import { useNavigate } from 'react-router-dom';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { DASHBOARD_HUB_ROWS } from '@app/DashboardHub/dashboardHubMockData';
+import {
+  clearDashboardCanvasWidgets,
+  mergeCanvasWidgetsWithCatalog,
+  readDashboardCanvasWidgets,
+  writeDashboardCanvasWidgets
+} from '@app/DashboardHub/dashboardCanvasStorage';
 
 const SESSION_ROWS_KEY = 'hcc-dashboard-hub-rows';
+
+function normalizeDashboardNameKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/** True if another row (or any row when exclude is omitted) already uses this name (compared case-insensitively, trimmed). */
+function isDashboardNameInUse(
+  allRows: HubRow[],
+  candidate: string,
+  excludeDashboardId?: string
+): boolean {
+  const key = normalizeDashboardNameKey(candidate);
+  if (!key) {
+    return false;
+  }
+  return allRows.some(
+    (r) => r.id !== excludeDashboardId && normalizeDashboardNameKey(r.name) === key
+  );
+}
 
 function isHubRow(value: unknown): value is HubRow {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
   const row = value as Record<string, unknown>;
+  const canvasOk = row.canvasTitle === undefined || typeof row.canvasTitle === 'string';
+  const homeOk = row.isHomepage === undefined || typeof row.isHomepage === 'boolean';
   return (
     typeof row.id === 'string' &&
     typeof row.name === 'string' &&
     typeof row.description === 'string' &&
-    typeof row.lastModified === 'string'
+    typeof row.lastModified === 'string' &&
+    canvasOk &&
+    homeOk
   );
+}
+
+/** Legacy rows without `canvasTitle` snapshot to `name` so the in-canvas title starts in sync, then can diverge. */
+function withCanvasTitle(row: HubRow): HubRow {
+  return { ...row, canvasTitle: row.canvasTitle ?? row.name };
 }
 
 function readRowsFromSessionStorage(): HubRow[] | null {
@@ -40,20 +80,106 @@ function readRowsFromSessionStorage(): HubRow[] | null {
 function initialRows(): HubRow[] {
   const stored = readRowsFromSessionStorage();
   if (stored) {
-    return stored;
+    return stored.map(withCanvasTitle);
   }
-  return DASHBOARD_HUB_ROWS.map((r) => ({ ...r }));
+  return DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r }));
+}
+
+function formatLastModifiedDate(): string {
+  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export interface DashboardDataContextValue {
   rows: HubRow[];
   updateDashboardName: (id: string, name: string) => void;
+  updateCanvasTitle: (id: string, canvasTitle: string) => void;
+  /** Creates a new blank dashboard row. Returns the new id. */
+  addDashboard: (input: { name: string; setAsHomepage: boolean }) => string;
+  /** Whether `name` is already used by a dashboard, optionally ignoring one id (e.g. the row being edited). */
+  isDashboardNameTaken: (name: string, excludeDashboardId?: string) => boolean;
+  /** At most one dashboard is homepage; clears the flag on other rows, then sets it on this id. */
+  setDashboardAsHomepage: (id: string) => void;
+  /** Removes a dashboard row, homepage flag, and stored canvas data. */
+  removeDashboard: (id: string) => void;
+  /**
+   * Clones a row with a unique name and copies widget layout into session storage.
+   * Returns the new id, or an empty string if the source is missing.
+   */
+  duplicateDashboard: (id: string) => string;
 }
 
 const DashboardDataContext = React.createContext<DashboardDataContextValue | null>(null);
 
+const HomepageSetToast: React.FC<{
+  toast: { name: string } | null;
+  onClose: () => void;
+}> = ({ toast, onClose }) => {
+  const navigate = useNavigate();
+  const dismissRef = React.useRef(onClose);
+  dismissRef.current = onClose;
+
+  React.useEffect(() => {
+    if (!toast) {
+      return;
+    }
+    const t = window.setTimeout(() => dismissRef.current(), 8_000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  if (!toast) {
+    return null;
+  }
+
+  return (
+    <div
+      className="hcc-homepage-set-toast"
+      style={{
+        position: 'fixed',
+        top: 'var(--pf-t--global--spacer--md)',
+        right: 'var(--pf-t--global--spacer--md)',
+        zIndex: 10_000,
+        maxWidth: 'min(32rem, calc(100% - 2 * var(--pf-t--global--spacer--md)))',
+        boxShadow: 'var(--pf-t--global--box-shadow--md, 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1))',
+        borderRadius: 'var(--pf-t--global--border--radius--default)'
+      }}
+    >
+      <Alert
+        variant="success"
+        isLiveRegion
+        isInline
+        actionClose={
+          <AlertActionCloseButton
+            onClick={onClose}
+            aria-label="Close homepage set notification"
+          />
+        }
+        title={
+          <span>
+            <strong>{`'${toast.name}'`}</strong> set as homepage.{' '}
+            <Button
+              variant="link"
+              isInline
+              onClick={() => {
+                onClose();
+                navigate('/');
+              }}
+            >
+              View homepage
+            </Button>
+          </span>
+        }
+      />
+    </div>
+  );
+};
+
 const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode }> = ({ children }) => {
   const [rows, setRows] = React.useState<HubRow[]>(initialRows);
+  const [homepageSetToast, setHomepageSetToast] = React.useState<{ name: string } | null>(null);
+
+  const dismissHomepageSetToast = React.useCallback(() => {
+    setHomepageSetToast(null);
+  }, []);
 
   React.useEffect(() => {
     try {
@@ -64,18 +190,154 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, [rows]);
 
   const updateDashboardName = React.useCallback((id: string, name: string) => {
-    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, name } : row)));
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return;
+    }
+    setRows((prev) => {
+      if (isDashboardNameInUse(prev, trimmed, id)) {
+        return prev;
+      }
+      return prev.map((row) => (row.id === id ? { ...row, name: trimmed } : row));
+    });
+  }, []);
+
+  const updateCanvasTitle = React.useCallback((id: string, canvasTitle: string) => {
+    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, canvasTitle } : row)));
+  }, []);
+
+  const addDashboard = React.useCallback((input: { name: string; setAsHomepage: boolean }) => {
+    const name = input.name.trim();
+    if (!name) {
+      return '';
+    }
+    let newId = '';
+    const lastModified = formatLastModifiedDate();
+    setRows((prev) => {
+      if (isDashboardNameInUse(prev, name)) {
+        return prev;
+      }
+      newId = `d-${Date.now()}`;
+      const cleared =
+        input.setAsHomepage === true
+          ? prev.map((r) => {
+              const { isHomepage: _omit, ...rest } = r;
+              return rest;
+            })
+          : prev;
+      const newRow: HubRow = {
+        id: newId,
+        name,
+        canvasTitle: name,
+        description: 'A blank dashboard you can customize with widgets.',
+        lastModified,
+        isHomepage: input.setAsHomepage ? true : undefined
+      };
+      return [...cleared, newRow];
+    });
+    if (newId && input.setAsHomepage) {
+      window.queueMicrotask(() => {
+        setHomepageSetToast({ name });
+      });
+    }
+    return newId;
+  }, []);
+
+  const isDashboardNameTaken = React.useCallback(
+    (name: string, excludeDashboardId?: string) => isDashboardNameInUse(rows, name, excludeDashboardId),
+    [rows]
+  );
+
+  const setDashboardAsHomepage = React.useCallback((id: string) => {
+    setRows((prev) => {
+      const target = prev.find((r) => r.id === id);
+      if (!target) {
+        return prev;
+      }
+      const displayName = target.canvasTitle ?? target.name;
+      window.queueMicrotask(() => {
+        setHomepageSetToast({ name: displayName });
+      });
+      return prev.map((r) => {
+        if (r.id === id) {
+          return { ...r, isHomepage: true };
+        }
+        if (r.isHomepage) {
+          const { isHomepage: _omit, ...rest } = r;
+          return rest as HubRow;
+        }
+        return r;
+      });
+    });
+  }, []);
+
+  const removeDashboard = React.useCallback((id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    clearDashboardCanvasWidgets(id);
+  }, []);
+
+  const duplicateDashboard = React.useCallback((id: string) => {
+    let createdId = '';
+    setRows((prev) => {
+      const source = prev.find((r) => r.id === id);
+      if (!source) {
+        return prev;
+      }
+      let candidate = `Copy of ${source.name}`;
+      let suffix = 2;
+      while (isDashboardNameInUse(prev, candidate)) {
+        candidate = `Copy of ${source.name} (${suffix})`;
+        suffix += 1;
+      }
+      createdId = `d-${Date.now()}`;
+      const newRow: HubRow = {
+        id: createdId,
+        name: candidate,
+        canvasTitle: source.canvasTitle ?? source.name,
+        description: source.description,
+        lastModified: formatLastModifiedDate()
+      };
+      return [...prev, newRow];
+    });
+    if (!createdId) {
+      return '';
+    }
+    const raw = readDashboardCanvasWidgets(id);
+    if (raw && raw.length) {
+      writeDashboardCanvasWidgets(createdId, mergeCanvasWidgetsWithCatalog(raw));
+    }
+    return createdId;
   }, []);
 
   const value = React.useMemo(
     () => ({
       rows,
-      updateDashboardName
+      updateDashboardName,
+      updateCanvasTitle,
+      addDashboard,
+      isDashboardNameTaken,
+      setDashboardAsHomepage,
+      removeDashboard,
+      duplicateDashboard
     }),
-    [rows, updateDashboardName]
+    [
+      rows,
+      updateDashboardName,
+      updateCanvasTitle,
+      addDashboard,
+      isDashboardNameTaken,
+      setDashboardAsHomepage,
+      removeDashboard,
+      duplicateDashboard
+    ]
   );
 
-  return <DashboardDataContext.Provider value={value}>{children}</DashboardDataContext.Provider>;
+  return (
+    <DashboardDataContext.Provider value={value}>
+      {children}
+      <HomepageSetToast toast={homepageSetToast} onClose={dismissHomepageSetToast} />
+    </DashboardDataContext.Provider>
+  );
 };
 
 function useDashboardData(): DashboardDataContextValue {

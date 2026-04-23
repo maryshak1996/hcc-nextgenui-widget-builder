@@ -3,38 +3,206 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Button,
+  Checkbox,
   Content,
+  Divider,
   Dropdown,
   DropdownItem,
   DropdownList,
   Flex,
   FlexItem,
+  Form,
+  FormGroup,
+  HelperText,
+  HelperTextItem,
   MenuToggle,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  ModalVariant,
   PageSection,
+  TextInput,
   Title,
   Tooltip
 } from '@patternfly/react-core';
-import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import {
+  ISortBy,
+  OnSort,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr
+} from '@patternfly/react-table';
+import {
+  CodeIcon,
   EllipsisVIcon,
   ExternalLinkAltIcon,
+  HomeIcon,
   OutlinedCloneIcon,
+  OutlinedTrashAltIcon,
   OutlinedWindowRestoreIcon,
-  PlusCircleIcon
+  PencilAltIcon,
+  PlusCircleIcon,
+  ShareAltIcon,
+  ThIcon
 } from '@patternfly/react-icons';
-import { Link } from 'react-router-dom';
+import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
+import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
+import { readDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
+
+const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
+const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
+
+/** Table column index for "Name" (excludes the leading home-indicator column). */
+const HUB_COL_NAME = 1;
+/** Table column index for "Last modified". */
+const HUB_COL_LAST_MOD = 3;
+
+function lastModifiedToTime(value: string): number {
+  const t = Date.parse(value);
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function sortHubRows(list: HubRow[], sortBy: ISortBy): HubRow[] {
+  const out = [...list];
+  if (sortBy.index === HUB_COL_NAME) {
+    const dir = sortBy.direction === 'desc' ? -1 : 1;
+    out.sort(
+      (a, b) => dir * a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    );
+  } else if (sortBy.index === HUB_COL_LAST_MOD) {
+    out.sort((a, b) => {
+      const ta = lastModifiedToTime(a.lastModified);
+      const tb = lastModifiedToTime(b.lastModified);
+      if (ta === tb) {
+        return 0;
+      }
+      if (sortBy.direction === 'asc') {
+        return ta < tb ? -1 : 1;
+      }
+      return ta > tb ? -1 : 1;
+    });
+  }
+  return out;
+}
 
 const DashboardHub: React.FunctionComponent = () => {
-  const { rows } = useDashboardData();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { rows, addDashboard, isDashboardNameTaken, setDashboardAsHomepage } = useDashboardData();
   const [openActionsRowId, setOpenActionsRowId] = React.useState<string | null>(null);
+  const [tableSort, setTableSort] = React.useState<ISortBy>({
+    index: HUB_COL_LAST_MOD,
+    direction: 'desc',
+    defaultDirection: 'desc'
+  });
   const [isCreateDashboardMenuOpen, setIsCreateDashboardMenuOpen] = React.useState(false);
+  const [isCreateBlankModalOpen, setIsCreateBlankModalOpen] = React.useState(false);
+  const [newBlankDashboardName, setNewBlankDashboardName] = React.useState('');
+  const [newBlankSetAsHomepage, setNewBlankSetAsHomepage] = React.useState(false);
+
+  type HubNavFromHome = { fromHome?: { openCreate?: 'blank' | 'import' | 'duplicate' } };
+
+  React.useLayoutEffect(() => {
+    const s = (location.state ?? null) as HubNavFromHome | null;
+    if (!s?.fromHome?.openCreate) {
+      return;
+    }
+    const { openCreate } = s.fromHome;
+    navigate(location.pathname, { replace: true, state: null });
+    if (openCreate === 'blank') {
+      setIsCreateBlankModalOpen(true);
+    } else {
+      setIsCreateDashboardMenuOpen(true);
+    }
+  }, [location.state, location.pathname, navigate]);
+
+  const nameTrimmed = newBlankDashboardName.trim();
+  const createBlankNameIsDuplicate = nameTrimmed.length > 0 && isDashboardNameTaken(nameTrimmed);
+  const isCreateBlankValid = nameTrimmed.length > 0 && !createBlankNameIsDuplicate;
+
+  const resetCreateBlankModal = React.useCallback(() => {
+    setNewBlankDashboardName('');
+    setNewBlankSetAsHomepage(false);
+  }, []);
+
+  const closeCreateBlankModal = React.useCallback(() => {
+    setIsCreateBlankModalOpen(false);
+    resetCreateBlankModal();
+  }, [resetCreateBlankModal]);
+
+  const handleCreateBlankDashboard = React.useCallback(() => {
+    if (!isCreateBlankValid) {
+      return;
+    }
+    const newId = addDashboard({ name: nameTrimmed, setAsHomepage: newBlankSetAsHomepage });
+    if (!newId) {
+      return;
+    }
+    closeCreateBlankModal();
+    setIsCreateDashboardMenuOpen(false);
+    navigate(`/dashboard-hub/${newId}`);
+  }, [
+    addDashboard,
+    closeCreateBlankModal,
+    isCreateBlankValid,
+    nameTrimmed,
+    navigate,
+    newBlankSetAsHomepage
+  ]);
+
+  const handleCreateBlankFormSubmit = React.useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      handleCreateBlankDashboard();
+    },
+    [handleCreateBlankDashboard]
+  );
+
+  const handleCopyRowConfiguration = React.useCallback((row: HubRow) => {
+    const raw = readDashboardCanvasWidgets(row.id);
+    const payload = {
+      dashboardId: row.id,
+      name: row.name,
+      widgets: raw ?? []
+    };
+    void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+    setOpenActionsRowId(null);
+  }, []);
+
+  const handleTableSort: OnSort = React.useCallback((_event, columnIndex) => {
+    setTableSort((prev) => {
+      const isActive = prev.index === columnIndex;
+      if (columnIndex === HUB_COL_NAME) {
+        return {
+          index: columnIndex,
+          direction: isActive ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc',
+          defaultDirection: 'asc'
+        };
+      }
+      if (columnIndex === HUB_COL_LAST_MOD) {
+        return {
+          index: columnIndex,
+          direction: isActive ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'desc',
+          defaultDirection: 'desc'
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  const sortedRows = React.useMemo(() => sortHubRows(rows, tableSort), [rows, tableSort]);
 
   return (
     <>
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/overview">Settings</BreadcrumbItem>
+          <BreadcrumbItem to="/">Home</BreadcrumbItem>
           <BreadcrumbItem isActive>Dashboard Hub</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>
@@ -107,7 +275,15 @@ const DashboardHub: React.FunctionComponent = () => {
               shouldFocusToggleOnSelect
             >
               <DropdownList>
-                <DropdownItem key="create-blank">Create from blank</DropdownItem>
+                <DropdownItem
+                  key="create-blank"
+                  onClick={() => {
+                    setIsCreateBlankModalOpen(true);
+                    setIsCreateDashboardMenuOpen(false);
+                  }}
+                >
+                  Create from blank
+                </DropdownItem>
                 <DropdownItem key="import-config">Import from config string</DropdownItem>
                 <DropdownItem key="duplicate">Duplicate existing</DropdownItem>
               </DropdownList>
@@ -120,15 +296,48 @@ const DashboardHub: React.FunctionComponent = () => {
         <Table aria-label="Dashboard hub" gridBreakPoint="">
           <Thead>
             <Tr>
-              <Th>Name</Th>
+              <Th modifier="fitContent" screenReaderText="Homepage indicator" />
+              <Th
+                sort={{
+                  columnIndex: HUB_COL_NAME,
+                  sortBy: tableSort,
+                  onSort: handleTableSort
+                }}
+              >
+                Name
+              </Th>
               <Th>Description</Th>
-              <Th>Last modified</Th>
+              <Th
+                sort={{
+                  columnIndex: HUB_COL_LAST_MOD,
+                  sortBy: tableSort,
+                  onSort: handleTableSort
+                }}
+              >
+                Last modified
+              </Th>
               <Th modifier="fitContent" screenReaderText="Actions" />
             </Tr>
           </Thead>
           <Tbody>
-            {rows.map((row) => (
+            {sortedRows.map((row) => (
               <Tr key={row.id}>
+                <Td
+                  dataLabel="Homepage"
+                  modifier="fitContent"
+                  textCenter
+                >
+                  {row.isHomepage ? (
+                    <Tooltip content="Console homepage">
+                      <span style={{ color: 'var(--pf-t--global--icon--Color--200, #4d4d4d)' }}>
+                        <HomeIcon
+                          style={{ display: 'block' }}
+                          aria-label="Set as your console homepage"
+                        />
+                      </span>
+                    </Tooltip>
+                  ) : null}
+                </Td>
                 <Td dataLabel="Name">
                   <Link
                     to={`/dashboard-hub/${row.id}`}
@@ -141,59 +350,160 @@ const DashboardHub: React.FunctionComponent = () => {
                 <Td dataLabel="Description">{row.description}</Td>
                 <Td dataLabel="Last modified">{row.lastModified}</Td>
                 <Td dataLabel="Actions" modifier="fitContent">
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      flexDirection: 'row',
-                      flexWrap: 'nowrap',
-                      alignItems: 'center',
-                      columnGap: 'var(--pf-t--global--spacer--sm)',
-                    }}
-                  >
-                    <Tooltip content="Duplicate dashboard">
-                      <Button
+                  <Dropdown
+                    isOpen={openActionsRowId === row.id}
+                    onSelect={() => setOpenActionsRowId(null)}
+                    onOpenChange={(isOpen: boolean) => setOpenActionsRowId(isOpen ? row.id : null)}
+                    popperProps={{ position: 'end' }}
+                    toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
+                      <MenuToggle
+                        ref={toggleRef}
                         variant="plain"
-                        type="button"
-                        aria-label="Duplicate dashboard"
-                        icon={<OutlinedCloneIcon />}
-                      />
-                    </Tooltip>
-                    <Dropdown
-                      isOpen={openActionsRowId === row.id}
-                      onSelect={() => setOpenActionsRowId(null)}
-                      onOpenChange={(isOpen: boolean) => setOpenActionsRowId(isOpen ? row.id : null)}
-                      popperProps={{ position: 'end' }}
-                      toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
-                        <MenuToggle
-                          ref={toggleRef}
-                          variant="plain"
-                          aria-label={`Actions for ${row.name}`}
-                          isExpanded={openActionsRowId === row.id}
-                          onClick={() => {
-                            setOpenActionsRowId((current) => (current === row.id ? null : row.id));
-                            setIsCreateDashboardMenuOpen(false);
-                          }}
+                        aria-label={`Actions for ${row.name}`}
+                        isExpanded={openActionsRowId === row.id}
+                        onClick={() => {
+                          setOpenActionsRowId((current) => (current === row.id ? null : row.id));
+                          setIsCreateDashboardMenuOpen(false);
+                        }}
+                      >
+                        <EllipsisVIcon />
+                      </MenuToggle>
+                    )}
+                    shouldFocusToggleOnSelect
+                  >
+                    <DropdownList>
+                      <DropdownItem
+                        key="edit"
+                        onClick={() => {
+                          navigate(`/dashboard-hub/${row.id}`);
+                          setOpenActionsRowId(null);
+                        }}
+                      >
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                         >
-                          <EllipsisVIcon />
-                        </MenuToggle>
-                      )}
-                      shouldFocusToggleOnSelect
-                    >
-                      <DropdownList>
-                        <DropdownItem key="edit">Edit dashboard</DropdownItem>
-                        <DropdownItem key="homepage">Set as homepage</DropdownItem>
-                        <DropdownItem key="copy">Copy configuration string</DropdownItem>
-                        <DropdownItem key="share">Share dashboard</DropdownItem>
-                        <DropdownItem key="delete">Delete dashboard</DropdownItem>
-                      </DropdownList>
-                    </Dropdown>
-                  </div>
+                          <PencilAltIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          Edit dashboard
+                        </span>
+                      </DropdownItem>
+                      <DropdownItem
+                        key="homepage"
+                        onClick={() => {
+                          setDashboardAsHomepage(row.id);
+                          setOpenActionsRowId(null);
+                        }}
+                      >
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <HomeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          Set as homepage
+                        </span>
+                      </DropdownItem>
+                      <DropdownItem key="duplicate" onClick={() => setOpenActionsRowId(null)}>
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <OutlinedCloneIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          Duplicate dashboard
+                        </span>
+                      </DropdownItem>
+                      <DropdownItem key="copy" onClick={() => handleCopyRowConfiguration(row)}>
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <CodeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          Copy configuration string
+                        </span>
+                      </DropdownItem>
+                      <DropdownItem key="share" onClick={() => setOpenActionsRowId(null)}>
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <ShareAltIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          Share dashboard
+                        </span>
+                      </DropdownItem>
+                      <Divider component="li" role="separator" />
+                      <DropdownItem
+                        key="delete"
+                        isDanger
+                        onClick={() => setOpenActionsRowId(null)}
+                      >
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <OutlinedTrashAltIcon style={{ color: 'var(--pf-t--global--danger-color--200)' }} />
+                          Delete dashboard
+                        </span>
+                      </DropdownItem>
+                    </DropdownList>
+                  </Dropdown>
                 </Td>
               </Tr>
             ))}
           </Tbody>
         </Table>
       </PageSection>
+
+      <Modal
+        variant={ModalVariant.small}
+        isOpen={isCreateBlankModalOpen}
+        onClose={closeCreateBlankModal}
+        aria-labelledby="create-blank-modal-title"
+      >
+        <ModalHeader
+          labelId="create-blank-modal-title"
+          title="Create a new blank dashboard"
+          titleIconVariant={ThIcon}
+        />
+        <ModalBody>
+          <Form id={CREATE_BLANK_DASHBOARD_FORM_ID} onSubmit={handleCreateBlankFormSubmit}>
+            <FormGroup isRequired fieldId="new-blank-dashboard-name" label="New dashboard name">
+              <TextInput
+                autoFocus
+                isRequired
+                type="text"
+                id="new-blank-dashboard-name"
+                name="new-blank-dashboard-name"
+                value={newBlankDashboardName}
+                onChange={(_event, value) => setNewBlankDashboardName(value)}
+                placeholder="Ie. prod-release monitoring"
+                validated={createBlankNameIsDuplicate ? 'error' : 'default'}
+                aria-describedby={createBlankNameIsDuplicate ? CREATE_BLANK_NAME_DUPLICATE_ID : undefined}
+              />
+              {createBlankNameIsDuplicate && (
+                <HelperText isLiveRegion>
+                  <HelperTextItem id={CREATE_BLANK_NAME_DUPLICATE_ID} variant="error" component="div">
+                    {DASHBOARD_DUPLICATE_NAME_ERROR}
+                  </HelperTextItem>
+                </HelperText>
+              )}
+            </FormGroup>
+            <FormGroup fieldId="new-blank-set-homepage" hasNoPaddingTop>
+              <Checkbox
+                id="new-blank-set-homepage"
+                isChecked={newBlankSetAsHomepage}
+                onChange={(_event, checked) => setNewBlankSetAsHomepage(checked)}
+                label="Set as homepage"
+              />
+            </FormGroup>
+          </Form>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            type="submit"
+            variant="primary"
+            form={CREATE_BLANK_DASHBOARD_FORM_ID}
+            isDisabled={!isCreateBlankValid}
+          >
+            Create dashboard
+          </Button>
+          <Button type="button" variant="link" onClick={closeCreateBlankModal}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 };
