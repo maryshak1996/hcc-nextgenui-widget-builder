@@ -55,6 +55,10 @@ import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import { resolveDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
 import { isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
+import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
+import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
+import { ImportConfigStringModal } from '@app/DashboardHub/ImportConfigStringModal';
+import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
 
 const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
 const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
@@ -95,7 +99,7 @@ function sortHubRows(list: HubRow[], sortBy: ISortBy): HubRow[] {
 const DashboardHub: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { rows, addDashboard, duplicateDashboard, isDashboardNameTaken, setDashboardAsHomepage } =
+  const { rows, addDashboard, isDashboardNameTaken, setDashboardAsHomepage, removeDashboard } =
     useDashboardData();
   const [openActionsRowId, setOpenActionsRowId] = React.useState<string | null>(null);
   const [tableSort, setTableSort] = React.useState<ISortBy>({
@@ -107,22 +111,15 @@ const DashboardHub: React.FunctionComponent = () => {
   const [isCreateBlankModalOpen, setIsCreateBlankModalOpen] = React.useState(false);
   const [newBlankDashboardName, setNewBlankDashboardName] = React.useState('');
   const [newBlankSetAsHomepage, setNewBlankSetAsHomepage] = React.useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = React.useState(false);
+  const [duplicateModalInitialSourceId, setDuplicateModalInitialSourceId] = React.useState('');
+  const [duplicateModalInitialHomepage, setDuplicateModalInitialHomepage] = React.useState(false);
+  const [isImportConfigModalOpen, setIsImportConfigModalOpen] = React.useState(false);
+  const [importModalInitialHomepage, setImportModalInitialHomepage] = React.useState(false);
+  const [deleteTargetRow, setDeleteTargetRow] = React.useState<HubRow | null>(null);
+  const [shareTargetRow, setShareTargetRow] = React.useState<HubRow | null>(null);
 
   type HubNavFromHome = { fromHome?: { openCreate?: 'blank' | 'import' | 'duplicate' } };
-
-  React.useLayoutEffect(() => {
-    const s = (location.state ?? null) as HubNavFromHome | null;
-    if (!s?.fromHome?.openCreate) {
-      return;
-    }
-    const { openCreate } = s.fromHome;
-    navigate(location.pathname, { replace: true, state: null });
-    if (openCreate === 'blank') {
-      setIsCreateBlankModalOpen(true);
-    } else {
-      setIsCreateDashboardMenuOpen(true);
-    }
-  }, [location.state, location.pathname, navigate]);
 
   const nameTrimmed = newBlankDashboardName.trim();
   const createBlankNameIsDuplicate = nameTrimmed.length > 0 && isDashboardNameTaken(nameTrimmed);
@@ -165,6 +162,76 @@ const DashboardHub: React.FunctionComponent = () => {
     },
     [handleCreateBlankDashboard]
   );
+
+  const closeDuplicateModal = React.useCallback(() => {
+    setIsDuplicateModalOpen(false);
+  }, []);
+
+  const openDuplicateModalFromHub = React.useCallback(() => {
+    setDuplicateModalInitialSourceId('');
+    setDuplicateModalInitialHomepage(false);
+    setIsDuplicateModalOpen(true);
+  }, []);
+
+  const handleDuplicateModalSuccess = React.useCallback(
+    (newId: string) => {
+      setIsDuplicateModalOpen(false);
+      setIsCreateDashboardMenuOpen(false);
+      navigate(`/dashboard-hub/${newId}`);
+    },
+    [navigate]
+  );
+
+  const closeImportConfigModal = React.useCallback(() => {
+    setIsImportConfigModalOpen(false);
+  }, []);
+
+  const handleImportConfigModalSuccess = React.useCallback(
+    (newId: string) => {
+      setIsImportConfigModalOpen(false);
+      setIsCreateDashboardMenuOpen(false);
+      navigate(`/dashboard-hub/${newId}`);
+    },
+    [navigate]
+  );
+
+  const closeDeleteDashboardModal = React.useCallback(() => {
+    setDeleteTargetRow(null);
+  }, []);
+
+  const closeShareDashboardModal = React.useCallback(() => {
+    setShareTargetRow(null);
+  }, []);
+
+  const handleDeleteDashboardConfirm = React.useCallback(() => {
+    if (!deleteTargetRow) {
+      return;
+    }
+    removeDashboard(deleteTargetRow.id);
+    setDeleteTargetRow(null);
+  }, [deleteTargetRow, removeDashboard]);
+
+  React.useLayoutEffect(() => {
+    const s = (location.state ?? null) as HubNavFromHome | null;
+    if (!s?.fromHome?.openCreate) {
+      return;
+    }
+    const { openCreate } = s.fromHome;
+    navigate(location.pathname, { replace: true, state: null });
+    if (openCreate === 'blank') {
+      setNewBlankSetAsHomepage(true);
+      setIsCreateBlankModalOpen(true);
+    } else if (openCreate === 'duplicate') {
+      setDuplicateModalInitialSourceId('');
+      setDuplicateModalInitialHomepage(true);
+      setIsDuplicateModalOpen(true);
+    } else if (openCreate === 'import') {
+      setImportModalInitialHomepage(true);
+      setIsImportConfigModalOpen(true);
+    } else {
+      setIsCreateDashboardMenuOpen(true);
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const handleCopyRowConfiguration = React.useCallback((row: HubRow) => {
     const raw = resolveDashboardCanvasWidgets(row);
@@ -279,15 +346,54 @@ const DashboardHub: React.FunctionComponent = () => {
               <DropdownList>
                 <DropdownItem
                   key="create-blank"
+                  icon={
+                    <span className="hcc-create-dashboard-menu-leading-icon">
+                      <PlusCircleIcon
+                        style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
+                        aria-hidden
+                      />
+                    </span>
+                  }
                   onClick={() => {
+                    setNewBlankSetAsHomepage(false);
                     setIsCreateBlankModalOpen(true);
                     setIsCreateDashboardMenuOpen(false);
                   }}
                 >
                   Create from blank
                 </DropdownItem>
-                <DropdownItem key="import-config">Import from config string</DropdownItem>
-                <DropdownItem key="duplicate">Duplicate existing</DropdownItem>
+                <DropdownItem
+                  key="import-config"
+                  icon={
+                    <span className="hcc-create-dashboard-menu-leading-icon">
+                      <CodeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} aria-hidden />
+                    </span>
+                  }
+                  onClick={() => {
+                    setImportModalInitialHomepage(false);
+                    setIsImportConfigModalOpen(true);
+                    setIsCreateDashboardMenuOpen(false);
+                  }}
+                >
+                  Import from config string
+                </DropdownItem>
+                <DropdownItem
+                  key="duplicate"
+                  icon={
+                    <span className="hcc-create-dashboard-menu-leading-icon">
+                      <OutlinedCloneIcon
+                        style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
+                        aria-hidden
+                      />
+                    </span>
+                  }
+                  onClick={() => {
+                    openDuplicateModalFromHub();
+                    setIsCreateDashboardMenuOpen(false);
+                  }}
+                >
+                  Duplicate existing
+                </DropdownItem>
               </DropdownList>
             </Dropdown>
           </FlexItem>
@@ -416,11 +522,10 @@ const DashboardHub: React.FunctionComponent = () => {
                       <DropdownItem
                         key="duplicate"
                         onClick={() => {
-                          const newId = duplicateDashboard(row.id);
+                          setDuplicateModalInitialSourceId(row.id);
+                          setDuplicateModalInitialHomepage(false);
+                          setIsDuplicateModalOpen(true);
                           setOpenActionsRowId(null);
-                          if (newId) {
-                            navigate(`/dashboard-hub/${newId}`);
-                          }
                         }}
                       >
                         <span
@@ -438,7 +543,13 @@ const DashboardHub: React.FunctionComponent = () => {
                           Copy configuration string
                         </span>
                       </DropdownItem>
-                      <DropdownItem key="share" onClick={() => setOpenActionsRowId(null)}>
+                      <DropdownItem
+                        key="share"
+                        onClick={() => {
+                          setShareTargetRow(row);
+                          setOpenActionsRowId(null);
+                        }}
+                      >
                         <span
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                         >
@@ -455,6 +566,7 @@ const DashboardHub: React.FunctionComponent = () => {
                           if (isConsoleDefaultHubRow(row)) {
                             return;
                           }
+                          setDeleteTargetRow(row);
                           setOpenActionsRowId(null);
                         }}
                       >
@@ -538,6 +650,36 @@ const DashboardHub: React.FunctionComponent = () => {
           </Button>
         </ModalFooter>
       </Modal>
+
+      <DuplicateDashboardModal
+        isOpen={isDuplicateModalOpen}
+        onClose={closeDuplicateModal}
+        rows={rows}
+        initialSourceId={duplicateModalInitialSourceId}
+        initialSetAsHomepage={duplicateModalInitialHomepage}
+        onSuccess={handleDuplicateModalSuccess}
+      />
+
+      <ImportConfigStringModal
+        isOpen={isImportConfigModalOpen}
+        onClose={closeImportConfigModal}
+        initialSetAsHomepage={importModalInitialHomepage}
+        onSuccess={handleImportConfigModalSuccess}
+      />
+
+      <ShareDashboardModal
+        isOpen={shareTargetRow !== null}
+        onClose={closeShareDashboardModal}
+        dashboardId={shareTargetRow?.id ?? ''}
+        dashboardName={shareTargetRow?.name ?? ''}
+      />
+
+      <DeleteDashboardModal
+        isOpen={deleteTargetRow !== null}
+        onClose={closeDeleteDashboardModal}
+        dashboardName={deleteTargetRow?.name ?? ''}
+        onConfirm={handleDeleteDashboardConfirm}
+      />
     </>
   );
 };

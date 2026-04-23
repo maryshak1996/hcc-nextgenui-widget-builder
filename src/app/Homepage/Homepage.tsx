@@ -9,6 +9,9 @@ import {
   DropdownGroup,
   DropdownItem,
   DropdownList,
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateFooter,
   Flex,
   FlexItem,
   MenuItemAction,
@@ -33,6 +36,8 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
+import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
+import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
 import {
   mergeCanvasWidgetsWithCatalog,
   onDashboardCanvasUpdated,
@@ -41,10 +46,37 @@ import {
 import type { Widget } from '@app/Homepage/widgetTypes';
 import {
   ReadOnlyHomepageWidgetFrame,
-  renderHomepageWidgetContent,
-  WIDGET_GRID_STYLES
+  WIDGET_GRID_STYLES,
+  renderHomepageWidgetContent
 } from '@app/Homepage/homepageWidgetGrid';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
+
+const HOMEPAGE_DASHBOARD_EMPTY_ILLUSTRATION_SRC =
+  'https://www.redhat.com/rhdc/managed-files/audience-1_rhai-inference-server-datasheet.webp';
+
+/** Renders in PatternFly `EmptyState` `icon` slot (receives `className` from `EmptyStateIcon`). */
+function HomepageDashboardEmptyIllustration({
+  className,
+  style,
+  ...rest
+}: React.ImgHTMLAttributes<HTMLImageElement>) {
+  return (
+    <img
+      {...rest}
+      src={HOMEPAGE_DASHBOARD_EMPTY_ILLUSTRATION_SRC}
+      alt=""
+      className={className}
+      style={{
+        maxWidth: 'min(100%, 320px)',
+        width: '100%',
+        height: 'auto',
+        display: 'block',
+        marginInline: 'auto',
+        ...style
+      }}
+    />
+  );
+}
 
 type GreetingSegment = 'morning' | 'afternoon' | 'evening' | 'night';
 
@@ -81,6 +113,8 @@ const Homepage: React.FunctionComponent = () => {
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 
   const closeHomepageHeroMenu = useCallback(() => {
     setIsHomepageHeroMenuOpen(false);
@@ -139,6 +173,29 @@ const Homepage: React.FunctionComponent = () => {
   const closeHomepageKebab = useCallback(() => {
     setIsHomepageKebabOpen(false);
   }, []);
+
+  const closeShareModal = useCallback(() => {
+    setIsShareModalOpen(false);
+  }, []);
+
+  const closeDuplicateModal = useCallback(() => {
+    setIsDuplicateModalOpen(false);
+  }, []);
+
+  const handleDuplicateModalSuccess = useCallback(
+    (newId: string) => {
+      setIsDuplicateModalOpen(false);
+      navigate(`/dashboard-hub/${newId}`);
+    },
+    [navigate]
+  );
+
+  useEffect(() => {
+    if (!homepageDashboard) {
+      setIsShareModalOpen(false);
+      setIsDuplicateModalOpen(false);
+    }
+  }, [homepageDashboard]);
 
   const handleCopyConfigurationString = useCallback(() => {
     if (!homepageDashboard) {
@@ -417,7 +474,13 @@ const Homepage: React.FunctionComponent = () => {
                               Copy configuration string
                             </span>
                           </DropdownItem>
-                          <DropdownItem key="duplicate" onClick={closeHomepageKebab}>
+                          <DropdownItem
+                            key="duplicate"
+                            onClick={() => {
+                              closeHomepageKebab();
+                              setIsDuplicateModalOpen(true);
+                            }}
+                          >
                             <span
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                             >
@@ -425,7 +488,13 @@ const Homepage: React.FunctionComponent = () => {
                               Duplicate dashboard
                             </span>
                           </DropdownItem>
-                          <DropdownItem key="share" onClick={closeHomepageKebab}>
+                          <DropdownItem
+                            key="share"
+                            onClick={() => {
+                              closeHomepageKebab();
+                              setIsShareModalOpen(true);
+                            }}
+                          >
                             <span
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                             >
@@ -517,11 +586,43 @@ const Homepage: React.FunctionComponent = () => {
                   ))}
                 </div>
               ) : (
-                <Content style={{ color: 'var(--pf-t--global--text--color--subtle)' }}>
-                  No widgets on this dashboard yet. Open{' '}
-                  <Link to={`/dashboard-hub/${homepageDashboard.id}`}>this dashboard in the hub</Link> to add widgets. You
-                  are viewing a read-only preview; editing happens only in Dashboard Hub.
-                </Content>
+                <EmptyState
+                  variant="lg"
+                  headingLevel="h2"
+                  titleText="Populate this dashboard"
+                  icon={HomepageDashboardEmptyIllustration}
+                >
+                  <EmptyStateBody>
+                    Create visual at-a-glance views of the most important information about your Red Hat systems,
+                    clusters, and more.
+                  </EmptyStateBody>
+                  <EmptyStateFooter>
+                    {homepageDashboard.isConsoleDefault === true ? (
+                      <Tooltip content="The 'Console default' dashboard is not editable.">
+                        <span style={{ display: 'inline-block' }} tabIndex={0}>
+                          <Button
+                            variant="primary"
+                            icon={<PencilAltIcon />}
+                            iconPosition="start"
+                            isDisabled
+                            aria-label="Edit dashboard (not available for Console default)"
+                          >
+                            Edit dashboard
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        icon={<PencilAltIcon />}
+                        iconPosition="start"
+                        onClick={() => navigate(`/dashboard-hub/${homepageDashboard.id}`)}
+                      >
+                        Edit dashboard
+                      </Button>
+                    )}
+                  </EmptyStateFooter>
+                </EmptyState>
               )}
             </div>
           </>
@@ -534,6 +635,20 @@ const Homepage: React.FunctionComponent = () => {
           </Content>
         )}
       </PageSection>
+      <ShareDashboardModal
+        isOpen={isShareModalOpen && Boolean(homepageDashboard)}
+        onClose={closeShareModal}
+        dashboardId={homepageDashboard?.id ?? ''}
+        dashboardName={homepageDashboard?.name ?? ''}
+      />
+      <DuplicateDashboardModal
+        isOpen={isDuplicateModalOpen && Boolean(homepageDashboard)}
+        onClose={closeDuplicateModal}
+        rows={rows}
+        initialSourceId={homepageDashboard?.id}
+        initialSetAsHomepage
+        onSuccess={handleDuplicateModalSuccess}
+      />
     </>
   );
 };

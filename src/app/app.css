@@ -26,41 +26,87 @@ body,
 }
 
 .editable-dashboard-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  align-items: start;
 }
 
-@media (min-width: 768px) {
-  .editable-dashboard-toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-  }
+/* Name + description stay one unit; actions wrap to the next row when space runs out */
+.editable-dashboard-toolbar__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
-/* Name field row + optional validation helper below */
+.editable-dashboard-meta-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pf-t--global--spacer--xs);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Name + description on one row; duplicate-name helper below */
 .editable-dashboard-name-editor {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
   max-width: 100%;
-  width: max-content;
+  width: 100%;
 }
 
-/* Keep name + inline actions on one line; don’t let the field span the full grid cell */
+.editable-dashboard-description-input-wrap {
+  flex: 1 1 6rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.editable-dashboard-description-input-wrap > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.editable-dashboard-description-input-wrap input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editable-dashboard-description-input--readonly {
+  cursor: default;
+}
+
+.editable-dashboard-description-input--readonly input {
+  cursor: default;
+  user-select: none;
+  caret-color: transparent;
+}
+
+/* Name + description + inline apply/cancel on one line */
 .editable-dashboard-name-group {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: var(--pf-t--global--spacer--xs);
+  gap: var(--pf-t--global--spacer--sm);
   min-width: 0;
   max-width: 100%;
-  width: max-content;
+  width: 100%;
+}
+
+.editable-dashboard-meta-inline-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--pf-t--global--spacer--xs);
 }
 
 .editable-dashboard-name-input-wrap {
@@ -113,15 +159,10 @@ body,
 }
 
 .editable-dashboard-toolbar__actions {
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  justify-self: stretch;
-}
-
-@media (min-width: 768px) {
-  .editable-dashboard-toolbar__actions {
-    justify-self: end;
-  }
+  margin-inline-start: auto;
 }
 
 /* Home route: top hero (greeting + homepage menu), full main width */
@@ -224,6 +265,102 @@ body,
 #homepage-hero-assignment-menu .homepage-hero-assignment-menu__leading-icon .pf-v6-svg {
   width: 1em;
   height: 1em;
+}
+
+/* Dashboard Hub "Create dashboard" menu: same leading-icon layout as Homepage hero assignment menu. */
+.hcc-create-dashboard-menu-leading-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.hcc-create-dashboard-menu-leading-icon .pf-v6-svg,
+.hcc-create-dashboard-menu-leading-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+.hcc-import-config-modal-intro {
+  margin-block-end: var(--pf-t--global--spacer--md);
+}
+
+.hcc-import-config-modal-intro p {
+  margin: 0;
+}
+
+.hcc-import-config-code-editor textarea {
+  font-family: var(--pf-t--global--font--family--mono, ui-monospace, monospace);
+  min-height: 12rem;
+}
+
+.hcc-share-dashboard-modal-intro {
+  margin-block-end: var(--pf-t--global--spacer--md);
+}
+
+.hcc-share-dashboard-modal-intro p {
+  margin: 0;
+}
+
+.hcc-share-dashboard-modal-divider {
+  margin-block: var(--pf-t--global--spacer--md);
+}
+
+.hcc-share-dashboard-recipient-list {
+  max-height: min(22rem, 50vh);
+  overflow-y: auto;
+}
+
+.hcc-share-dashboard-recipient-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-t--global--spacer--sm);
+  padding-block: var(--pf-t--global--spacer--sm);
+  border-block-end: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.hcc-share-dashboard-recipient-row:last-child {
+  border-block-end: none;
+}
+
+.hcc-share-dashboard-recipient-row__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--sm);
+  min-width: 0;
+}
+
+.hcc-share-dashboard-recipient-type-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.hcc-share-dashboard-recipient-type-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.hcc-share-dashboard-recipient-permission-select {
+  flex-shrink: 0;
+  min-width: 7.5rem;
+}
+
+.hcc-share-dashboard-creator-permission-toggle {
+  flex-shrink: 0;
+  min-width: 7.5rem;
+}
+
+.hcc-share-permission-menu__remove-access {
+  border-block-start: 1px solid var(--pf-t--global--border--color--default);
+  margin-block-start: var(--pf-t--global--spacer--xs);
+  padding-block-start: var(--pf-t--global--spacer--sm);
 }
 
 .pf-v6-c-content {

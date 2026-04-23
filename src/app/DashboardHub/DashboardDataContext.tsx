@@ -105,6 +105,8 @@ function formatLastModifiedDate(): string {
 export interface DashboardDataContextValue {
   rows: HubRow[];
   updateDashboardName: (id: string, name: string) => void;
+  /** Hub “Description” column; trimmed text, empty allowed. No-op for the built-in Console default row. */
+  updateDashboardDescription: (id: string, description: string) => void;
   updateCanvasTitle: (id: string, canvasTitle: string) => void;
   /** Creates a new blank dashboard row. Returns the new id. */
   addDashboard: (input: { name: string; setAsHomepage: boolean }) => string;
@@ -112,16 +114,36 @@ export interface DashboardDataContextValue {
   isDashboardNameTaken: (name: string, excludeDashboardId?: string) => boolean;
   /** At most one dashboard is homepage; clears the flag on other rows, then sets it on this id. */
   setDashboardAsHomepage: (id: string) => void;
-  /** Removes a dashboard row, homepage flag, and stored canvas data. */
+  /**
+   * Removes a dashboard row and stored canvas data.
+   * If the removed row was the console homepage, homepage falls back to the built-in Console default dashboard.
+   */
   removeDashboard: (id: string) => void;
   /**
-   * Clones a row with a unique name and copies widget layout into session storage.
-   * Returns the new id, or an empty string if the source is missing.
+   * Clones a row and copies widget layout into session storage.
+   * With `options.name`, uses that name (must be unique); otherwise picks a unique `Copy of …` name.
+   * With `options.setAsHomepage`, clears homepage on other rows and sets it on the clone (only when a new row is created).
+   * Returns the new id, or an empty string if the source is missing or the chosen name is taken.
    */
-  duplicateDashboard: (id: string) => string;
+  duplicateDashboard: (
+    id: string,
+    options?: { name?: string; setAsHomepage?: boolean }
+  ) => string;
+  /** Show the “sharing settings updated” success toast (after Save settings in the share modal). */
+  notifyShareSettingsSaved: (dashboardId: string, dashboardName: string) => void;
 }
 
 const DashboardDataContext = React.createContext<DashboardDataContextValue | null>(null);
+
+const TOAST_FIXED_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  top: 'var(--pf-t--global--spacer--md)',
+  right: 'var(--pf-t--global--spacer--md)',
+  zIndex: 10_000,
+  maxWidth: 'min(32rem, calc(100% - 2 * var(--pf-t--global--spacer--md)))',
+  boxShadow: 'var(--pf-t--global--box-shadow--md, 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1))',
+  borderRadius: 'var(--pf-t--global--border--radius--default)'
+};
 
 const HomepageSetToast: React.FC<{
   toast: { name: string } | null;
@@ -144,18 +166,7 @@ const HomepageSetToast: React.FC<{
   }
 
   return (
-    <div
-      className="hcc-homepage-set-toast"
-      style={{
-        position: 'fixed',
-        top: 'var(--pf-t--global--spacer--md)',
-        right: 'var(--pf-t--global--spacer--md)',
-        zIndex: 10_000,
-        maxWidth: 'min(32rem, calc(100% - 2 * var(--pf-t--global--spacer--md)))',
-        boxShadow: 'var(--pf-t--global--box-shadow--md, 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1))',
-        borderRadius: 'var(--pf-t--global--border--radius--default)'
-      }}
-    >
+    <div className="hcc-homepage-set-toast" style={TOAST_FIXED_STYLE}>
       <Alert
         variant="success"
         isLiveRegion
@@ -186,12 +197,97 @@ const HomepageSetToast: React.FC<{
   );
 };
 
+const ShareSettingsToast: React.FC<{
+  toast: { dashboardId: string; name: string } | null;
+  onClose: () => void;
+}> = ({ toast, onClose }) => {
+  const navigate = useNavigate();
+  const dismissRef = React.useRef(onClose);
+  dismissRef.current = onClose;
+
+  React.useEffect(() => {
+    if (!toast) {
+      return;
+    }
+    const t = window.setTimeout(() => dismissRef.current(), 8_000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  if (!toast) {
+    return null;
+  }
+
+  const dashboardPath = `/dashboard-hub/${toast.dashboardId}`;
+
+  return (
+    <div className="hcc-share-settings-toast" style={{ ...TOAST_FIXED_STYLE, zIndex: 10_001 }}>
+      <Alert
+        variant="success"
+        isLiveRegion
+        isInline
+        actionClose={
+          <AlertActionCloseButton
+            onClick={onClose}
+            aria-label="Close sharing settings notification"
+          />
+        }
+        title={
+          <span>
+            <strong>&#x2018;{toast.name}&#x2019;</strong> sharing settings have been updated.
+          </span>
+        }
+      >
+        <p style={{ margin: 'var(--pf-t--global--spacer--xs) 0 var(--pf-t--global--spacer--sm)' }}>
+          Users and groups who have gained additional access have been alerted.
+        </p>
+        <div>
+          <Button
+            variant="link"
+            isInline
+            onClick={() => {
+              onClose();
+              navigate(dashboardPath);
+            }}
+          >
+            View dashboard
+          </Button>
+          <span aria-hidden style={{ marginInline: 'var(--pf-t--global--spacer--sm)' }}>
+            ·
+          </span>
+          <Button
+            variant="link"
+            isInline
+            onClick={() => {
+              onClose();
+              navigate(dashboardPath, { state: { openShare: true } });
+            }}
+          >
+            Modify permissions
+          </Button>
+        </div>
+      </Alert>
+    </div>
+  );
+};
+
 const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode }> = ({ children }) => {
   const [rows, setRows] = React.useState<HubRow[]>(initialRows);
   const [homepageSetToast, setHomepageSetToast] = React.useState<{ name: string } | null>(null);
+  const [shareSettingsToast, setShareSettingsToast] = React.useState<{
+    dashboardId: string;
+    name: string;
+  } | null>(null);
 
   const dismissHomepageSetToast = React.useCallback(() => {
     setHomepageSetToast(null);
+  }, []);
+
+  const dismissShareSettingsToast = React.useCallback(() => {
+    setShareSettingsToast(null);
+  }, []);
+
+  const notifyShareSettingsSaved = React.useCallback((dashboardId: string, dashboardName: string) => {
+    setShareSettingsToast({ dashboardId, name: dashboardName });
   }, []);
 
   React.useEffect(() => {
@@ -216,6 +312,17 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
       }
       return prev.map((row) => (row.id === id ? { ...row, name: trimmed } : row));
     });
+  }, []);
+
+  const updateDashboardDescription = React.useCallback((id: string, description: string) => {
+    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+      return;
+    }
+    const trimmed = description.trim();
+    const lastModified = formatLastModifiedDate();
+    setRows((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, description: trimmed, lastModified } : row))
+    );
   }, []);
 
   const updateCanvasTitle = React.useCallback((id: string, canvasTitle: string) => {
@@ -248,7 +355,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
         id: newId,
         name,
         canvasTitle: name,
-        description: 'A blank dashboard you can customize with widgets.',
+        description: '',
         lastModified,
         isHomepage: input.setAsHomepage ? true : undefined
       };
@@ -294,66 +401,137 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
     if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
       return;
     }
-    setRows((prev) => prev.filter((r) => r.id !== id));
+    let showHomepageFallbackToast = false;
+    let fallbackHomepageDisplayName = 'Console default';
+    setRows((prev) => {
+      const target = prev.find((r) => r.id === id);
+      if (!target) {
+        return prev;
+      }
+      const wasHomepage = target.isHomepage === true;
+      const filtered = prev.filter((r) => r.id !== id);
+      if (!wasHomepage) {
+        return filtered;
+      }
+      const consoleRow = prev.find((r) => r.id === CONSOLE_DEFAULT_DASHBOARD_ID);
+      if (consoleRow) {
+        fallbackHomepageDisplayName = consoleRow.canvasTitle ?? consoleRow.name;
+      }
+      showHomepageFallbackToast = true;
+      return filtered.map((r) => {
+        if (r.id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+          return { ...r, isHomepage: true };
+        }
+        if (r.isHomepage) {
+          const { isHomepage: _omit, ...rest } = r;
+          return rest as HubRow;
+        }
+        return r;
+      });
+    });
+    if (showHomepageFallbackToast) {
+      window.queueMicrotask(() => {
+        setHomepageSetToast({ name: fallbackHomepageDisplayName });
+      });
+    }
     clearDashboardCanvasWidgets(id);
   }, []);
 
-  const duplicateDashboard = React.useCallback((id: string) => {
-    let createdId = '';
-    setRows((prev) => {
-      const source = prev.find((r) => r.id === id);
-      if (!source) {
-        return prev;
+  const duplicateDashboard = React.useCallback(
+    (id: string, options?: { name?: string; setAsHomepage?: boolean }) => {
+      let createdId = '';
+      const trimmedCustomName = options?.name?.trim() ?? '';
+      const useCustomName = trimmedCustomName.length > 0;
+
+      setRows((prev) => {
+        const source = prev.find((r) => r.id === id);
+        if (!source) {
+          return prev;
+        }
+        if (useCustomName) {
+          if (isDashboardNameInUse(prev, trimmedCustomName)) {
+            return prev;
+          }
+          createdId = `d-${Date.now()}`;
+          const cleared =
+            options?.setAsHomepage === true
+              ? prev.map((r) => {
+                  const { isHomepage: _omit, ...rest } = r;
+                  return rest;
+                })
+              : prev;
+          const newRow: HubRow = {
+            id: createdId,
+            name: trimmedCustomName,
+            canvasTitle: trimmedCustomName,
+            description: source.description,
+            lastModified: formatLastModifiedDate(),
+            isHomepage: options?.setAsHomepage ? true : undefined
+          };
+          return [...cleared, newRow];
+        }
+
+        let candidate = `Copy of ${source.name}`;
+        let suffix = 2;
+        while (isDashboardNameInUse(prev, candidate)) {
+          candidate = `Copy of ${source.name} (${suffix})`;
+          suffix += 1;
+        }
+        createdId = `d-${Date.now()}`;
+        const newRow: HubRow = {
+          id: createdId,
+          name: candidate,
+          canvasTitle: source.canvasTitle ?? source.name,
+          description: source.description,
+          lastModified: formatLastModifiedDate()
+        };
+        return [...prev, newRow];
+      });
+
+      if (!createdId) {
+        return '';
       }
-      let candidate = `Copy of ${source.name}`;
-      let suffix = 2;
-      while (isDashboardNameInUse(prev, candidate)) {
-        candidate = `Copy of ${source.name} (${suffix})`;
-        suffix += 1;
+      if (useCustomName && options?.setAsHomepage) {
+        window.queueMicrotask(() => {
+          setHomepageSetToast({ name: trimmedCustomName });
+        });
       }
-      createdId = `d-${Date.now()}`;
-      const newRow: HubRow = {
-        id: createdId,
-        name: candidate,
-        canvasTitle: source.canvasTitle ?? source.name,
-        description: source.description,
-        lastModified: formatLastModifiedDate()
-      };
-      return [...prev, newRow];
-    });
-    if (!createdId) {
-      return '';
-    }
-    const raw =
-      id === CONSOLE_DEFAULT_DASHBOARD_ID
-        ? getConsoleDefaultWidgets()
-        : readDashboardCanvasWidgets(id);
-    if (raw && raw.length) {
-      writeDashboardCanvasWidgets(createdId, mergeCanvasWidgetsWithCatalog(raw));
-    }
-    return createdId;
-  }, []);
+      const raw =
+        id === CONSOLE_DEFAULT_DASHBOARD_ID
+          ? getConsoleDefaultWidgets()
+          : readDashboardCanvasWidgets(id);
+      if (raw && raw.length) {
+        writeDashboardCanvasWidgets(createdId, mergeCanvasWidgetsWithCatalog(raw));
+      }
+      return createdId;
+    },
+    []
+  );
 
   const value = React.useMemo(
     () => ({
       rows,
       updateDashboardName,
+      updateDashboardDescription,
       updateCanvasTitle,
       addDashboard,
       isDashboardNameTaken,
       setDashboardAsHomepage,
       removeDashboard,
-      duplicateDashboard
+      duplicateDashboard,
+      notifyShareSettingsSaved
     }),
     [
       rows,
       updateDashboardName,
+      updateDashboardDescription,
       updateCanvasTitle,
       addDashboard,
       isDashboardNameTaken,
       setDashboardAsHomepage,
       removeDashboard,
-      duplicateDashboard
+      duplicateDashboard,
+      notifyShareSettingsSaved
     ]
   );
 
@@ -361,6 +539,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
     <DashboardDataContext.Provider value={value}>
       {children}
       <HomepageSetToast toast={homepageSetToast} onClose={dismissHomepageSetToast} />
+      <ShareSettingsToast toast={shareSettingsToast} onClose={dismissShareSettingsToast} />
     </DashboardDataContext.Provider>
   );
 };

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
   Breadcrumb,
@@ -26,7 +26,8 @@ import {
   HelperText,
   HelperTextItem,
   TextInput,
-  Title
+  Title,
+  Tooltip
 } from '@patternfly/react-core';
 import {
   CheckCircleIcon,
@@ -76,6 +77,9 @@ import {
   resolveDashboardCanvasWidgets,
   writeDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
+import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
+import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
+import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
 
 type PersistIndicator = 'saved' | 'saving';
 
@@ -394,17 +398,20 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
 /**
  * Shell for editing a single dashboard. Wire layout, save, widgets, etc. per product spec.
  */
+type DashboardLocationState = { openShare?: boolean } | null;
+
 const EditableDashboard: React.FunctionComponent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { dashboardId } = useParams<{ dashboardId: string }>();
   const {
     rows,
     updateDashboardName,
+    updateDashboardDescription,
     updateCanvasTitle,
     isDashboardNameTaken,
     setDashboardAsHomepage,
-    removeDashboard,
-    duplicateDashboard
+    removeDashboard
   } = useDashboardData();
   const dashboard = dashboardId ? rows.find((r) => r.id === dashboardId) : undefined;
   const isConsoleDefault = Boolean(dashboard && isConsoleDefaultHubRow(dashboard));
@@ -418,13 +425,32 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const [autosaveEnabled, setAutosaveEnabled] = React.useState(true);
   const [isKebabOpen, setIsKebabOpen] = React.useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    const s = (location.state ?? null) as DashboardLocationState;
+    if (!s?.openShare) {
+      return;
+    }
+    navigate(location.pathname, { replace: true, state: null });
+    if (dashboard) {
+      setIsShareModalOpen(true);
+    }
+  }, [dashboard, location.pathname, location.state, navigate]);
 
   const [localName, setLocalName] = React.useState('');
+  const [localDescription, setLocalDescription] = React.useState('');
   const [isNameFieldFocused, setIsNameFieldFocused] = React.useState(false);
+  const [isDescriptionFieldFocused, setIsDescriptionFieldFocused] = React.useState(false);
   const [persistIndicator, setPersistIndicator] = React.useState<PersistIndicator>('saved');
   const savingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const nameEditorRef = React.useRef<HTMLDivElement>(null);
+  const descriptionInputRef = React.useRef<HTMLInputElement>(null);
+  const descriptionFieldWrapRef = React.useRef<HTMLDivElement>(null);
+  const [isDescriptionTruncated, setIsDescriptionTruncated] = React.useState(false);
 
   const [isWidgetDrawerOpen, setIsWidgetDrawerOpen] = React.useState(false);
   const [removedWidgets, setRemovedWidgets] = React.useState<Widget[]>(() => createHomepageWidgetClones());
@@ -433,8 +459,34 @@ const EditableDashboard: React.FunctionComponent = () => {
   React.useEffect(() => {
     if (dashboard) {
       setLocalName(dashboard.name);
+      setLocalDescription(dashboard.description ?? '');
     }
-  }, [dashboard?.id, dashboard?.name]);
+  }, [dashboard?.id, dashboard?.name, dashboard?.description]);
+
+  const measureDescriptionTruncation = React.useCallback(() => {
+    const el = descriptionInputRef.current;
+    if (!el || !localDescription.trim()) {
+      setIsDescriptionTruncated(false);
+      return;
+    }
+    setIsDescriptionTruncated(Math.ceil(el.scrollWidth) > Math.floor(el.clientWidth));
+  }, [localDescription]);
+
+  React.useLayoutEffect(() => {
+    measureDescriptionTruncation();
+  }, [measureDescriptionTruncation]);
+
+  React.useEffect(() => {
+    const wrap = descriptionFieldWrapRef.current;
+    if (!wrap) {
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      measureDescriptionTruncation();
+    });
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [measureDescriptionTruncation]);
 
   /** Load per-dashboard widget layout (session storage) before paint; keeps hub ↔ homepage in sync. */
   React.useLayoutEffect(() => {
@@ -489,7 +541,10 @@ const EditableDashboard: React.FunctionComponent = () => {
     []
   );
 
-  const isDirty = dashboard ? localName !== dashboard.name : false;
+  const isDirty = dashboard
+    ? localName !== dashboard.name ||
+      localDescription.trim() !== (dashboard.description ?? '').trim()
+    : false;
 
   const toolbarNameIsDuplicate = Boolean(
     dashboard && localName.trim() && isDashboardNameTaken(localName, dashboard.id)
@@ -524,6 +579,53 @@ const EditableDashboard: React.FunctionComponent = () => {
     setIsNameFieldFocused(false);
   }, [dashboard, localName, isDashboardNameTaken, updateDashboardName, autosaveEnabled, runAutosavePersistFlow]);
 
+  const applyDescriptionIfDirty = React.useCallback(() => {
+    if (!dashboard || isConsoleDefault) {
+      return;
+    }
+    const next = localDescription.trim();
+    const current = (dashboard.description ?? '').trim();
+    if (next === current) {
+      return;
+    }
+    updateDashboardDescription(dashboard.id, next);
+    if (autosaveEnabled) {
+      runAutosavePersistFlow();
+    }
+  }, [
+    autosaveEnabled,
+    dashboard,
+    isConsoleDefault,
+    localDescription,
+    runAutosavePersistFlow,
+    updateDashboardDescription
+  ]);
+
+  const applyDescriptionChange = React.useCallback(() => {
+    applyDescriptionIfDirty();
+    setIsDescriptionFieldFocused(false);
+  }, [applyDescriptionIfDirty]);
+
+  const handleDescriptionBlur = React.useCallback(() => {
+    if (!dashboard || isConsoleDefault || !autosaveEnabled) {
+      return;
+    }
+    const next = localDescription.trim();
+    const current = (dashboard.description ?? '').trim();
+    if (next === current) {
+      return;
+    }
+    updateDashboardDescription(dashboard.id, next);
+    runAutosavePersistFlow();
+  }, [
+    autosaveEnabled,
+    dashboard,
+    isConsoleDefault,
+    localDescription,
+    runAutosavePersistFlow,
+    updateDashboardDescription
+  ]);
+
   const cancelNameChange = React.useCallback(() => {
     if (!dashboard) {
       return;
@@ -532,13 +634,23 @@ const EditableDashboard: React.FunctionComponent = () => {
     setIsNameFieldFocused(false);
   }, [dashboard]);
 
+  const cancelDescriptionChange = React.useCallback(() => {
+    if (!dashboard) {
+      return;
+    }
+    setLocalDescription(dashboard.description ?? '');
+    setIsDescriptionFieldFocused(false);
+  }, [dashboard]);
+
   const handleNameEditorBlur = React.useCallback(() => {
     window.setTimeout(() => {
       if (!nameEditorRef.current?.contains(document.activeElement)) {
         setIsNameFieldFocused(false);
+        setIsDescriptionFieldFocused(false);
         if (autosaveEnabled) {
           if (dashboard) {
             setLocalName(dashboard.name);
+            setLocalDescription(dashboard.description ?? '');
           }
         }
       }
@@ -547,11 +659,15 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const handleSaveManual = React.useCallback(() => {
     applyNameChange();
-  }, [applyNameChange]);
+    applyDescriptionIfDirty();
+  }, [applyDescriptionIfDirty, applyNameChange]);
 
   const handleCancelManual = React.useCallback(() => {
     cancelNameChange();
-  }, [cancelNameChange]);
+    if (dashboard) {
+      setLocalDescription(dashboard.description ?? '');
+    }
+  }, [cancelNameChange, dashboard]);
 
   const handleAddWidgetFromBank = React.useCallback((widget: Widget) => {
     setRemovedWidgets((prev) => prev.filter((w) => w.id !== widget.id));
@@ -598,21 +714,34 @@ const EditableDashboard: React.FunctionComponent = () => {
     if (!dashboard) {
       return;
     }
-    const newId = duplicateDashboard(dashboard.id);
-    if (newId) {
-      setIsKebabOpen(false);
+    setIsKebabOpen(false);
+    setIsDuplicateModalOpen(true);
+  }, [dashboard]);
+
+  const handleDuplicateModalSuccess = React.useCallback(
+    (newId: string) => {
+      setIsDuplicateModalOpen(false);
       navigate(`/dashboard-hub/${newId}`);
-    }
-  }, [dashboard, duplicateDashboard, navigate]);
+    },
+    [navigate]
+  );
 
   const handleKebabDelete = React.useCallback(() => {
     if (!dashboard || isConsoleDefaultHubRow(dashboard)) {
       return;
     }
-    removeDashboard(dashboard.id);
     setIsKebabOpen(false);
+    setIsDeleteModalOpen(true);
+  }, [dashboard]);
+
+  const handleDeleteDashboardConfirm = React.useCallback(() => {
+    if (!dashboard || isConsoleDefaultHubRow(dashboard)) {
+      return;
+    }
+    removeDashboard(dashboard.id);
+    setIsDeleteModalOpen(false);
     navigate('/dashboard-hub');
-  }, [dashboard, removeDashboard, navigate]);
+  }, [dashboard, navigate, removeDashboard]);
 
   const dashboardBody = dashboard ? (
     <>
@@ -621,20 +750,21 @@ const EditableDashboard: React.FunctionComponent = () => {
           style={{ paddingTop: 0, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
         >
           <div role="toolbar" aria-label="Dashboard editor" className="editable-dashboard-toolbar">
-            <div style={{ minWidth: 0, maxWidth: '100%' }}>
+            <div className="editable-dashboard-toolbar__meta">
               <div
                 ref={nameEditorRef}
-                className="editable-dashboard-name-editor"
+                className="editable-dashboard-meta-editor"
                 onBlur={handleNameEditorBlur}
               >
-                <div className="editable-dashboard-name-group">
-                  <div
-                    className={
-                      dashboard.isHomepage
-                        ? 'editable-dashboard-name-input-wrap editable-dashboard-name-input-wrap--home'
-                        : 'editable-dashboard-name-input-wrap'
-                    }
-                  >
+                <div className="editable-dashboard-name-editor">
+                  <div className="editable-dashboard-name-group">
+                    <div
+                      className={
+                        dashboard.isHomepage
+                          ? 'editable-dashboard-name-input-wrap editable-dashboard-name-input-wrap--home'
+                          : 'editable-dashboard-name-input-wrap'
+                      }
+                    >
                     {dashboard.isHomepage ? (
                       <span
                         className="editable-dashboard-name-input__home-icon"
@@ -666,6 +796,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       onFocus={() => {
                         if (!isConsoleDefault) {
                           setIsNameFieldFocused(true);
+                          setIsDescriptionFieldFocused(false);
                         }
                       }}
                       onKeyDown={(e) => {
@@ -692,46 +823,132 @@ const EditableDashboard: React.FunctionComponent = () => {
                       validated={toolbarNameIsDuplicate ? 'error' : 'default'}
                       aria-describedby={toolbarNameIsDuplicate ? 'dashboard-name-duplicate-error' : undefined}
                     />
-                  </div>
-                  {!isConsoleDefault && isNameFieldFocused && (
-                    <>
-                      <Button
-                        variant="plain"
-                        type="button"
-                        aria-label="Apply dashboard name"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={applyNameChange}
-                        isDisabled={
-                          !localName.trim() ||
-                          localName.trim() === dashboard.name ||
-                          toolbarNameIsDuplicate
+                    </div>
+                    {!isConsoleDefault && isNameFieldFocused && (
+                      <span className="editable-dashboard-meta-inline-actions">
+                        <Button
+                          variant="plain"
+                          type="button"
+                          aria-label="Apply dashboard name"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={applyNameChange}
+                          isDisabled={
+                            !localName.trim() ||
+                            localName.trim() === dashboard.name ||
+                            toolbarNameIsDuplicate
+                          }
+                        >
+                          <CheckIcon />
+                        </Button>
+                        <Button
+                          variant="plain"
+                          type="button"
+                          aria-label="Cancel dashboard name edit"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={cancelNameChange}
+                        >
+                          <TimesIcon />
+                        </Button>
+                      </span>
+                    )}
+                    <div
+                      ref={descriptionFieldWrapRef}
+                      className="editable-dashboard-description-input-wrap"
+                    >
+                      <TextInput
+                        ref={descriptionInputRef}
+                        id="dashboard-description-input"
+                        aria-label="Short dashboard description (optional)"
+                        type="text"
+                        value={localDescription}
+                        onChange={(_event, value) => setLocalDescription(value)}
+                        onFocus={() => {
+                          if (!isConsoleDefault) {
+                            setIsDescriptionFieldFocused(true);
+                            setIsNameFieldFocused(false);
+                          }
+                        }}
+                        onBlur={handleDescriptionBlur}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter') {
+                            return;
+                          }
+                          e.preventDefault();
+                          if (!dashboard || isConsoleDefault) {
+                            return;
+                          }
+                          const next = localDescription.trim();
+                          const current = (dashboard.description ?? '').trim();
+                          if (next === current) {
+                            return;
+                          }
+                          applyDescriptionChange();
+                        }}
+                        onMouseDown={
+                          isConsoleDefault
+                            ? (e: React.MouseEvent<HTMLInputElement>) => {
+                                e.preventDefault();
+                              }
+                            : undefined
                         }
+                        maxLength={500}
+                        readOnly={isConsoleDefault}
+                        readOnlyVariant={isConsoleDefault ? 'default' : undefined}
+                        tabIndex={isConsoleDefault ? -1 : undefined}
+                        placeholder="(Optional) Short description of the dashboard"
+                        className={
+                          isConsoleDefault
+                            ? 'editable-dashboard-description-input editable-dashboard-description-input--readonly'
+                            : 'editable-dashboard-description-input'
+                        }
+                      />
+                      {isDescriptionTruncated && localDescription.trim() ? (
+                        <Tooltip
+                          triggerRef={descriptionInputRef}
+                          content={localDescription}
+                          position="bottom"
+                          aria="none"
+                        />
+                      ) : null}
+                    </div>
+                    {!isConsoleDefault && isDescriptionFieldFocused && (
+                      <span className="editable-dashboard-meta-inline-actions">
+                        <Button
+                          variant="plain"
+                          type="button"
+                          aria-label="Apply dashboard description"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={applyDescriptionChange}
+                          isDisabled={
+                            localDescription.trim() === (dashboard.description ?? '').trim()
+                          }
+                        >
+                          <CheckIcon />
+                        </Button>
+                        <Button
+                          variant="plain"
+                          type="button"
+                          aria-label="Cancel dashboard description edit"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={cancelDescriptionChange}
+                        >
+                          <TimesIcon />
+                        </Button>
+                      </span>
+                    )}
+                  </div>
+                  {toolbarNameIsDuplicate && (
+                    <HelperText isLiveRegion>
+                      <HelperTextItem
+                        id="dashboard-name-duplicate-error"
+                        variant="error"
+                        component="div"
                       >
-                        <CheckIcon />
-                      </Button>
-                      <Button
-                        variant="plain"
-                        type="button"
-                        aria-label="Cancel dashboard name edit"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={cancelNameChange}
-                      >
-                        <TimesIcon />
-                      </Button>
-                    </>
+                        {DASHBOARD_DUPLICATE_NAME_ERROR}
+                      </HelperTextItem>
+                    </HelperText>
                   )}
                 </div>
-                {toolbarNameIsDuplicate && (
-                  <HelperText isLiveRegion>
-                    <HelperTextItem
-                      id="dashboard-name-duplicate-error"
-                      variant="error"
-                      component="div"
-                    >
-                      {DASHBOARD_DUPLICATE_NAME_ERROR}
-                    </HelperTextItem>
-                  </HelperText>
-                )}
               </div>
             </div>
             <div className="editable-dashboard-toolbar__actions">
@@ -804,7 +1021,9 @@ const EditableDashboard: React.FunctionComponent = () => {
                     />
                   </FlexItem>
                   <FlexItem>
-                    <Button variant="secondary">Share</Button>
+                    <Button variant="secondary" onClick={() => setIsShareModalOpen(true)}>
+                      Share
+                    </Button>
                   </FlexItem>
                   <FlexItem>
                     <Button
@@ -958,6 +1177,31 @@ const EditableDashboard: React.FunctionComponent = () => {
           </Content>
         </PageSection>
       )}
+
+      {dashboard ? (
+        <>
+          <DuplicateDashboardModal
+            isOpen={isDuplicateModalOpen}
+            onClose={() => setIsDuplicateModalOpen(false)}
+            rows={rows}
+            initialSourceId={dashboard.id}
+            initialSetAsHomepage={false}
+            onSuccess={handleDuplicateModalSuccess}
+          />
+          <DeleteDashboardModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            dashboardName={dashboard.name}
+            onConfirm={handleDeleteDashboardConfirm}
+          />
+          <ShareDashboardModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            dashboardId={dashboard.id}
+            dashboardName={dashboard.name}
+          />
+        </>
+      ) : null}
     </div>
   );
 };

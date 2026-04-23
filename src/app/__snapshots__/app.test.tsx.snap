@@ -39,7 +39,7 @@ exports[`App tests should render default App component 1`] = `
           >
             <img
               alt="Red Hat Logo"
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Red_Hat_logo.svg/2560px-Red_Hat_logo.svg.png"
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Red_Hat_logo.svg/3840px-Red_Hat_logo.svg.png"
               style="height: 40px; width: auto;"
             />
           </span>
@@ -901,7 +901,7 @@ exports[`App tests should render default App component 1`] = `
                                 >
                                   <div
                                     class="pf-v6-c-content"
-                                    data-ouia-component-id="OUIA-Generated-Content-2"
+                                    data-ouia-component-id="OUIA-Generated-Content-1"
                                     data-ouia-component-type="PF6/Content"
                                     data-ouia-safe="true"
                                     data-pf-content="true"
@@ -981,7 +981,7 @@ exports[`App tests should render default App component 1`] = `
                                 >
                                   <div
                                     class="pf-v6-c-content"
-                                    data-ouia-component-id="OUIA-Generated-Content-3"
+                                    data-ouia-component-id="OUIA-Generated-Content-2"
                                     data-ouia-component-type="PF6/Content"
                                     data-ouia-safe="true"
                                     data-pf-content="true"
@@ -1061,7 +1061,7 @@ exports[`App tests should render default App component 1`] = `
                                 >
                                   <div
                                     class="pf-v6-c-content"
-                                    data-ouia-component-id="OUIA-Generated-Content-4"
+                                    data-ouia-component-id="OUIA-Generated-Content-3"
                                     data-ouia-component-type="PF6/Content"
                                     data-ouia-safe="true"
                                     data-pf-content="true"
@@ -1182,7 +1182,7 @@ exports[`App tests should render default App component 1`] = `
                                                 >
                                                   <small
                                                     class="pf-v6-c-content--small"
-                                                    data-ouia-component-id="OUIA-Generated-Content-5"
+                                                    data-ouia-component-id="OUIA-Generated-Content-4"
                                                     data-ouia-component-type="PF6/Content"
                                                     data-ouia-safe="true"
                                                     data-pf-content="true"
@@ -1228,7 +1228,7 @@ exports[`App tests should render default App component 1`] = `
                                                 >
                                                   <small
                                                     class="pf-v6-c-content--small"
-                                                    data-ouia-component-id="OUIA-Generated-Content-6"
+                                                    data-ouia-component-id="OUIA-Generated-Content-5"
                                                     data-ouia-component-type="PF6/Content"
                                                     data-ouia-safe="true"
                                                     data-pf-content="true"
@@ -1274,7 +1274,7 @@ exports[`App tests should render default App component 1`] = `
                                                 >
                                                   <small
                                                     class="pf-v6-c-content--small"
-                                                    data-ouia-component-id="OUIA-Generated-Content-7"
+                                                    data-ouia-component-id="OUIA-Generated-Content-6"
                                                     data-ouia-component-type="PF6/Content"
                                                     data-ouia-safe="true"
                                                     data-pf-content="true"
@@ -1328,7 +1328,7 @@ exports[`App tests should render default App component 1`] = `
                                                 >
                                                   <small
                                                     class="pf-v6-c-content--small"
-                                                    data-ouia-component-id="OUIA-Generated-Content-8"
+                                                    data-ouia-component-id="OUIA-Generated-Content-7"
                                                     data-ouia-component-type="PF6/Content"
                                                     data-ouia-safe="true"
                                                     data-pf-content="true"
@@ -1374,7 +1374,7 @@ exports[`App tests should render default App component 1`] = `
                                                 >
                                                   <small
                                                     class="pf-v6-c-content--small"
-                                                    data-ouia-component-id="OUIA-Generated-Content-9"
+                                                    data-ouia-component-id="OUIA-Generated-Content-8"
                                                     data-ouia-component-type="PF6/Content"
                                                     data-ouia-safe="true"
                                                     data-pf-content="true"
@@ -1428,7 +1428,7 @@ exports[`App tests should render default App component 1`] = `
                                 >
                                   <p
                                     class="pf-v6-c-content--p"
-                                    data-ouia-component-id="OUIA-Generated-Content-10"
+                                    data-ouia-component-id="OUIA-Generated-Content-9"
                                     data-ouia-component-type="PF6/Content"
                                     data-ouia-safe="true"
                                     data-pf-content="true"
@@ -1481,7 +1481,7 @@ exports[`App tests should render default App component 1`] = `
                                     >
                                       <div
                                         class="pf-v6-c-content"
-                                        data-ouia-component-id="OUIA-Generated-Content-11"
+                                        data-ouia-component-id="OUIA-Generated-Content-10"
                                         data-ouia-component-type="PF6/Content"
                                         data-ouia-safe="true"
                                         data-pf-content="true"

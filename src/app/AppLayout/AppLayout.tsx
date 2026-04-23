@@ -4307,8 +4307,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         )}
         <MastheadBrand data-codemods>
           <MastheadLogo data-codemods onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Red_Hat_logo.svg/2560px-Red_Hat_logo.svg.png"
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Red_Hat_logo.svg/3840px-Red_Hat_logo.svg.png"
               alt="Red Hat Logo"
               style={{ height: '40px', width: 'auto' }}
             />
