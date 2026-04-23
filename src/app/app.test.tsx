@@ -8,9 +8,14 @@ import { BrowserRouter } from 'react-router-dom';
 
 describe('App tests', () => {
   test('should render default App component', () => {
-    const { asFragment } = render(<App />);
-
-    expect(asFragment()).toMatchSnapshot();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2020-06-15T10:30:00'));
+    try {
+      const { asFragment } = render(<App />);
+      expect(asFragment()).toMatchSnapshot();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('should render a nav-toggle button', () => {

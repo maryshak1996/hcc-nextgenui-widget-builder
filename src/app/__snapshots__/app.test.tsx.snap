@@ -607,11 +607,11 @@ exports[`App tests should render default App component 1`] = `
                                     fill="currentColor"
                                     height="1em"
                                     role="img"
-                                    viewBox="0 0 448 512"
+                                    viewBox="0 0 512 512"
                                     width="1em"
                                   >
                                     <path
-                                      d="M372.57 112.641v-10.825c0-43.612-40.52-76.691-83.039-65.546-25.629-49.5-94.09-47.45-117.982.747C130.269 26.456 89.144 57.945 89.144 102v126.13c-19.953-7.427-43.308-5.068-62.083 8.871-29.355 21.796-35.794 63.333-14.55 93.153L132.48 498.569a32 32 0 0 0 26.062 13.432h222.897c14.904 0 27.835-10.289 31.182-24.813l30.184-130.958A203.637 203.637 0 0 0 448 310.564V179c0-40.62-35.523-71.992-75.43-66.359zm27.427 197.922c0 11.731-1.334 23.469-3.965 34.886L368.707 464h-201.92L51.591 302.303c-14.439-20.27 15.023-42.776 29.394-22.605l27.128 38.079c8.995 12.626 29.031 6.287 29.031-9.283V102c0-25.645 36.571-24.81 36.571.691V256c0 8.837 7.163 16 16 16h6.856c8.837 0 16-7.163 16-16V67c0-25.663 36.571-24.81 36.571.691V256c0 8.837 7.163 16 16 16h6.856c8.837 0 16-7.163 16-16V101.125c0-25.672 36.57-24.81 36.57.691V256c0 8.837 7.163 16 16 16h6.857c8.837 0 16-7.163 16-16v-76.309c0-26.242 36.57-25.64 36.57-.691v131.563z"
+                                      d="M494.2 221.9l-59.8-40.5 13.7-71c2.6-13.2-1.6-26.8-11.1-36.4-9.6-9.5-23.2-13.7-36.2-11.1l-70.9 13.7-40.4-59.9c-15.1-22.3-51.9-22.3-67 0l-40.4 59.9-70.8-13.7C98 60.4 84.5 64.5 75 74.1c-9.5 9.6-13.7 23.1-11.1 36.3l13.7 71-59.8 40.5C6.6 229.5 0 242 0 255.5s6.7 26 17.8 33.5l59.8 40.5-13.7 71c-2.6 13.2 1.6 26.8 11.1 36.3 9.5 9.5 22.9 13.7 36.3 11.1l70.8-13.7 40.4 59.9C230 505.3 242.6 512 256 512s26-6.7 33.5-17.8l40.4-59.9 70.9 13.7c13.4 2.7 26.8-1.6 36.3-11.1 9.5-9.5 13.6-23.1 11.1-36.3l-13.7-71 59.8-40.5c11.1-7.5 17.8-20.1 17.8-33.5-.1-13.6-6.7-26.1-17.9-33.7zm-112.9 85.6l17.6 91.2-91-17.6L256 458l-51.9-77-90.9 17.6 17.6-91.2-76.8-52 76.8-52-17.6-91.2 91 17.6L256 53l51.9 76.9 91-17.6-17.6 91.1 76.8 52-76.8 52.1zM256 152c-57.3 0-104 46.7-104 104s46.7 104 104 104 104-46.7 104-104-46.7-104-104-104zm0 160c-30.9 0-56-25.1-56-56s25.1-56 56-56 56 25.1 56 56-25.1 56-56 56z"
                                     />
                                   </svg>
                                 </span>
@@ -630,7 +630,7 @@ exports[`App tests should render default App component 1`] = `
                             >
                               <button
                                 aria-expanded="false"
-                                aria-label="No homepage assigned. Open menu to set a dashboard as your homepage."
+                                aria-label="Homepage: Console default. Open menu."
                                 class="pf-v6-c-menu-toggle"
                                 data-ouia-component-id="OUIA-Generated-MenuToggle-default-1"
                                 data-ouia-component-type="PF6/MenuToggle"
@@ -641,7 +641,7 @@ exports[`App tests should render default App component 1`] = `
                                   class="pf-v6-c-menu-toggle__text"
                                 >
                                   <span
-                                    style="display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: min(32rem, 70vw); color: var(--pf-t--global--text--color--subtle);"
+                                    style="display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: min(32rem, 70vw);"
                                   >
                                     <svg
                                       aria-hidden="true"
@@ -660,7 +660,7 @@ exports[`App tests should render default App component 1`] = `
                                     <span
                                       style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;"
                                     >
-                                      No homepage assigned
+                                      Console default
                                     </span>
                                   </span>
                                 </span>
@@ -697,32 +697,907 @@ exports[`App tests should render default App component 1`] = `
                       </div>
                     </section>
                     <section
-                      class="pf-v6-c-page__main-section"
+                      class="pf-v6-c-page__main-section homepage-dashboard-page-section"
                     >
                       <div
                         class="pf-v6-c-page__main-body"
                       >
                         <div
-                          class="pf-v6-c-content"
-                          data-ouia-component-id="OUIA-Generated-Content-1"
-                          data-ouia-component-type="PF6/Content"
-                          data-ouia-safe="true"
-                          data-pf-content="true"
+                          style="max-width: 1566px; margin: 0px auto; width: 100%;"
                         >
-                          <p>
-                            Set a 
-                            <strong>
-                              homepage dashboard
-                            </strong>
-                             in 
-                            <a
-                              data-discover="true"
-                              href="/dashboard-hub"
+                          <div
+                            class="pf-v6-l-flex pf-m-space-items-md pf-m-align-items-flex-start pf-m-justify-content-space-between homepage-dashboard-title-bar"
+                            style="width: 100%; min-width: 0; margin-bottom: var(--pf-t--global--spacer--sm);"
+                          >
+                            <div
+                              class="homepage-dashboard-title"
+                              style="min-width: 0; flex: 1 1 auto;"
                             >
-                              Dashboard Hub
-                            </a>
-                             (kebab menu → Set as homepage) to show it here. Until then, the widget area is empty.
-                          </p>
+                              <h2
+                                class="pf-v6-c-title pf-m-2xl homepage-dashboard-title__text"
+                                data-ouia-component-id="OUIA-Generated-Title-2"
+                                data-ouia-component-type="PF6/Title"
+                                data-ouia-safe="true"
+                              >
+                                Welcome to the Hybrid Cloud Console
+                              </h2>
+                            </div>
+                            <div
+                              class="homepage-dashboard-actions"
+                              style="flex: 0 0 auto;"
+                            >
+                              <div
+                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
+                                style="flex-wrap: nowrap;"
+                              >
+                                <div
+                                  class=""
+                                >
+                                  <button
+                                    aria-expanded="false"
+                                    aria-label="Homepage dashboard actions"
+                                    class="pf-v6-c-menu-toggle pf-m-plain"
+                                    data-ouia-component-id="OUIA-Generated-MenuToggle-plain-1"
+                                    data-ouia-component-type="PF6/MenuToggle"
+                                    data-ouia-safe="true"
+                                    type="button"
+                                  >
+                                    <span
+                                      class="pf-v6-c-menu-toggle__text"
+                                    >
+                                      <svg
+                                        aria-hidden="true"
+                                        class="pf-v6-svg"
+                                        fill="currentColor"
+                                        height="1em"
+                                        role="img"
+                                        viewBox="0 0 192 512"
+                                        width="1em"
+                                      >
+                                        <path
+                                          d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </button>
+                                </div>
+                                <div
+                                  class=""
+                                >
+                                  <div
+                                    style="display: contents;"
+                                  >
+                                    <span
+                                      style="display: inline-block;"
+                                      tabindex="0"
+                                    >
+                                      <button
+                                        aria-label="Edit dashboard (not available for Console default)"
+                                        class="pf-v6-c-button pf-m-secondary"
+                                        data-ouia-component-id="OUIA-Generated-Button-secondary-1"
+                                        data-ouia-component-type="PF6/Button"
+                                        data-ouia-safe="true"
+                                        disabled=""
+                                        type="button"
+                                      >
+                                        <span
+                                          class="pf-v6-c-button__icon pf-m-start"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 512 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"
+                                            />
+                                          </svg>
+                                        </span>
+                                        <span
+                                          class="pf-v6-c-button__text"
+                                        >
+                                          Edit dashboard
+                                        </span>
+                                      </button>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style="margin-bottom: var(--pf-t--global--spacer--md);"
+                          >
+                            <div
+                              class="pf-v6-c-alert pf-m-inline pf-m-plain pf-m-info"
+                              data-ouia-component-id="OUIA-Generated-Alert-info-1"
+                              data-ouia-component-type="PF6/Alert"
+                              data-ouia-safe="true"
+                            >
+                              <div
+                                class="pf-v6-c-alert__icon"
+                              >
+                                <svg
+                                  aria-hidden="true"
+                                  class="pf-v6-svg"
+                                  fill="currentColor"
+                                  height="1em"
+                                  role="img"
+                                  viewBox="0 0 512 512"
+                                  width="1em"
+                                >
+                                  <path
+                                    d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"
+                                  />
+                                </svg>
+                              </div>
+                              <p
+                                class="pf-v6-c-alert__title"
+                              >
+                                <span
+                                  class="pf-v6-screen-reader"
+                                >
+                                  Info alert:
+                                </span>
+                                We've made enhancements to our dashboard, including: creating multiple, saving, sharing, duplicating and more. 
+                                <a
+                                  class="pf-v6-c-button pf-m-link pf-m-inline"
+                                  data-ouia-component-id="OUIA-Generated-Button-link-1"
+                                  data-ouia-component-type="PF6/Button"
+                                  data-ouia-safe="true"
+                                  href="#"
+                                >
+                                  <span
+                                    class="pf-v6-c-button__text"
+                                  >
+                                    Learn more.
+                                  </span>
+                                </a>
+                              </p>
+                            </div>
+                          </div>
+                          <div
+                            aria-label="Read-only preview of your homepage dashboard"
+                            class="widgets-grid homepage-readonly-grid"
+                            style="min-width: 0; width: 100%;"
+                          >
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 1; grid-row: span 3;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-1"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-3"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      RHEL
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <div
+                                    class="pf-v6-c-content"
+                                    data-ouia-component-id="OUIA-Generated-Content-2"
+                                    data-ouia-component-type="PF6/Content"
+                                    data-ouia-safe="true"
+                                    data-pf-content="true"
+                                  >
+                                    Proactively assess, secure, and stabilize the business-critical services that you scale from your RHEL systems.
+                                  </div>
+                                </div>
+                                <div
+                                  class="pf-v6-c-card__footer"
+                                >
+                                  <button
+                                    class="pf-v6-c-button pf-m-link"
+                                    data-ouia-component-id="OUIA-Generated-Button-link-2"
+                                    data-ouia-component-type="PF6/Button"
+                                    data-ouia-safe="true"
+                                    type="button"
+                                  >
+                                    <span
+                                      class="pf-v6-c-button__text"
+                                    >
+                                      Insights for RHEL
+                                    </span>
+                                    <span
+                                      class="pf-v6-c-button__icon pf-m-end"
+                                    >
+                                      <svg
+                                        aria-hidden="true"
+                                        class="pf-v6-svg"
+                                        fill="currentColor"
+                                        height="1em"
+                                        role="img"
+                                        viewBox="0 0 448 512"
+                                        width="1em"
+                                      >
+                                        <path
+                                          d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 1; grid-row: span 3;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-2"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-4"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      OpenShift
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <div
+                                    class="pf-v6-c-content"
+                                    data-ouia-component-id="OUIA-Generated-Content-3"
+                                    data-ouia-component-type="PF6/Content"
+                                    data-ouia-safe="true"
+                                    data-pf-content="true"
+                                  >
+                                    Build, run, and scale container-based applications - now with developer tools, CI/CD, and release management.
+                                  </div>
+                                </div>
+                                <div
+                                  class="pf-v6-c-card__footer"
+                                >
+                                  <button
+                                    class="pf-v6-c-button pf-m-link"
+                                    data-ouia-component-id="OUIA-Generated-Button-link-3"
+                                    data-ouia-component-type="PF6/Button"
+                                    data-ouia-safe="true"
+                                    type="button"
+                                  >
+                                    <span
+                                      class="pf-v6-c-button__text"
+                                    >
+                                      OpenShift
+                                    </span>
+                                    <span
+                                      class="pf-v6-c-button__icon pf-m-end"
+                                    >
+                                      <svg
+                                        aria-hidden="true"
+                                        class="pf-v6-svg"
+                                        fill="currentColor"
+                                        height="1em"
+                                        role="img"
+                                        viewBox="0 0 448 512"
+                                        width="1em"
+                                      >
+                                        <path
+                                          d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 1; grid-row: span 3;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-3"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-5"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      Ansible
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <div
+                                    class="pf-v6-c-content"
+                                    data-ouia-component-id="OUIA-Generated-Content-4"
+                                    data-ouia-component-type="PF6/Content"
+                                    data-ouia-safe="true"
+                                    data-pf-content="true"
+                                  >
+                                    Create, share, and manage automations - from development and operations, to security and network teams.
+                                  </div>
+                                </div>
+                                <div
+                                  class="pf-v6-c-card__footer"
+                                >
+                                  <button
+                                    class="pf-v6-c-button pf-m-link"
+                                    data-ouia-component-id="OUIA-Generated-Button-link-4"
+                                    data-ouia-component-type="PF6/Button"
+                                    data-ouia-safe="true"
+                                    type="button"
+                                  >
+                                    <span
+                                      class="pf-v6-c-button__text"
+                                    >
+                                      Ansible
+                                    </span>
+                                    <span
+                                      class="pf-v6-c-button__icon pf-m-end"
+                                    >
+                                      <svg
+                                        aria-hidden="true"
+                                        class="pf-v6-svg"
+                                        fill="currentColor"
+                                        height="1em"
+                                        role="img"
+                                        viewBox="0 0 448 512"
+                                        width="1em"
+                                      >
+                                        <path
+                                          d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 3; grid-row: span 5;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-4"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-6"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      Explore capabilities
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <div
+                                    class="pf-v6-l-flex pf-m-space-items-lg pf-m-column"
+                                  >
+                                    <div
+                                      class=""
+                                    >
+                                      <div
+                                        class="pf-v6-l-flex pf-m-space-items-md pf-m-row pf-m-wrap"
+                                      >
+                                        <div
+                                          class="pf-m-flex-1"
+                                          style="min-width: 180px;"
+                                        >
+                                          <div
+                                            class="pf-v6-c-card pf-m-compact pf-m-secondary explore-capability-card"
+                                            data-ouia-component-id="OUIA-Generated-Card-5"
+                                            data-ouia-component-type="PF6/Card"
+                                            data-ouia-safe="true"
+                                            id=""
+                                          >
+                                            <div
+                                              class="pf-v6-c-card__body"
+                                            >
+                                              <div
+                                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                              >
+                                                <div
+                                                  class=""
+                                                >
+                                                  <h4
+                                                    class="pf-v6-c-title pf-m-md"
+                                                    data-ouia-component-id="OUIA-Generated-Title-7"
+                                                    data-ouia-component-type="PF6/Title"
+                                                    data-ouia-safe="true"
+                                                  >
+                                                    Get started with a tour
+                                                  </h4>
+                                                </div>
+                                                <div
+                                                  class=""
+                                                >
+                                                  <small
+                                                    class="pf-v6-c-content--small"
+                                                    data-ouia-component-id="OUIA-Generated-Content-5"
+                                                    data-ouia-component-type="PF6/Content"
+                                                    data-ouia-safe="true"
+                                                    data-pf-content="true"
+                                                  >
+                                                    Take a quick guided tour to understand how the Red Hat Hybrid Cloud Console's capabilities will increase your efficiency
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div
+                                          class="pf-m-flex-1"
+                                          style="min-width: 180px;"
+                                        >
+                                          <div
+                                            class="pf-v6-c-card pf-m-compact pf-m-secondary explore-capability-card"
+                                            data-ouia-component-id="OUIA-Generated-Card-6"
+                                            data-ouia-component-type="PF6/Card"
+                                            data-ouia-safe="true"
+                                            id=""
+                                          >
+                                            <div
+                                              class="pf-v6-c-card__body"
+                                            >
+                                              <div
+                                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                              >
+                                                <div
+                                                  class=""
+                                                >
+                                                  <h4
+                                                    class="pf-v6-c-title pf-m-md"
+                                                    data-ouia-component-id="OUIA-Generated-Title-8"
+                                                    data-ouia-component-type="PF6/Title"
+                                                    data-ouia-safe="true"
+                                                  >
+                                                    Try OpenShift on AWS
+                                                  </h4>
+                                                </div>
+                                                <div
+                                                  class=""
+                                                >
+                                                  <small
+                                                    class="pf-v6-c-content--small"
+                                                    data-ouia-component-id="OUIA-Generated-Content-6"
+                                                    data-ouia-component-type="PF6/Content"
+                                                    data-ouia-safe="true"
+                                                    data-pf-content="true"
+                                                  >
+                                                    Quickly build, deploy, and scale applications with Red Hat OpenShift Service on AWS (ROSA), our fully-managed turnkey application platform.
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div
+                                          class="pf-m-flex-1"
+                                          style="min-width: 180px;"
+                                        >
+                                          <div
+                                            class="pf-v6-c-card pf-m-compact pf-m-secondary explore-capability-card"
+                                            data-ouia-component-id="OUIA-Generated-Card-7"
+                                            data-ouia-component-type="PF6/Card"
+                                            data-ouia-safe="true"
+                                            id=""
+                                          >
+                                            <div
+                                              class="pf-v6-c-card__body"
+                                            >
+                                              <div
+                                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                              >
+                                                <div
+                                                  class=""
+                                                >
+                                                  <h4
+                                                    class="pf-v6-c-title pf-m-md"
+                                                    data-ouia-component-id="OUIA-Generated-Title-9"
+                                                    data-ouia-component-type="PF6/Title"
+                                                    data-ouia-safe="true"
+                                                  >
+                                                    Try our products in the Developer Sandbox
+                                                  </h4>
+                                                </div>
+                                                <div
+                                                  class=""
+                                                >
+                                                  <small
+                                                    class="pf-v6-c-content--small"
+                                                    data-ouia-component-id="OUIA-Generated-Content-7"
+                                                    data-ouia-component-type="PF6/Content"
+                                                    data-ouia-safe="true"
+                                                    data-pf-content="true"
+                                                  >
+                                                    The Developer Sandbox offers no-cost access to Red Hat products and technologies for trial use - no setup or configuration necessary.
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div
+                                      class=""
+                                    >
+                                      <div
+                                        class="pf-v6-l-flex pf-m-space-items-md pf-m-row pf-m-justify-content-flex-start pf-m-wrap"
+                                      >
+                                        <div
+                                          class="pf-m-flex-1"
+                                          style="min-width: 180px; max-width: calc(33.333% - 8px);"
+                                        >
+                                          <div
+                                            class="pf-v6-c-card pf-m-compact pf-m-secondary explore-capability-card"
+                                            data-ouia-component-id="OUIA-Generated-Card-8"
+                                            data-ouia-component-type="PF6/Card"
+                                            data-ouia-safe="true"
+                                            id=""
+                                          >
+                                            <div
+                                              class="pf-v6-c-card__body"
+                                            >
+                                              <div
+                                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                              >
+                                                <div
+                                                  class=""
+                                                >
+                                                  <h4
+                                                    class="pf-v6-c-title pf-m-md"
+                                                    data-ouia-component-id="OUIA-Generated-Title-10"
+                                                    data-ouia-component-type="PF6/Title"
+                                                    data-ouia-safe="true"
+                                                  >
+                                                    Analyze RHEL environments
+                                                  </h4>
+                                                </div>
+                                                <div
+                                                  class=""
+                                                >
+                                                  <small
+                                                    class="pf-v6-c-content--small"
+                                                    data-ouia-component-id="OUIA-Generated-Content-8"
+                                                    data-ouia-component-type="PF6/Content"
+                                                    data-ouia-safe="true"
+                                                    data-pf-content="true"
+                                                  >
+                                                    Analyze platforms and applications from the console to better manage your hybrid cloud environments.
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div
+                                          class="pf-m-flex-1"
+                                          style="min-width: 180px; max-width: calc(33.333% - 8px);"
+                                        >
+                                          <div
+                                            class="pf-v6-c-card pf-m-compact pf-m-secondary explore-capability-card"
+                                            data-ouia-component-id="OUIA-Generated-Card-9"
+                                            data-ouia-component-type="PF6/Card"
+                                            data-ouia-safe="true"
+                                            id=""
+                                          >
+                                            <div
+                                              class="pf-v6-c-card__body"
+                                            >
+                                              <div
+                                                class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                              >
+                                                <div
+                                                  class=""
+                                                >
+                                                  <h4
+                                                    class="pf-v6-c-title pf-m-md"
+                                                    data-ouia-component-id="OUIA-Generated-Title-11"
+                                                    data-ouia-component-type="PF6/Title"
+                                                    data-ouia-safe="true"
+                                                  >
+                                                    Convert from CentOS to RHEL
+                                                  </h4>
+                                                </div>
+                                                <div
+                                                  class=""
+                                                >
+                                                  <small
+                                                    class="pf-v6-c-content--small"
+                                                    data-ouia-component-id="OUIA-Generated-Content-9"
+                                                    data-ouia-component-type="PF6/Content"
+                                                    data-ouia-safe="true"
+                                                    data-pf-content="true"
+                                                  >
+                                                    Seamlessly migrate your CentOS systems to Red Hat Enterprise Linux with our conversion tools and guidance.
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 1; grid-row: span 2;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-10"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-12"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      My account
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <p
+                                    class="pf-v6-c-content--p"
+                                    data-ouia-component-id="OUIA-Generated-Content-10"
+                                    data-ouia-component-type="PF6/Content"
+                                    data-ouia-safe="true"
+                                    data-pf-content="true"
+                                    style="color: var(--pf-t--global--text--color--subtle, var(--pf-v6-global--Color--200));"
+                                  >
+                                    Widget content will be added in a follow-up.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              class="widget-wrapper read-only-homepage-widget"
+                              style="grid-column: span 1; grid-row: span 4;"
+                            >
+                              <div
+                                class="pf-v6-c-card pf-m-full-height widget-card "
+                                data-ouia-component-id="OUIA-Generated-Card-11"
+                                data-ouia-component-type="PF6/Card"
+                                data-ouia-safe="true"
+                                id=""
+                              >
+                                <div
+                                  class="pf-v6-c-card__header"
+                                >
+                                  <div
+                                    class="pf-v6-c-card__header-main"
+                                  >
+                                    <h4
+                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                      data-ouia-component-id="OUIA-Generated-Title-13"
+                                      data-ouia-component-type="PF6/Title"
+                                      data-ouia-safe="true"
+                                    >
+                                      Recently visited
+                                    </h4>
+                                  </div>
+                                </div>
+                                <hr
+                                  class="pf-v6-c-divider"
+                                />
+                                <div
+                                  class="pf-v6-c-card__body"
+                                  style="overflow: auto;"
+                                >
+                                  <div
+                                    class="pf-v6-l-flex pf-m-space-items-sm pf-m-column"
+                                  >
+                                    <div
+                                      class=""
+                                    >
+                                      <div
+                                        class="pf-v6-c-content"
+                                        data-ouia-component-id="OUIA-Generated-Content-11"
+                                        data-ouia-component-type="PF6/Content"
+                                        data-ouia-safe="true"
+                                        data-pf-content="true"
+                                      >
+                                        Quick access to your most recently visited services and resources.
+                                      </div>
+                                    </div>
+                                    <div
+                                      class="pf-m-flex-1"
+                                    >
+                                      <ul
+                                        class="pf-v6-c-list pf-m-plain"
+                                        role="list"
+                                      >
+                                        <li
+                                          class=""
+                                        >
+                                          <span>
+                                            <button
+                                              class="pf-v6-c-button pf-m-link"
+                                              data-ouia-component-id="OUIA-Generated-Button-link-5"
+                                              data-ouia-component-type="PF6/Button"
+                                              data-ouia-safe="true"
+                                              type="button"
+                                            >
+                                              <span
+                                                class="pf-v6-c-button__text"
+                                              >
+                                                Dashboard Hub
+                                              </span>
+                                            </button>
+                                          </span>
+                                        </li>
+                                        <li
+                                          class=""
+                                        >
+                                          <span>
+                                            <button
+                                              class="pf-v6-c-button pf-m-link"
+                                              data-ouia-component-id="OUIA-Generated-Button-link-6"
+                                              data-ouia-component-type="PF6/Button"
+                                              data-ouia-safe="true"
+                                              type="button"
+                                            >
+                                              <span
+                                                class="pf-v6-c-button__text"
+                                              >
+                                                Alert Manager
+                                              </span>
+                                            </button>
+                                          </span>
+                                        </li>
+                                        <li
+                                          class=""
+                                        >
+                                          <span>
+                                            <button
+                                              class="pf-v6-c-button pf-m-link"
+                                              data-ouia-component-id="OUIA-Generated-Button-link-7"
+                                              data-ouia-component-type="PF6/Button"
+                                              data-ouia-safe="true"
+                                              type="button"
+                                            >
+                                              <span
+                                                class="pf-v6-c-button__text"
+                                              >
+                                                Data Integration
+                                              </span>
+                                            </button>
+                                          </span>
+                                        </li>
+                                        <li
+                                          class=""
+                                        >
+                                          <span>
+                                            <button
+                                              class="pf-v6-c-button pf-m-link"
+                                              data-ouia-component-id="OUIA-Generated-Button-link-8"
+                                              data-ouia-component-type="PF6/Button"
+                                              data-ouia-safe="true"
+                                              type="button"
+                                            >
+                                              <span
+                                                class="pf-v6-c-button__text"
+                                              >
+                                                My User Access
+                                              </span>
+                                            </button>
+                                          </span>
+                                        </li>
+                                        <li
+                                          class=""
+                                        >
+                                          <span>
+                                            <button
+                                              class="pf-v6-c-button pf-m-link"
+                                              data-ouia-component-id="OUIA-Generated-Button-link-9"
+                                              data-ouia-component-type="PF6/Button"
+                                              data-ouia-safe="true"
+                                              type="button"
+                                            >
+                                              <span
+                                                class="pf-v6-c-button__text"
+                                              >
+                                                Event Log
+                                              </span>
+                                            </button>
+                                          </span>
+                                        </li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </section>

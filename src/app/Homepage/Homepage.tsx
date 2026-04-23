@@ -1,38 +1,42 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Button,
   Content,
   Divider,
-  DrilldownMenu,
   Dropdown,
+  DropdownGroup,
   DropdownItem,
   DropdownList,
   Flex,
-  MenuGroup,
   FlexItem,
-  MenuItem,
   MenuItemAction,
   MenuToggle,
   PageSection,
-  Title
+  Title,
+  Tooltip
 } from '@patternfly/react-core';
 import {
+  CloudMoonIcon,
+  CloudSunIcon,
   CodeIcon,
   EllipsisVIcon,
   HomeIcon,
   OutlinedCloneIcon,
-  OutlinedHandPaperIcon,
+  OutlinedMoonIcon,
+  OutlinedSunIcon,
   PencilAltIcon,
   PlusCircleIcon,
   ShareAltIcon
 } from '@patternfly/react-icons';
 import { Link, useNavigate } from 'react-router-dom';
+import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import {
   mergeCanvasWidgetsWithCatalog,
   onDashboardCanvasUpdated,
-  readDashboardCanvasWidgets
+  resolveDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
 import type { Widget } from '@app/Homepage/widgetTypes';
 import {
@@ -58,18 +62,36 @@ function getGreetingSegmentForLocalTime(date: Date): GreetingSegment {
   return 'night';
 }
 
+function HomepageGreetingIcon({ segment }: { segment: GreetingSegment }) {
+  switch (segment) {
+    case 'morning':
+      return <OutlinedSunIcon aria-hidden />;
+    case 'afternoon':
+      return <CloudSunIcon aria-hidden />;
+    case 'evening':
+      return <CloudMoonIcon aria-hidden />;
+    case 'night':
+      return <OutlinedMoonIcon aria-hidden />;
+  }
+}
+
 const Homepage: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const { rows, setDashboardAsHomepage } = useDashboardData();
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
-  const [homeHeroMenuDrilledIn, setHomeHeroMenuDrilledIn] = useState<string[]>([]);
-  const [homeHeroDrillPath, setHomeHeroDrillPath] = useState<string[]>([]);
-  const [homeHeroActiveMenu, setHomeHeroActiveMenu] = useState('homepage-hero-drilldown-root');
-  const [homeHeroMenuHeights, setHomeHeroMenuHeights] = useState<Record<string, number>>({});
+
+  const closeHomepageHeroMenu = useCallback(() => {
+    setIsHomepageHeroMenuOpen(false);
+  }, []);
 
   const greetingSegment = useMemo(() => getGreetingSegmentForLocalTime(new Date()), []);
+  /** After “Good …” — late night still says “evening”, not “night”. */
+  const greetingTitleWord = useMemo(
+    () => (greetingSegment === 'night' ? 'evening' : greetingSegment),
+    [greetingSegment]
+  );
 
   const homepageDashboard = useMemo(
     () => rows.find((r) => r.isHomepage),
@@ -79,6 +101,10 @@ const Homepage: React.FunctionComponent = () => {
   const canvasTitle = homepageDashboard
     ? (homepageDashboard.canvasTitle ?? homepageDashboard.name)
     : '';
+
+  /** Hero title in the widget area; built-in dashboard uses a product welcome line instead of the hub name. */
+  const homepageDashboardBodyTitle =
+    homepageDashboard?.isConsoleDefault === true ? CONSOLE_DEFAULT_BODY_TITLE : canvasTitle;
 
   const sortedHubRows = useMemo(
     () => [...rows].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -90,7 +116,7 @@ const Homepage: React.FunctionComponent = () => {
       setDisplayWidgets([]);
       return;
     }
-    const raw = readDashboardCanvasWidgets(homepageDashboard.id);
+    const raw = resolveDashboardCanvasWidgets(homepageDashboard);
     if (raw && raw.length > 0) {
       setDisplayWidgets(mergeCanvasWidgetsWithCatalog(raw));
     } else {
@@ -114,46 +140,11 @@ const Homepage: React.FunctionComponent = () => {
     setIsHomepageKebabOpen(false);
   }, []);
 
-  const onHomepageHeroGetMenuHeight = useCallback((menuId: string, height: number) => {
-    setHomeHeroMenuHeights((prev) => {
-      if (prev[menuId] === height) {
-        return prev;
-      }
-      if (menuId === 'homepage-hero-drilldown-root' || (menuId !== 'homepage-hero-drilldown-root' && prev[menuId] !== height)) {
-        return { ...prev, [menuId]: height };
-      }
-      return prev;
-    });
-  }, []);
-
-  const onHomepageHeroDrillIn = useCallback(
-    (
-      _event: React.KeyboardEvent | React.MouseEvent,
-      fromMenuId: string,
-      toMenuId: string,
-      pathId: string
-    ) => {
-      setHomeHeroMenuDrilledIn((d) => [...d, fromMenuId]);
-      setHomeHeroDrillPath((p) => [...p, pathId]);
-      setHomeHeroActiveMenu(toMenuId);
-    },
-    []
-  );
-
-  const onHomepageHeroDrillOut = useCallback(
-    (_event: React.KeyboardEvent | React.MouseEvent, toMenuId: string, _itemId?: string) => {
-      setHomeHeroMenuDrilledIn((d) => d.slice(0, -1));
-      setHomeHeroDrillPath((p) => p.slice(0, -1));
-      setHomeHeroActiveMenu(toMenuId);
-    },
-    []
-  );
-
   const handleCopyConfigurationString = useCallback(() => {
     if (!homepageDashboard) {
       return;
     }
-    const raw = readDashboardCanvasWidgets(homepageDashboard.id);
+    const raw = resolveDashboardCanvasWidgets(homepageDashboard);
     const payload = {
       dashboardId: homepageDashboard.id,
       name: homepageDashboard.name,
@@ -182,42 +173,25 @@ const Homepage: React.FunctionComponent = () => {
                 style={{ minWidth: 0 }}
               >
                 <span className="homepage-hero-greeting__icon" aria-hidden>
-                  <OutlinedHandPaperIcon />
+                  <HomepageGreetingIcon segment={greetingSegment} />
                 </span>
                 <Title
                   headingLevel="h1"
                   size="4xl"
                   className="homepage-hero-greeting__title"
                 >
-                  Good {greetingSegment}, {MASTHEAD_USER_DISPLAY_NAME}
+                  Good {greetingTitleWord}, {MASTHEAD_USER_DISPLAY_NAME}
                 </Title>
               </Flex>
             </FlexItem>
             <FlexItem>
               <Dropdown
-                id="homepage-hero-drilldown-root"
+                id="homepage-hero-assignment-menu"
+                data-hcc-menu-rev="leading-icons-1"
                 isOpen={isHomepageHeroMenuOpen}
-                containsDrilldown
-                drilldownItemPath={homeHeroDrillPath}
-                drilledInMenus={homeHeroMenuDrilledIn}
-                activeMenu={homeHeroActiveMenu}
-                onDrillIn={onHomepageHeroDrillIn}
-                onDrillOut={onHomepageHeroDrillOut}
-                onGetMenuHeight={onHomepageHeroGetMenuHeight}
+                isScrollable={false}
                 shouldFocusToggleOnSelect
-                menuHeight={
-                  homeHeroMenuHeights[homeHeroActiveMenu] != null
-                    ? `${homeHeroMenuHeights[homeHeroActiveMenu]}px`
-                    : undefined
-                }
-                onOpenChange={(isOpen) => {
-                  setIsHomepageHeroMenuOpen(isOpen);
-                  if (!isOpen) {
-                    setHomeHeroMenuDrilledIn([]);
-                    setHomeHeroDrillPath([]);
-                    setHomeHeroActiveMenu('homepage-hero-drilldown-root');
-                  }
-                }}
+                onOpenChange={setIsHomepageHeroMenuOpen}
                 popperProps={{ position: 'end' }}
                 toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
                   <MenuToggle
@@ -261,8 +235,8 @@ const Homepage: React.FunctionComponent = () => {
                   </MenuToggle>
                 )}
               >
-                <DropdownList>
-                  <MenuGroup label="Set as homepage ..." labelHeadingLevel="h2">
+                <DropdownGroup label="Set as homepage ..." labelHeadingLevel="h2">
+                  <DropdownList>
                     {sortedHubRows.length > 0 ? (
                       sortedHubRows.map((row) => (
                         <DropdownItem
@@ -271,21 +245,23 @@ const Homepage: React.FunctionComponent = () => {
                           isSelected={row.isHomepage === true}
                           onClick={() => {
                             setDashboardAsHomepage(row.id);
-                            setIsHomepageHeroMenuOpen(false);
-                            setHomeHeroMenuDrilledIn([]);
-                            setHomeHeroDrillPath([]);
-                            setHomeHeroActiveMenu('homepage-hero-drilldown-root');
+                            closeHomepageHeroMenu();
                           }}
                           actions={
                             <MenuItemAction
                               icon={<PencilAltIcon />}
-                              aria-label={`Edit ${row.name}`}
+                              aria-label={
+                                row.isConsoleDefault === true
+                                  ? `Edit ${row.name} (not available, Console default is not editable)`
+                                  : `Edit ${row.name}`
+                              }
+                              isDisabled={row.isConsoleDefault === true}
                               onClick={(e) => {
                                 e?.stopPropagation?.();
-                                setIsHomepageHeroMenuOpen(false);
-                                setHomeHeroMenuDrilledIn([]);
-                                setHomeHeroDrillPath([]);
-                                setHomeHeroActiveMenu('homepage-hero-drilldown-root');
+                                if (row.isConsoleDefault === true) {
+                                  return;
+                                }
+                                closeHomepageHeroMenu();
                                 navigate(`/dashboard-hub/${row.id}`);
                               }}
                             />
@@ -299,79 +275,77 @@ const Homepage: React.FunctionComponent = () => {
                         No dashboards in hub yet
                       </DropdownItem>
                     )}
-                  </MenuGroup>
-                  <Divider component="li" role="separator" />
-                  <DropdownItem
-                    value="hp-menu-create"
-                    direction="down"
-                    icon={
-                      <PlusCircleIcon
-                        style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
-                        aria-hidden
-                      />
-                    }
-                    drilldownMenu={
-                      <DrilldownMenu id="homepage-hero-drilldown-create">
-                        <MenuItem itemId="hp-menu-create-up" direction="up">
-                          Create new dashboard
-                        </MenuItem>
-                        <Divider component="li" role="separator" />
-                        <MenuItem
-                          itemId="hp-menu-blank"
-                          onClick={() => {
-                            setIsHomepageHeroMenuOpen(false);
-                            setHomeHeroMenuDrilledIn([]);
-                            setHomeHeroDrillPath([]);
-                            setHomeHeroActiveMenu('homepage-hero-drilldown-root');
-                            navigate('/dashboard-hub', {
-                              state: { fromHome: { openCreate: 'blank' } }
-                            });
-                          }}
-                        >
-                          Create from blank
-                        </MenuItem>
-                        <MenuItem
-                          itemId="hp-menu-import"
-                          onClick={() => {
-                            setIsHomepageHeroMenuOpen(false);
-                            setHomeHeroMenuDrilledIn([]);
-                            setHomeHeroDrillPath([]);
-                            setHomeHeroActiveMenu('homepage-hero-drilldown-root');
-                            navigate('/dashboard-hub', {
-                              state: { fromHome: { openCreate: 'import' } }
-                            });
-                          }}
-                        >
-                          Import from config string
-                        </MenuItem>
-                        <MenuItem
-                          itemId="hp-menu-dup"
-                          onClick={() => {
-                            setIsHomepageHeroMenuOpen(false);
-                            setHomeHeroMenuDrilledIn([]);
-                            setHomeHeroDrillPath([]);
-                            setHomeHeroActiveMenu('homepage-hero-drilldown-root');
-                            navigate('/dashboard-hub', {
-                              state: { fromHome: { openCreate: 'duplicate' } }
-                            });
-                          }}
-                        >
-                          Duplicate existing
-                        </MenuItem>
-                      </DrilldownMenu>
-                    }
-                  >
-                    Create new dashboard
-                  </DropdownItem>
-                  <Divider component="li" role="separator" />
+                  </DropdownList>
+                </DropdownGroup>
+                <Divider />
+                <DropdownGroup label="Create new dashboard" labelHeadingLevel="h2">
+                  <DropdownList>
+                    <DropdownItem
+                      value="hp-menu-blank"
+                      icon={
+                        <span className="homepage-hero-assignment-menu__leading-icon">
+                          <PlusCircleIcon
+                            style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
+                            aria-hidden
+                          />
+                        </span>
+                      }
+                      onClick={() => {
+                        closeHomepageHeroMenu();
+                        navigate('/dashboard-hub', {
+                          state: { fromHome: { openCreate: 'blank' } }
+                        });
+                      }}
+                    >
+                      Create from blank
+                    </DropdownItem>
+                    <DropdownItem
+                      value="hp-menu-import"
+                      icon={
+                        <span className="homepage-hero-assignment-menu__leading-icon">
+                          <CodeIcon
+                            style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
+                            aria-hidden
+                          />
+                        </span>
+                      }
+                      onClick={() => {
+                        closeHomepageHeroMenu();
+                        navigate('/dashboard-hub', {
+                          state: { fromHome: { openCreate: 'import' } }
+                        });
+                      }}
+                    >
+                      Import from config string
+                    </DropdownItem>
+                    <DropdownItem
+                      value="hp-menu-dup"
+                      icon={
+                        <span className="homepage-hero-assignment-menu__leading-icon">
+                          <OutlinedCloneIcon
+                            style={{ color: 'var(--pf-t--global--icon--Color--200)' }}
+                            aria-hidden
+                          />
+                        </span>
+                      }
+                      onClick={() => {
+                        closeHomepageHeroMenu();
+                        navigate('/dashboard-hub', {
+                          state: { fromHome: { openCreate: 'duplicate' } }
+                        });
+                      }}
+                    >
+                      Duplicate existing
+                    </DropdownItem>
+                  </DropdownList>
+                </DropdownGroup>
+                <Divider />
+                <DropdownList>
                   <DropdownItem
                     value="dashboard-hub"
                     description="Create, manage, and share dashboards"
                     onClick={() => {
-                      setIsHomepageHeroMenuOpen(false);
-                      setHomeHeroMenuDrilledIn([]);
-                      setHomeHeroDrillPath([]);
-                      setHomeHeroActiveMenu('homepage-hero-drilldown-root');
+                      closeHomepageHeroMenu();
                       navigate('/dashboard-hub');
                     }}
                   >
@@ -384,7 +358,7 @@ const Homepage: React.FunctionComponent = () => {
         </div>
         <div className="homepage-hero-separator" role="separator" aria-orientation="horizontal" />
       </PageSection>
-      <PageSection>
+      <PageSection className="homepage-dashboard-page-section">
         {homepageDashboard ? (
           <>
             <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}>
@@ -395,13 +369,13 @@ const Homepage: React.FunctionComponent = () => {
                 style={{
                   width: '100%',
                   minWidth: 0,
-                  marginBottom: 'var(--pf-t--global--spacer--lg)',
+                  marginBottom: 'var(--pf-t--global--spacer--sm)',
                 }}
                 className="homepage-dashboard-title-bar"
               >
                 <FlexItem className="homepage-dashboard-title" style={{ minWidth: 0, flex: '1 1 auto' }}>
                   <Title headingLevel="h2" size="2xl" className="homepage-dashboard-title__text">
-                    {canvasTitle}
+                    {homepageDashboardBodyTitle}
                   </Title>
                 </FlexItem>
                 <FlexItem
@@ -474,18 +448,59 @@ const Homepage: React.FunctionComponent = () => {
                       </Dropdown>
                     </FlexItem>
                     <FlexItem>
-                      <Button
-                        variant="secondary"
-                        icon={<PencilAltIcon />}
-                        iconPosition="start"
-                        onClick={() => navigate(`/dashboard-hub/${homepageDashboard.id}`)}
-                      >
-                        Edit dashboard
-                      </Button>
+                      {homepageDashboard.isConsoleDefault === true ? (
+                        <Tooltip content="The 'Console default' dashboard is not editable.">
+                          <span style={{ display: 'inline-block' }} tabIndex={0}>
+                            <Button
+                              variant="secondary"
+                              icon={<PencilAltIcon />}
+                              iconPosition="start"
+                              isDisabled
+                              aria-label="Edit dashboard (not available for Console default)"
+                            >
+                              Edit dashboard
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          icon={<PencilAltIcon />}
+                          iconPosition="start"
+                          onClick={() => navigate(`/dashboard-hub/${homepageDashboard.id}`)}
+                        >
+                          Edit dashboard
+                        </Button>
+                      )}
                     </FlexItem>
                   </Flex>
                 </FlexItem>
               </Flex>
+              <div style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+                <Alert
+                  variant="info"
+                  isInline
+                  isPlain
+                  component="p"
+                  title={
+                    <>
+                      We&apos;ve made enhancements to our dashboard, including: creating multiple, saving, sharing,
+                      duplicating and more.{' '}
+                      <Button
+                        component="a"
+                        variant="link"
+                        isInline
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                        }}
+                      >
+                        Learn more.
+                      </Button>
+                    </>
+                  }
+                />
+              </div>
               {displayWidgets.length > 0 ? (
                 <div
                   className="widgets-grid homepage-readonly-grid"

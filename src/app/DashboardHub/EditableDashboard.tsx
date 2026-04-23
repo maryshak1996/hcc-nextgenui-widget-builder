@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Alert,
   Breadcrumb,
   BreadcrumbItem,
   Button,
@@ -43,6 +44,7 @@ import { AddWidgetsDrawer } from '@app/Homepage/AddWidgetsDrawer';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
 import {
   GAP,
+  ReadOnlyHomepageWidgetFrame,
   renderHomepageWidgetContent,
   ROW_HEIGHT,
   SortableWidgetCard,
@@ -62,10 +64,16 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
+import {
+  CONSOLE_DEFAULT_BODY_TITLE,
+  getConsoleDefaultWidgets,
+  isConsoleDefaultHubRow
+} from '@app/DashboardHub/consoleDefaultDashboard';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import {
   mergeCanvasWidgetsWithCatalog,
   readDashboardCanvasWidgets,
+  resolveDashboardCanvasWidgets,
   writeDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
 
@@ -82,6 +90,8 @@ interface EditableDashboardCanvasProps {
   onSizeChange: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => void;
   onRemoveWidget: (id: string) => void;
   onReorder: (next: Widget[]) => void;
+  /** Built-in console default: show widgets without drag, resize, or title edit. */
+  readOnly?: boolean;
 }
 
 const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
@@ -92,7 +102,8 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
   onOpenAddWidgets,
   onSizeChange,
   onRemoveWidget,
-  onReorder
+  onReorder,
+  readOnly = false
 }) => {
   const navigate = useNavigate();
   const gridRef = React.useRef<HTMLDivElement>(null);
@@ -200,7 +211,11 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
       }}
     >
       <CardHeader>
-        {!isEditingSectionTitle ? (
+        {readOnly ? (
+          <Title headingLevel="h1" size="2xl">
+            {canvasTitle}
+          </Title>
+        ) : !isEditingSectionTitle ? (
           <Flex
             alignItems={{ default: 'alignItemsCenter' }}
             spaceItems={{ default: 'spaceItemsSm' }}
@@ -284,7 +299,36 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
             justifyContent: canvasWidgets.length === 0 ? 'flex-start' : undefined
           }}
         >
-          {canvasWidgets.length === 0 ? (
+          {readOnly ? (
+            canvasWidgets.length === 0 ? (
+              <EmptyState
+                variant={EmptyStateVariant.full}
+                headingLevel="h2"
+                titleText="No widgets"
+                icon={PlusCircleIcon}
+              >
+                <EmptyStateBody>This dashboard does not display any widgets.</EmptyStateBody>
+              </EmptyState>
+            ) : (
+              <>
+                <style>{WIDGET_GRID_STYLES}</style>
+                <div
+                  className="widgets-grid homepage-readonly-grid"
+                  style={{ width: '100%', minWidth: 0 }}
+                  aria-label="Dashboard widgets (read-only)"
+                >
+                  {canvasWidgets.map((widget) => (
+                    <ReadOnlyHomepageWidgetFrame key={widget.id} widget={widget}>
+                      {renderHomepageWidgetContent(widget, {
+                        navigate,
+                        readOnly: true
+                      })}
+                    </ReadOnlyHomepageWidgetFrame>
+                  ))}
+                </div>
+              </>
+            )
+          ) : canvasWidgets.length === 0 ? (
             <EmptyState
               variant={EmptyStateVariant.full}
               headingLevel="h2"
@@ -363,12 +407,14 @@ const EditableDashboard: React.FunctionComponent = () => {
     duplicateDashboard
   } = useDashboardData();
   const dashboard = dashboardId ? rows.find((r) => r.id === dashboardId) : undefined;
+  const isConsoleDefault = Boolean(dashboard && isConsoleDefaultHubRow(dashboard));
   const homepageRow = React.useMemo(() => rows.find((r) => r.isHomepage), [rows]);
   const currentHomepageLabel = homepageRow
     ? (homepageRow.canvasTitle ?? homepageRow.name)
     : 'None';
   const breadcrumbLabel = dashboard?.name ?? 'Dashboard';
   const resolvedCanvasTitle = dashboard ? dashboard.canvasTitle ?? dashboard.name : '';
+  const canvasSectionTitle = isConsoleDefault ? CONSOLE_DEFAULT_BODY_TITLE : resolvedCanvasTitle;
 
   const [autosaveEnabled, setAutosaveEnabled] = React.useState(true);
   const [isKebabOpen, setIsKebabOpen] = React.useState(false);
@@ -396,6 +442,14 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     const all = createHomepageWidgetClones();
+    if (isConsoleDefault && dashboard) {
+      const merged = mergeCanvasWidgetsWithCatalog(getConsoleDefaultWidgets(), all);
+      setCanvasWidgets(merged);
+      const onCanvas = new Set(merged.map((w) => w.id));
+      setRemovedWidgets(all.filter((w) => !onCanvas.has(w.id)));
+      skipNextCanvasPersist.current = true;
+      return;
+    }
     const stored = readDashboardCanvasWidgets(dashboardId);
     if (stored && stored.length > 0) {
       const merged = mergeCanvasWidgetsWithCatalog(stored, all);
@@ -407,13 +461,16 @@ const EditableDashboard: React.FunctionComponent = () => {
       setRemovedWidgets(all);
     }
     skipNextCanvasPersist.current = true;
-  }, [dashboardId]);
+  }, [isConsoleDefault, dashboardId, dashboard]);
 
   const skipNextCanvasPersist = React.useRef(false);
 
   /** Persist layout so the console home can show a read-only replica. */
   React.useEffect(() => {
-    if (!dashboardId) {
+    if (!dashboardId || isConsoleDefault) {
+      if (isConsoleDefault) {
+        skipNextCanvasPersist.current = true;
+      }
       return;
     }
     if (skipNextCanvasPersist.current) {
@@ -421,7 +478,7 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     writeDashboardCanvasWidgets(dashboardId, canvasWidgets);
-  }, [dashboardId, canvasWidgets]);
+  }, [dashboardId, isConsoleDefault, canvasWidgets]);
 
   React.useEffect(
     () => () => {
@@ -521,14 +578,17 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, []);
 
   const toggleWidgetDrawer = React.useCallback(() => {
+    if (isConsoleDefault) {
+      return;
+    }
     setIsWidgetDrawerOpen((open) => !open);
-  }, []);
+  }, [isConsoleDefault]);
 
   const handleCopyConfigurationString = React.useCallback(() => {
     if (!dashboard) {
       return;
     }
-    const raw = readDashboardCanvasWidgets(dashboard.id);
+    const raw = resolveDashboardCanvasWidgets(dashboard);
     const payload = { dashboardId: dashboard.id, name: dashboard.name, widgets: raw ?? [] };
     void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     setIsKebabOpen(false);
@@ -546,7 +606,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [dashboard, duplicateDashboard, navigate]);
 
   const handleKebabDelete = React.useCallback(() => {
-    if (!dashboard) {
+    if (!dashboard || isConsoleDefaultHubRow(dashboard)) {
       return;
     }
     removeDashboard(dashboard.id);
@@ -554,9 +614,8 @@ const EditableDashboard: React.FunctionComponent = () => {
     navigate('/dashboard-hub');
   }, [dashboard, removeDashboard, navigate]);
 
-  const dashboardBody =
-    dashboard ? (
-      <>
+  const dashboardBody = dashboard ? (
+    <>
         <PageSection
           hasBodyWrapper={false}
           style={{ paddingTop: 0, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
@@ -586,12 +645,29 @@ const EditableDashboard: React.FunctionComponent = () => {
                       </span>
                     ) : null}
                     <TextInput
-                      className="editable-dashboard-name-input"
+                      className={
+                        isConsoleDefault
+                          ? 'editable-dashboard-name-input editable-dashboard-name-input--non-interactive'
+                          : 'editable-dashboard-name-input'
+                      }
                       id="dashboard-name-input"
                       type="text"
                       value={localName}
+                      readOnlyVariant={isConsoleDefault ? 'default' : undefined}
+                      tabIndex={isConsoleDefault ? -1 : undefined}
+                      onMouseDown={
+                        isConsoleDefault
+                          ? (e: React.MouseEvent<HTMLInputElement>) => {
+                              e.preventDefault();
+                            }
+                          : undefined
+                      }
                       onChange={(_event, value) => setLocalName(value)}
-                      onFocus={() => setIsNameFieldFocused(true)}
+                      onFocus={() => {
+                        if (!isConsoleDefault) {
+                          setIsNameFieldFocused(true);
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') {
                           return;
@@ -617,7 +693,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       aria-describedby={toolbarNameIsDuplicate ? 'dashboard-name-duplicate-error' : undefined}
                     />
                   </div>
-                  {isNameFieldFocused && (
+                  {!isConsoleDefault && isNameFieldFocused && (
                     <>
                       <Button
                         variant="plain"
@@ -666,7 +742,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                 spaceItems={{ default: 'spaceItemsMd' }}
                 style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
               >
-                  {!autosaveEnabled && (
+                  {!isConsoleDefault && !autosaveEnabled && (
                     <>
                       <FlexItem>
                         <Button variant="secondary" onClick={handleSaveManual} isDisabled={!isDirty}>
@@ -723,6 +799,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       id={`dashboard-autosave-${dashboard.id}`}
                       label="Autosave"
                       isChecked={autosaveEnabled}
+                      isDisabled={isConsoleDefault}
                       onChange={(_event, checked) => setAutosaveEnabled(checked)}
                     />
                   </FlexItem>
@@ -730,7 +807,14 @@ const EditableDashboard: React.FunctionComponent = () => {
                     <Button variant="secondary">Share</Button>
                   </FlexItem>
                   <FlexItem>
-                    <Button variant={isWidgetDrawerOpen ? 'secondary' : 'primary'} onClick={toggleWidgetDrawer}>
+                    <Button
+                      variant={isWidgetDrawerOpen ? 'secondary' : 'primary'}
+                      onClick={toggleWidgetDrawer}
+                      isDisabled={isConsoleDefault}
+                      title={
+                        isConsoleDefault ? 'Widgets cannot be added to the built-in Console default dashboard.' : undefined
+                      }
+                    >
                       {isWidgetDrawerOpen ? 'Close drawer' : 'Add widgets'}
                     </Button>
                   </FlexItem>
@@ -787,14 +871,19 @@ const EditableDashboard: React.FunctionComponent = () => {
                         </DropdownItem>
                         <Divider component="li" role="separator" />
                         <DropdownItem
-                          isDanger
+                          isDanger={!isConsoleDefault}
+                          isDisabled={isConsoleDefault}
                           onClick={handleKebabDelete}
                         >
                           <span
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                           >
                             <OutlinedTrashAltIcon
-                              style={{ color: 'var(--pf-t--global--danger-color--200)' }}
+                              style={{
+                                color: isConsoleDefault
+                                  ? 'var(--pf-t--global--icon--Color--200)'
+                                  : 'var(--pf-t--global--danger-color--200)'
+                              }}
                             />
                             Delete dashboard
                           </span>
@@ -807,17 +896,19 @@ const EditableDashboard: React.FunctionComponent = () => {
           </div>
         </PageSection>
 
-        <AddWidgetsDrawer
-          isOpen={isWidgetDrawerOpen}
-          onClose={() => setIsWidgetDrawerOpen(false)}
-          removedWidgets={removedWidgets}
-          onAddWidget={handleAddWidgetFromBank}
-        />
+        {!isConsoleDefault && (
+          <AddWidgetsDrawer
+            isOpen={isWidgetDrawerOpen}
+            onClose={() => setIsWidgetDrawerOpen(false)}
+            removedWidgets={removedWidgets}
+            onAddWidget={handleAddWidgetFromBank}
+          />
+        )}
 
         <PageSection>
           <EditableDashboardCanvas
             key={dashboard.id}
-            canvasTitle={resolvedCanvasTitle}
+            canvasTitle={canvasSectionTitle}
             titleFallback={dashboard.name}
             onCanvasTitleCommit={(title) => updateCanvasTitle(dashboard.id, title)}
             canvasWidgets={canvasWidgets}
@@ -825,10 +916,11 @@ const EditableDashboard: React.FunctionComponent = () => {
             onSizeChange={handleCanvasSizeChange}
             onRemoveWidget={handleRemoveFromCanvas}
             onReorder={handleCanvasReorder}
+            readOnly={isConsoleDefault}
           />
         </PageSection>
-      </>
-    ) : null;
+    </>
+  ) : null;
 
   return (
     <div className="editable-dashboard-page">
@@ -839,6 +931,17 @@ const EditableDashboard: React.FunctionComponent = () => {
           <BreadcrumbItem isActive>{breadcrumbLabel}</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>
+
+      {isConsoleDefault ? (
+        <PageSection hasBodyWrapper={false}>
+          <Alert
+            variant="info"
+            isInline
+            isPlain
+            title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it, copy its config string, and share it though."
+          />
+        </PageSection>
+      ) : null}
 
       {dashboardBody}
 

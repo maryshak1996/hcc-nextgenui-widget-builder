@@ -1,5 +1,7 @@
 import type { Widget } from '@app/Homepage/widgetTypes';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
+import { getConsoleDefaultWidgets, isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
+import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 
 const STORAGE_PREFIX = 'hcc-dashboard-canvas-';
 
@@ -51,6 +53,14 @@ export function mergeCanvasWidgetsWithCatalog(stored: Widget[], catalog: Widget[
       title: s.title || c.title
     };
   });
+}
+
+/** Session-backed layout, or the built-in console-default layout when applicable. */
+export function resolveDashboardCanvasWidgets(row: HubRow): Widget[] | null {
+  if (isConsoleDefaultHubRow(row)) {
+    return getConsoleDefaultWidgets();
+  }
+  return readDashboardCanvasWidgets(row.id);
 }
 
 export function readDashboardCanvasWidgets(dashboardId: string): Widget[] | null {

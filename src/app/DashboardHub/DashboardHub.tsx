@@ -53,7 +53,8 @@ import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
-import { readDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
+import { resolveDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
+import { isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
 
 const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
 const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
@@ -94,7 +95,8 @@ function sortHubRows(list: HubRow[], sortBy: ISortBy): HubRow[] {
 const DashboardHub: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { rows, addDashboard, isDashboardNameTaken, setDashboardAsHomepage } = useDashboardData();
+  const { rows, addDashboard, duplicateDashboard, isDashboardNameTaken, setDashboardAsHomepage } =
+    useDashboardData();
   const [openActionsRowId, setOpenActionsRowId] = React.useState<string | null>(null);
   const [tableSort, setTableSort] = React.useState<ISortBy>({
     index: HUB_COL_LAST_MOD,
@@ -165,7 +167,7 @@ const DashboardHub: React.FunctionComponent = () => {
   );
 
   const handleCopyRowConfiguration = React.useCallback((row: HubRow) => {
-    const raw = readDashboardCanvasWidgets(row.id);
+    const raw = resolveDashboardCanvasWidgets(row);
     const payload = {
       dashboardId: row.id,
       name: row.name,
@@ -374,7 +376,11 @@ const DashboardHub: React.FunctionComponent = () => {
                     <DropdownList>
                       <DropdownItem
                         key="edit"
+                        isDisabled={Boolean(row.isConsoleDefault)}
                         onClick={() => {
+                          if (row.isConsoleDefault) {
+                            return;
+                          }
                           navigate(`/dashboard-hub/${row.id}`);
                           setOpenActionsRowId(null);
                         }}
@@ -388,7 +394,14 @@ const DashboardHub: React.FunctionComponent = () => {
                       </DropdownItem>
                       <DropdownItem
                         key="homepage"
+                        isDisabled={Boolean(row.isHomepage)}
+                        description={
+                          row.isHomepage ? 'This dashboard is already your console homepage.' : undefined
+                        }
                         onClick={() => {
+                          if (row.isHomepage) {
+                            return;
+                          }
                           setDashboardAsHomepage(row.id);
                           setOpenActionsRowId(null);
                         }}
@@ -400,7 +413,16 @@ const DashboardHub: React.FunctionComponent = () => {
                           Set as homepage
                         </span>
                       </DropdownItem>
-                      <DropdownItem key="duplicate" onClick={() => setOpenActionsRowId(null)}>
+                      <DropdownItem
+                        key="duplicate"
+                        onClick={() => {
+                          const newId = duplicateDashboard(row.id);
+                          setOpenActionsRowId(null);
+                          if (newId) {
+                            navigate(`/dashboard-hub/${newId}`);
+                          }
+                        }}
+                      >
                         <span
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                         >
@@ -427,13 +449,25 @@ const DashboardHub: React.FunctionComponent = () => {
                       <Divider component="li" role="separator" />
                       <DropdownItem
                         key="delete"
-                        isDanger
-                        onClick={() => setOpenActionsRowId(null)}
+                        isDanger={!isConsoleDefaultHubRow(row)}
+                        isDisabled={isConsoleDefaultHubRow(row)}
+                        onClick={() => {
+                          if (isConsoleDefaultHubRow(row)) {
+                            return;
+                          }
+                          setOpenActionsRowId(null);
+                        }}
                       >
                         <span
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                         >
-                          <OutlinedTrashAltIcon style={{ color: 'var(--pf-t--global--danger-color--200)' }} />
+                          <OutlinedTrashAltIcon
+                            style={{
+                              color: isConsoleDefaultHubRow(row)
+                                ? 'var(--pf-t--global--icon--Color--200)'
+                                : 'var(--pf-t--global--danger-color--200)'
+                            }}
+                          />
                           Delete dashboard
                         </span>
                       </DropdownItem>

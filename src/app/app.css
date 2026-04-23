@@ -101,6 +101,17 @@ body,
   flex: 0 0 auto;
 }
 
+/* Console default: PF read-only look, but no focus ring / I-beam / text selection */
+.editable-dashboard-name-input--non-interactive {
+  cursor: default;
+}
+
+.editable-dashboard-name-input--non-interactive input {
+  cursor: default;
+  user-select: none;
+  caret-color: transparent;
+}
+
 .editable-dashboard-toolbar__actions {
   min-width: 0;
   max-width: 100%;
@@ -139,17 +150,80 @@ body,
   vertical-align: middle;
 }
 
-/* Full-width line under the home hero (spans the main column) */
-.homepage-hero-separator {
+/*
+ * Full-width line under the home hero: bleed past PageSection / PageBody horizontal inset so the rule
+ * spans the full white main container (same edge as the rounded page background), not only the text column.
+ */
+.homepage-hero-header .homepage-hero-separator {
+  --homepage-hero-bleed-inline: calc(
+    var(--pf-v6-c-page__main-section--PaddingInlineStart, var(--pf-t--global--spacer--lg)) -
+      var(--pf-v6-c-page__main-container--BorderWidth, 0px)
+  );
   display: block;
-  width: 100%;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--homepage-hero-bleed-inline));
   max-width: none;
   height: 0;
   border: 0;
   border-top: 1px solid var(--pf-t--global--border--color--default, #c7c7c7);
-  margin: var(--pf-t--global--spacer--lg) 0 0;
+  margin: var(--pf-t--global--spacer--lg) calc(-1 * var(--homepage-hero-bleed-inline)) 0;
   flex: none;
   align-self: stretch;
+}
+
+/* Tighter band below the hero divider before the dashboard title row (default section stack reads “large”). */
+.pf-v6-c-page__main-section.homepage-hero-header {
+  --pf-v6-c-page__main-section--PaddingBlockEnd: var(--pf-t--global--spacer--sm);
+}
+
+.pf-v6-c-page__main-section.homepage-hero-header + .pf-v6-c-page__main-section.homepage-dashboard-page-section {
+  --pf-v6-c-page__main-section--PaddingBlockStart: var(--pf-t--global--spacer--md);
+}
+
+/*
+ * Homepage assignment menu (see Homepage.tsx Dropdown id): `npm start` serves stale dist until `npm run build`.
+ * PF scrollable / menu content max-height can still force overflow-y: auto; neutralize for this menu only.
+ */
+#homepage-hero-assignment-menu.pf-v6-c-menu {
+  --pf-v6-c-menu__content--MaxHeight: none !important;
+  --pf-v6-c-menu__content--Height: auto !important;
+  --pf-v6-c-menu--m-scrollable__content--MaxHeight: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#homepage-hero-assignment-menu .pf-v6-c-menu__content,
+#homepage-hero-assignment-menu .pf-v6-c-menu__list {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  overflow-y: visible !important;
+}
+
+/* Leading menu icons can collapse to 0 width in the item flex row (esp. wide viewBox SVGs). */
+#homepage-hero-assignment-menu .pf-v6-c-menu__item-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+}
+
+#homepage-hero-assignment-menu .pf-v6-c-menu__item-icon svg {
+  flex-shrink: 0;
+}
+
+#homepage-hero-assignment-menu .homepage-hero-assignment-menu__leading-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+#homepage-hero-assignment-menu .homepage-hero-assignment-menu__leading-icon .pf-v6-svg {
+  width: 1em;
+  height: 1em;
 }
 
 .pf-v6-c-content {

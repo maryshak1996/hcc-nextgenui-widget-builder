@@ -8,6 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { DASHBOARD_HUB_ROWS } from '@app/DashboardHub/dashboardHubMockData';
 import {
+  CONSOLE_DEFAULT_DASHBOARD_ID,
+  getConsoleDefaultWidgets,
+  mergeConsoleDefaultIntoRows
+} from '@app/DashboardHub/consoleDefaultDashboard';
+import {
   clearDashboardCanvasWidgets,
   mergeCanvasWidgetsWithCatalog,
   readDashboardCanvasWidgets,
@@ -30,6 +35,12 @@ function isDashboardNameInUse(
   if (!key) {
     return false;
   }
+  if (
+    key === normalizeDashboardNameKey('Console default') &&
+    excludeDashboardId !== CONSOLE_DEFAULT_DASHBOARD_ID
+  ) {
+    return true;
+  }
   return allRows.some(
     (r) => r.id !== excludeDashboardId && normalizeDashboardNameKey(r.name) === key
   );
@@ -42,13 +53,15 @@ function isHubRow(value: unknown): value is HubRow {
   const row = value as Record<string, unknown>;
   const canvasOk = row.canvasTitle === undefined || typeof row.canvasTitle === 'string';
   const homeOk = row.isHomepage === undefined || typeof row.isHomepage === 'boolean';
+  const consoleOk = row.isConsoleDefault === undefined || typeof row.isConsoleDefault === 'boolean';
   return (
     typeof row.id === 'string' &&
     typeof row.name === 'string' &&
     typeof row.description === 'string' &&
     typeof row.lastModified === 'string' &&
     canvasOk &&
-    homeOk
+    homeOk &&
+    consoleOk
   );
 }
 
@@ -80,9 +93,9 @@ function readRowsFromSessionStorage(): HubRow[] | null {
 function initialRows(): HubRow[] {
   const stored = readRowsFromSessionStorage();
   if (stored) {
-    return stored.map(withCanvasTitle);
+    return mergeConsoleDefaultIntoRows(stored.map(withCanvasTitle));
   }
-  return DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r }));
+  return mergeConsoleDefaultIntoRows(DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r })));
 }
 
 function formatLastModifiedDate(): string {
@@ -190,6 +203,9 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, [rows]);
 
   const updateDashboardName = React.useCallback((id: string, name: string) => {
+    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+      return;
+    }
     const trimmed = name.trim();
     if (!trimmed) {
       return;
@@ -203,6 +219,9 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, []);
 
   const updateCanvasTitle = React.useCallback((id: string, canvasTitle: string) => {
+    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+      return;
+    }
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, canvasTitle } : row)));
   }, []);
 
@@ -272,6 +291,9 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, []);
 
   const removeDashboard = React.useCallback((id: string) => {
+    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+      return;
+    }
     setRows((prev) => prev.filter((r) => r.id !== id));
     clearDashboardCanvasWidgets(id);
   }, []);
@@ -302,7 +324,10 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
     if (!createdId) {
       return '';
     }
-    const raw = readDashboardCanvasWidgets(id);
+    const raw =
+      id === CONSOLE_DEFAULT_DASHBOARD_ID
+        ? getConsoleDefaultWidgets()
+        : readDashboardCanvasWidgets(id);
     if (raw && raw.length) {
       writeDashboardCanvasWidgets(createdId, mergeCanvasWidgetsWithCatalog(raw));
     }
