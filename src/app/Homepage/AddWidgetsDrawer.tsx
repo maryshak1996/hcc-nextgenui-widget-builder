@@ -8,6 +8,7 @@ import {
   Content,
   EmptyState,
   EmptyStateBody,
+  EmptyStateFooter,
   ExpandableSection,
   Flex,
   FlexItem,
@@ -21,10 +22,13 @@ import {
   TextInputGroupUtilities,
   Title
 } from '@patternfly/react-core';
-import { AngleRightIcon, CubesIcon, PlusCircleIcon, TimesIcon } from '@patternfly/react-icons';
+import { AngleRightIcon, CubesIcon, PanelOpenIcon, TimesIcon } from '@patternfly/react-icons';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
+import { EXAMPLE_BANK_SEARCH_PROMPTS, filterCatalogWidgetsBySearch } from '@app/Homepage/bankWidgetSearch';
+import { BankWidgetCard } from '@app/Homepage/BankWidgetCard';
 import { ADD_WIDGETS_DRAWER_STYLES } from '@app/Homepage/addWidgetsDrawerStyles';
+import { HOMEPAGE_WIDGET_CATALOG } from '@app/Homepage/homepageWidgetCatalog';
 import type { Widget } from '@app/Homepage/widgetTypes';
 
 /** Shown at the bottom when search is empty; order matches product ask. */
@@ -36,204 +40,56 @@ const FEATURED_BANK_WIDGET_IDS: readonly string[] = [
   'ansible'
 ];
 
-/** Example prompts: click fills the search field and runs the same keyword search as Enter. */
-const EXAMPLE_BANK_SEARCH_PROMPTS: readonly string[] = [
-  'Show me my critical vulnerabilities',
-  'Visualize my RHEL subscription usage',
-  'Show me my account details',
-  'Summarize my cluster health'
-];
+/** How many tiles to show in “Recommended for you” — matches featured ID count; backfills from catalog when some are already on the dashboard */
+const RECOMMENDED_VISIBLE_TARGET = FEATURED_BANK_WIDGET_IDS.length;
 
-/** Filler words stripped so natural-language queries still match on meaningful tokens. */
-const BANK_SEARCH_STOP_WORDS = new Set([
-  'a',
-  'an',
-  'and',
-  'any',
-  'are',
-  'as',
-  'at',
-  'be',
-  'been',
-  'being',
-  'both',
-  'but',
-  'by',
-  'can',
-  'could',
-  'did',
-  'do',
-  'does',
-  'each',
-  'few',
-  'find',
-  'for',
-  'from',
-  'get',
-  'had',
-  'has',
-  'have',
-  'having',
-  'he',
-  'help',
-  'her',
-  'here',
-  'him',
-  'his',
-  'how',
-  'i',
-  'if',
-  'in',
-  'into',
-  'is',
-  'it',
-  'its',
-  'just',
-  'like',
-  'many',
-  'may',
-  'me',
-  'might',
-  'more',
-  'most',
-  'much',
-  'must',
-  'my',
-  'need',
-  'needs',
-  'no',
-  'not',
-  'of',
-  'on',
-  'only',
-  'or',
-  'other',
-  'our',
-  'own',
-  'same',
-  'see',
-  'shall',
-  'she',
-  'should',
-  'show',
-  'so',
-  'some',
-  'such',
-  'than',
-  'that',
-  'the',
-  'their',
-  'them',
-  'then',
-  'there',
-  'these',
-  'they',
-  'this',
-  'those',
-  'to',
-  'too',
-  'very',
-  'want',
-  'was',
-  'we',
-  'were',
-  'what',
-  'when',
-  'where',
-  'which',
-  'who',
-  'why',
-  'will',
-  'with',
-  'would',
-  'you',
-  'your'
-]);
+/**
+ * Prioritize featured IDs still in the bank; then backfill with other widgets the user hasn’t added yet
+ * (catalog order) until the slot count is filled.
+ */
+function getRecommendedBankWidgets(removedWidgets: Widget[]): Widget[] {
+  const availableById = new Map(removedWidgets.map((w) => [w.id, w]));
+  const result: Widget[] = [];
+  const seen = new Set<string>();
 
-function tokenizeBankSearchQuery(raw: string): string[] {
-  const q = raw.trim().toLowerCase();
-  if (!q) {
-    return [];
+  for (const id of FEATURED_BANK_WIDGET_IDS) {
+    if (result.length >= RECOMMENDED_VISIBLE_TARGET) {
+      break;
+    }
+    const w = availableById.get(id);
+    if (w) {
+      result.push(w);
+      seen.add(id);
+    }
   }
-  return q
-    .split(/[^a-z0-9]+/i)
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2 && !BANK_SEARCH_STOP_WORDS.has(t));
-}
 
-/** e.g. "clusters" also tries "cluster" against titles. */
-function bankSearchKeywordVariants(token: string): readonly string[] {
-  const out = new Set<string>([token]);
-  if (token.length > 3 && token.endsWith('s') && !token.endsWith('ss')) {
-    out.add(token.slice(0, -1));
+  for (const catalogWidget of HOMEPAGE_WIDGET_CATALOG) {
+    if (result.length >= RECOMMENDED_VISIBLE_TARGET) {
+      break;
+    }
+    if (seen.has(catalogWidget.id)) {
+      continue;
+    }
+    const w = availableById.get(catalogWidget.id);
+    if (w) {
+      result.push(w);
+      seen.add(catalogWidget.id);
+    }
   }
-  return Array.from(out);
-}
 
-function widgetMatchesBankSearchKeywords(widget: Widget, keywords: readonly string[]): boolean {
-  if (keywords.length === 0) {
-    return false;
-  }
-  const hay = `${widget.title} ${widget.id}`.toLowerCase();
-  return keywords.some((kw) => bankSearchKeywordVariants(kw).some((variant) => hay.includes(variant)));
+  return result;
 }
 
 function getVisiblePreconfiguredBankWidgets(removedWidgets: Widget[], searchQuery: string): Widget[] {
   const q = searchQuery.trim();
   if (q) {
-    const keywords = tokenizeBankSearchQuery(q);
-    return removedWidgets.filter((w) => widgetMatchesBankSearchKeywords(w, keywords));
+    return filterCatalogWidgetsBySearch(removedWidgets, searchQuery);
   }
-  return FEATURED_BANK_WIDGET_IDS.map((id) => removedWidgets.find((w) => w.id === id)).filter(
-    (w): w is Widget => w !== undefined
-  );
+  return getRecommendedBankWidgets(removedWidgets);
 }
-
-interface BankWidgetCardProps {
-  widget: Widget;
-  onAdd: (widget: Widget) => void;
-}
-
-const BankWidgetCard: React.FC<BankWidgetCardProps> = ({ widget, onAdd }) => {
-  return (
-    <div className="bank-widget-wrapper">
-      <Card className="bank-widget-card" isCompact>
-        <CardBody
-          style={{ paddingBlock: 8, paddingInline: 'var(--pf-t--global--spacer--md)' }}
-        >
-          <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
-            <FlexItem flex={{ default: 'flex_1' }}>
-              <Content
-                component="p"
-                style={{
-                  fontSize: 'var(--pf-v6-global--FontSize--sm)',
-                  fontWeight: 'var(--pf-t--global--font--weight--body--bold)',
-                  margin: 0
-                }}
-              >
-                {widget.title}
-              </Content>
-            </FlexItem>
-            <FlexItem>
-              <Button
-                type="button"
-                variant="plain"
-                className="add-widgets-bank-add"
-                icon={<PlusCircleIcon />}
-                aria-label={`Add ${widget.title} to your dashboard`}
-                onClick={() => onAdd(widget)}
-              />
-            </FlexItem>
-          </Flex>
-        </CardBody>
-      </Card>
-    </div>
-  );
-};
 
 export interface AddWidgetsDrawerProps {
   isOpen: boolean;
-  onClose: () => void;
   removedWidgets: Widget[];
   /** Add a pre-configured widget to the page/canvas (no bank drag). */
   onAddWidget: (widget: Widget) => void;
@@ -247,7 +103,6 @@ export interface AddWidgetsDrawerProps {
  */
 const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   isOpen,
-  onClose,
   removedWidgets,
   onAddWidget,
   maxWidth = '1566px'
@@ -287,17 +142,82 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
     setIsExamplePromptsExpanded(false);
   }, []);
 
+  const openDashboardWidgetsHelpTab = useCallback(() => {
+    helpPanelContext?.openHelpPanelWithTab('Dashboard widgets');
+  }, [helpPanelContext]);
+
+  const openRequestNewWidgetTab = useCallback(() => {
+    helpPanelContext?.openHelpPanelToShareGeneralFeedback();
+  }, [helpPanelContext]);
+
+  const widgetBankEmptyActions = (
+    <EmptyStateFooter>
+      <Flex spaceItems={{ default: 'spaceItemsSm' }} flexWrap={{ default: 'wrap' }}>
+        <Button
+          variant="primary"
+          size="sm"
+          type="button"
+          icon={<PanelOpenIcon aria-hidden />}
+          iconPosition="end"
+          onClick={openDashboardWidgetsHelpTab}
+        >
+          View all widgets
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          icon={<PanelOpenIcon aria-hidden />}
+          iconPosition="end"
+          onClick={openRequestNewWidgetTab}
+        >
+          Request a new widget
+        </Button>
+      </Flex>
+    </EmptyStateFooter>
+  );
+
+  const widgetBankEmptyActionsCentered = (
+    <EmptyStateFooter>
+      <Flex
+        justifyContent={{ default: 'justifyContentCenter' }}
+        alignItems={{ default: 'alignItemsCenter' }}
+        spaceItems={{ default: 'spaceItemsSm' }}
+        flexWrap={{ default: 'wrap' }}
+        style={{ width: '100%' }}
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          type="button"
+          icon={<PanelOpenIcon aria-hidden />}
+          iconPosition="end"
+          onClick={openDashboardWidgetsHelpTab}
+        >
+          View all widgets
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          icon={<PanelOpenIcon aria-hidden />}
+          iconPosition="end"
+          onClick={openRequestNewWidgetTab}
+        >
+          Request a new widget
+        </Button>
+      </Flex>
+    </EmptyStateFooter>
+  );
+
   return (
-    <FlexItem style={{ width: '100%' }}>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <style>{ADD_WIDGETS_DRAWER_STYLES}</style>
       <div className={`widget-drawer ${isOpen ? 'open' : ''}`} style={{ maxWidth, margin: '0 auto', width: '100%' }}>
         <Panel className="widget-drawer-panel">
           <PanelMain>
             <PanelMainBody>
               <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }} alignItems={{ default: 'alignItemsFlexStart' }}>
-                <Flex justifyContent={{ default: 'justifyContentFlexEnd' }} alignItems={{ default: 'alignItemsCenter' }} style={{ width: '100%' }}>
-                  <Button variant="plain" aria-label="Close drawer" onClick={onClose} icon={<TimesIcon />} />
-                </Flex>
                 <Flex
                   direction={{ default: 'row' }}
                   spaceItems={{ default: 'spaceItemsMd' }}
@@ -419,46 +339,57 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                               </ExpandableSection>
                             )}
                             {removedWidgets.length === 0 ? (
-                              <EmptyState variant="xs" headingLevel="h4" titleText="No widgets available" icon={CubesIcon}>
+                              <EmptyState variant="xs" headingLevel="h4" titleText="No widgets available" className="add-widgets-empty-no-widgets-available">
                                 <EmptyStateBody>
                                   All available pre-configured widgets are already displayed in your dashboard.
                                 </EmptyStateBody>
+                                {widgetBankEmptyActionsCentered}
                               </EmptyState>
                             ) : visiblePreconfigured.length === 0 ? (
                               <EmptyState variant="xs" headingLevel="h4" titleText="No matching widgets" icon={CubesIcon}>
                                 <EmptyStateBody>
                                   Try a different search, or check that the widget is still in the add list.
                                 </EmptyStateBody>
+                                {widgetBankEmptyActions}
                               </EmptyState>
                             ) : !bankSearchQuery.trim() ? (
                               <section aria-labelledby="add-widgets-recommended-label">
                                 <Flex
                                   justifyContent={{ default: 'justifyContentSpaceBetween' }}
-                                  alignItems={{ default: 'alignItemsBaseline' }}
+                                  alignItems={{ default: 'alignItemsCenter' }}
                                   flexWrap={{ default: 'nowrap' }}
                                   style={{ width: '100%', gap: 'var(--pf-t--global--spacer--sm)' }}
                                 >
                                   <FlexItem>
-                                    <p
+                                    <Title
+                                      headingLevel="h5"
+                                      size="md"
                                       id="add-widgets-recommended-label"
-                                      className="pf-v6-c-menu__group-title"
-                                      style={{ margin: 0 }}
+                                      style={{
+                                        fontSize: 'var(--pf-v6-global--FontSize--sm)',
+                                        lineHeight: 'var(--pf-v6-global--LineHeight--sm)'
+                                      }}
                                     >
                                       Recommended for you
-                                    </p>
+                                    </Title>
                                   </FlexItem>
                                   <FlexItem>
                                     <Button
-                                      variant="link"
-                                      isInline
+                                      variant="tertiary"
+                                      size="sm"
                                       type="button"
                                       onClick={() => helpPanelContext?.openHelpPanelWithTab('Dashboard widgets')}
+                                      icon={<PanelOpenIcon aria-hidden />}
+                                      iconPosition="end"
                                     >
                                       All widgets
                                     </Button>
                                   </FlexItem>
                                 </Flex>
-                                <div className="removed-widgets-grid add-widgets-bank-grid">
+                                <div
+                                  className="removed-widgets-grid add-widgets-bank-grid"
+                                  style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}
+                                >
                                   {visiblePreconfigured.map((widget) => (
                                     <BankWidgetCard key={widget.id} widget={widget} onAdd={onAddWidget} />
                                   ))}
@@ -585,7 +516,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
           </PanelMain>
         </Panel>
       </div>
-    </FlexItem>
+    </div>
   );
 };
 

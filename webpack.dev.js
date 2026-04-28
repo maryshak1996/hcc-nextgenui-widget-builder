@@ -4,7 +4,7 @@ import { merge } from 'webpack-merge';
 import common from './webpack.common.js';
 import { stylePaths } from './stylePaths.js';
 const HOST = process.env.HOST || 'localhost';
-/** Default dev port (see `prestart:dev` in package.json — it frees this port before each `npm run start:dev`). */
+/** Default dev port (`npm start` / `npm run dev`; `prestart` frees this port via kill-port). */
 const PORT = process.env.PORT || '9000';
 
 export default merge(common('development'), {
@@ -17,9 +17,8 @@ export default merge(common('development'), {
     open: true,
     // Avoid stale main/chunk scripts when the browser or a proxy caches aggressively.
     headers: { 'Cache-Control': 'no-store' },
-    // Do not serve `./dist` here: static files are checked before webpack’s in-memory
-    // bundle, so an existing dist/index.html + hashed chunks load stale JS/CSS and
-    // HMR/source changes never appear until a full production build (localhost:9000).
+    // Never serve loose files from disk before webpack’s bundle (avoids stale ./dist).
+    static: false,
     client: {
       overlay: true,
     },

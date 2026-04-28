@@ -2,6 +2,7 @@ import * as React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
+import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import CommentIcon from '@app/bgimages/comment-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
@@ -155,6 +156,8 @@ interface MenuItem {
 // Create a context for help panel functions
 interface HelpPanelContextType {
   openHelpPanelWithTab: (title: string) => void;
+  /** Find help → Feedback → Share general feedback (breadcrumb screen). */
+  openHelpPanelToShareGeneralFeedback: () => void;
 }
 
 export const HelpPanelContext = React.createContext<HelpPanelContextType | undefined>(undefined);
@@ -1960,6 +1963,42 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       setIsNotificationDrawerOpen(false);
     }
   };
+
+  const openHelpPanelToShareGeneralFeedback = React.useCallback(() => {
+    setTabs((prevTabs) => {
+      const idx = prevTabs.findIndex((t) => t.id === 'get-started');
+      if (idx === -1) {
+        return prevTabs;
+      }
+      const newTabs = [...prevTabs];
+      newTabs[idx] = {
+        ...newTabs[idx],
+        activeSubTab: 5,
+        hasUserInteracted: true,
+        title: 'Feedback',
+        originalTitle: 'Feedback',
+        searchQuery: ''
+      };
+      return newTabs;
+    });
+    setActiveTabKey('get-started');
+    setSearchQuery('');
+    setFeedbackView('general');
+
+    if (!isDrawerExpanded) {
+      setIsDrawerExpanded(true);
+    }
+    if (isNotificationDrawerOpen) {
+      setIsNotificationDrawerOpen(false);
+    }
+
+    setTimeout(() => {
+      const idx = tabsRef.current.findIndex((t) => t.id === 'get-started');
+      if (idx !== -1) {
+        ensureActiveTabVisible(idx);
+      }
+    }, 100);
+  }, [ensureActiveTabVisible, isDrawerExpanded, isNotificationDrawerOpen]);
 
   const onSearchChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
     setSearchValue(value);
@@ -4217,22 +4256,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           );
         }
         
-        // Check if this is the Slack notifications quick start tab
         if (tab.title === 'Dashboard widgets') {
-          return (
-            <div style={{ padding: '24px' }}>
-              <Content>
-                <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
-                  Dashboard widgets
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73' }}>
-                  Browse all widgets you can add to your dashboard: pre-configured options, AI-generated widgets, and
-                  static markdown. Use the widget bank to add tiles to your layout and customize what you see on your
-                  home page.
-                </p>
-              </Content>
-            </div>
-          );
+          return <DashboardWidgetsHelpPanelContent />;
         }
 
         if (tab.title === 'Configuring console event notifications in Slack') {
@@ -5197,11 +5222,10 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           <DrawerContent panelContent={notificationDrawerContent}>
             {/* Help Drawer (inner, left-side) */}
             <Drawer isExpanded={isDrawerExpanded} isInline>
-              <DrawerContent panelContent={drawerContent}>
-                <HelpPanelContext.Provider value={{ openHelpPanelWithTab }}>
-                  {children}
-                </HelpPanelContext.Provider>
-              </DrawerContent>
+              <HelpPanelContext.Provider value={{ openHelpPanelWithTab, openHelpPanelToShareGeneralFeedback }}>
+                {/* Provider wraps DrawerContent so help panel tab bodies (e.g. Dashboard widgets) receive context, not only route children */}
+                <DrawerContent panelContent={drawerContent}>{children}</DrawerContent>
+              </HelpPanelContext.Provider>
             </Drawer>
           </DrawerContent>
         </Drawer>

@@ -19,12 +19,17 @@ import {
   EmptyStateVariant,
   Flex,
   FlexItem,
+  Form,
   MenuToggle,
   PageSection,
   Spinner,
   Switch,
+  FormGroup,
   HelperText,
   HelperTextItem,
+  Tab,
+  Tabs,
+  TabTitleText,
   TextInput,
   Title,
   Tooltip
@@ -39,9 +44,12 @@ import {
   OutlinedTrashAltIcon,
   PencilAltIcon,
   PlusCircleIcon,
+  ShareAltIcon,
+  TimesCircleIcon,
   TimesIcon
 } from '@patternfly/react-icons';
 import { AddWidgetsDrawer } from '@app/Homepage/AddWidgetsDrawer';
+import { setDashboardBankBridgeState } from '@app/Homepage/dashboardBankBridge';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
 import {
   GAP,
@@ -453,6 +461,8 @@ const EditableDashboard: React.FunctionComponent = () => {
   const [isDescriptionTruncated, setIsDescriptionTruncated] = React.useState(false);
 
   const [isWidgetDrawerOpen, setIsWidgetDrawerOpen] = React.useState(false);
+  /** Unified grey behind toolbar + widget bank (inline styles avoid PF cascade hiding app.css). */
+  const isAddWidgetsDrawerChromeOpen = !isConsoleDefault && isWidgetDrawerOpen;
   const [removedWidgets, setRemovedWidgets] = React.useState<Widget[]>(() => createHomepageWidgetClones());
   const [canvasWidgets, setCanvasWidgets] = React.useState<Widget[]>([]);
 
@@ -674,6 +684,25 @@ const EditableDashboard: React.FunctionComponent = () => {
     setCanvasWidgets((prev) => (prev.some((w) => w.id === widget.id) ? prev : [...prev, widget]));
   }, []);
 
+  React.useEffect(() => {
+    if (!dashboardId) {
+      setDashboardBankBridgeState(null);
+      return;
+    }
+    setDashboardBankBridgeState({
+      canvasWidgetIds: new Set(canvasWidgets.map((w) => w.id)),
+      addWidgetToDashboard: handleAddWidgetFromBank,
+      canAddWidgets: !isConsoleDefault,
+    });
+  }, [dashboardId, canvasWidgets, handleAddWidgetFromBank, isConsoleDefault]);
+
+  React.useEffect(
+    () => () => {
+      setDashboardBankBridgeState(null);
+    },
+    []
+  );
+
   const handleCanvasSizeChange = React.useCallback((id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => {
     setCanvasWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, colSpan, rowSpan } : w)));
   }, []);
@@ -747,9 +776,29 @@ const EditableDashboard: React.FunctionComponent = () => {
     <>
         <PageSection
           hasBodyWrapper={false}
-          style={{ paddingTop: 0, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
+          className="hcc-editable-dashboard-toolbar-section"
+          style={{
+            paddingTop: 0,
+            paddingBottom: isAddWidgetsDrawerChromeOpen ? 0 : undefined,
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box'
+          }}
         >
-          <div role="toolbar" aria-label="Dashboard editor" className="editable-dashboard-toolbar">
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box'
+            }}
+          >
+          <div
+            role="toolbar"
+            aria-label="Dashboard editor"
+            className="editable-dashboard-toolbar"
+          >
             <div className="editable-dashboard-toolbar__meta">
               <div
                 ref={nameEditorRef}
@@ -757,108 +806,126 @@ const EditableDashboard: React.FunctionComponent = () => {
                 onBlur={handleNameEditorBlur}
               >
                 <div className="editable-dashboard-name-editor">
-                  <div className="editable-dashboard-name-group">
-                    <div
-                      className={
-                        dashboard.isHomepage
-                          ? 'editable-dashboard-name-input-wrap editable-dashboard-name-input-wrap--home'
-                          : 'editable-dashboard-name-input-wrap'
-                      }
+                  <Form
+                    className="editable-dashboard-toolbar-meta-form editable-dashboard-name-group"
+                    onSubmit={(event) => event.preventDefault()}
+                  >
+                    <div className="editable-dashboard-toolbar-field editable-dashboard-toolbar-field--name">
+                      <div className="editable-dashboard-toolbar-field__row">
+                        <div className="editable-dashboard-name-input-wrap">
+                    <FormGroup
+                      fieldId="dashboard-name-input"
+                      label="Name"
+                      className="editable-dashboard-toolbar-form-group"
                     >
-                    {dashboard.isHomepage ? (
-                      <span
-                        className="editable-dashboard-name-input__home-icon"
-                        title="Console homepage"
-                        aria-hidden
+                      <div
+                        className={
+                          dashboard.isHomepage
+                            ? 'editable-dashboard-name-input-inner editable-dashboard-name-input-inner--home'
+                            : 'editable-dashboard-name-input-inner'
+                        }
                       >
-                        <HomeIcon />
-                      </span>
-                    ) : null}
-                    <TextInput
-                      className={
-                        isConsoleDefault
-                          ? 'editable-dashboard-name-input editable-dashboard-name-input--non-interactive'
-                          : 'editable-dashboard-name-input'
-                      }
-                      id="dashboard-name-input"
-                      type="text"
-                      value={localName}
-                      readOnlyVariant={isConsoleDefault ? 'default' : undefined}
-                      tabIndex={isConsoleDefault ? -1 : undefined}
-                      onMouseDown={
-                        isConsoleDefault
-                          ? (e: React.MouseEvent<HTMLInputElement>) => {
-                              e.preventDefault();
-                            }
-                          : undefined
-                      }
-                      onChange={(_event, value) => setLocalName(value)}
-                      onFocus={() => {
-                        if (!isConsoleDefault) {
-                          setIsNameFieldFocused(true);
-                          setIsDescriptionFieldFocused(false);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== 'Enter') {
-                          return;
-                        }
-                        e.preventDefault();
-                        if (!dashboard) {
-                          return;
-                        }
-                        if (!localName.trim() || localName.trim() === dashboard.name) {
-                          return;
-                        }
-                        if (isDashboardNameTaken(localName, dashboard.id)) {
-                          return;
-                        }
-                        applyNameChange();
-                      }}
-                      aria-label={
-                        dashboard.isHomepage
-                          ? 'Dashboard name (set as your console homepage)'
-                          : 'Dashboard name'
-                      }
-                      validated={toolbarNameIsDuplicate ? 'error' : 'default'}
-                      aria-describedby={toolbarNameIsDuplicate ? 'dashboard-name-duplicate-error' : undefined}
-                    />
-                    </div>
-                    {!isConsoleDefault && isNameFieldFocused && (
-                      <span className="editable-dashboard-meta-inline-actions">
-                        <Button
-                          variant="plain"
-                          type="button"
-                          aria-label="Apply dashboard name"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={applyNameChange}
-                          isDisabled={
-                            !localName.trim() ||
-                            localName.trim() === dashboard.name ||
-                            toolbarNameIsDuplicate
+                        {dashboard.isHomepage ? (
+                          <span
+                            className="editable-dashboard-name-input__home-icon"
+                            title="Console homepage"
+                            aria-hidden
+                          >
+                            <HomeIcon />
+                          </span>
+                        ) : null}
+                        <TextInput
+                          className={
+                            isConsoleDefault
+                              ? 'editable-dashboard-name-input editable-dashboard-name-input--non-interactive'
+                              : 'editable-dashboard-name-input'
                           }
-                        >
-                          <CheckIcon />
-                        </Button>
-                        <Button
-                          variant="plain"
-                          type="button"
-                          aria-label="Cancel dashboard name edit"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={cancelNameChange}
-                        >
-                          <TimesIcon />
-                        </Button>
-                      </span>
-                    )}
+                          id="dashboard-name-input"
+                          type="text"
+                          value={localName}
+                          readOnlyVariant={isConsoleDefault ? 'default' : undefined}
+                          tabIndex={isConsoleDefault ? -1 : undefined}
+                          onMouseDown={
+                            isConsoleDefault
+                              ? (e: React.MouseEvent<HTMLInputElement>) => {
+                                  e.preventDefault();
+                                }
+                              : undefined
+                          }
+                          onChange={(_event, value) => setLocalName(value)}
+                          onFocus={() => {
+                            if (!isConsoleDefault) {
+                              setIsNameFieldFocused(true);
+                              setIsDescriptionFieldFocused(false);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') {
+                              return;
+                            }
+                            e.preventDefault();
+                            if (!dashboard) {
+                              return;
+                            }
+                            if (!localName.trim() || localName.trim() === dashboard.name) {
+                              return;
+                            }
+                            if (isDashboardNameTaken(localName, dashboard.id)) {
+                              return;
+                            }
+                            applyNameChange();
+                          }}
+                          validated={toolbarNameIsDuplicate ? 'error' : 'default'}
+                          aria-describedby={
+                            toolbarNameIsDuplicate ? 'dashboard-name-duplicate-error' : undefined
+                          }
+                        />
+                      </div>
+                    </FormGroup>
+                        </div>
+                        {!isConsoleDefault && isNameFieldFocused && (
+                          <span className="editable-dashboard-meta-inline-actions">
+                            <Button
+                              variant="plain"
+                              type="button"
+                              aria-label="Apply dashboard name"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={applyNameChange}
+                              isDisabled={
+                                !localName.trim() ||
+                                localName.trim() === dashboard.name ||
+                                toolbarNameIsDuplicate
+                              }
+                            >
+                              <CheckIcon />
+                            </Button>
+                            <Button
+                              variant="plain"
+                              type="button"
+                              aria-label="Cancel dashboard name edit"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={cancelNameChange}
+                            >
+                              <TimesIcon />
+                            </Button>
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div
                       ref={descriptionFieldWrapRef}
-                      className="editable-dashboard-description-input-wrap"
+                      className="editable-dashboard-toolbar-field editable-dashboard-toolbar-field--description"
                     >
+                      <div className="editable-dashboard-toolbar-field__row">
+                        <div className="editable-dashboard-description-input-wrap">
+                      <FormGroup
+                        fieldId="dashboard-description-input"
+                        label="Description"
+                        className="editable-dashboard-toolbar-form-group"
+                      >
                       <TextInput
                         ref={descriptionInputRef}
                         id="dashboard-description-input"
-                        aria-label="Short dashboard description (optional)"
                         type="text"
                         value={localDescription}
                         onChange={(_event, value) => setLocalDescription(value)}
@@ -902,6 +969,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                             : 'editable-dashboard-description-input'
                         }
                       />
+                      </FormGroup>
                       {isDescriptionTruncated && localDescription.trim() ? (
                         <Tooltip
                           triggerRef={descriptionInputRef}
@@ -910,33 +978,35 @@ const EditableDashboard: React.FunctionComponent = () => {
                           aria="none"
                         />
                       ) : null}
+                        </div>
+                        {!isConsoleDefault && isDescriptionFieldFocused && (
+                          <span className="editable-dashboard-meta-inline-actions">
+                            <Button
+                              variant="plain"
+                              type="button"
+                              aria-label="Apply dashboard description"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={applyDescriptionChange}
+                              isDisabled={
+                                localDescription.trim() === (dashboard.description ?? '').trim()
+                              }
+                            >
+                              <CheckIcon />
+                            </Button>
+                            <Button
+                              variant="plain"
+                              type="button"
+                              aria-label="Cancel dashboard description edit"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={cancelDescriptionChange}
+                            >
+                              <TimesIcon />
+                            </Button>
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {!isConsoleDefault && isDescriptionFieldFocused && (
-                      <span className="editable-dashboard-meta-inline-actions">
-                        <Button
-                          variant="plain"
-                          type="button"
-                          aria-label="Apply dashboard description"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={applyDescriptionChange}
-                          isDisabled={
-                            localDescription.trim() === (dashboard.description ?? '').trim()
-                          }
-                        >
-                          <CheckIcon />
-                        </Button>
-                        <Button
-                          variant="plain"
-                          type="button"
-                          aria-label="Cancel dashboard description edit"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={cancelDescriptionChange}
-                        >
-                          <TimesIcon />
-                        </Button>
-                      </span>
-                    )}
-                  </div>
+                  </Form>
                   {toolbarNameIsDuplicate && (
                     <HelperText isLiveRegion>
                       <HelperTextItem
@@ -995,7 +1065,10 @@ const EditableDashboard: React.FunctionComponent = () => {
                         ) : (
                           <>
                             <CheckCircleIcon
-                              style={{ color: 'var(--pf-t--global--color--status--success--default)', fontSize: '1rem' }}
+                              style={{
+                                color: 'var(--pf-t--global--text--color--subtle)',
+                                fontSize: '1rem'
+                              }}
                               aria-hidden
                             />
                             <span
@@ -1021,21 +1094,74 @@ const EditableDashboard: React.FunctionComponent = () => {
                     />
                   </FlexItem>
                   <FlexItem>
-                    <Button variant="secondary" onClick={() => setIsShareModalOpen(true)}>
-                      Share
+                    <Button
+                      variant="plain"
+                      className="editable-dashboard-toolbar-plain-icon-action"
+                      onClick={() => setIsShareModalOpen(true)}
+                    >
+                      <span className="editable-dashboard-toolbar-icon-label__inner">
+                        <span className="editable-dashboard-toolbar-icon-label__icon" aria-hidden>
+                          <ShareAltIcon />
+                        </span>
+                        <span className="editable-dashboard-toolbar-icon-label__label">Share</span>
+                      </span>
                     </Button>
                   </FlexItem>
                   <FlexItem>
-                    <Button
-                      variant={isWidgetDrawerOpen ? 'secondary' : 'primary'}
-                      onClick={toggleWidgetDrawer}
-                      isDisabled={isConsoleDefault}
-                      title={
-                        isConsoleDefault ? 'Widgets cannot be added to the built-in Console default dashboard.' : undefined
-                      }
-                    >
-                      {isWidgetDrawerOpen ? 'Close drawer' : 'Add widgets'}
-                    </Button>
+                    {isWidgetDrawerOpen ? (
+                      <Tabs
+                        id={`editable-dashboard-widget-tabs-${dashboard.id}`}
+                        aria-label={
+                          isConsoleDefault
+                            ? 'Widgets unavailable on Console default dashboard'
+                            : 'Close widget panel'
+                        }
+                        isBox
+                        variant="secondary"
+                        activeKey="widgets-panel"
+                        onSelect={() => {
+                          if (!isConsoleDefault) {
+                            toggleWidgetDrawer();
+                          }
+                        }}
+                        hasNoBorderBottom
+                        className="editable-dashboard-widget-panel-tabs"
+                      >
+                        <Tab
+                          eventKey="widgets-panel"
+                          isDisabled={isConsoleDefault}
+                          title={
+                            <TabTitleText>
+                              <span className="editable-dashboard-toolbar-icon-label__inner">
+                                <span className="editable-dashboard-toolbar-icon-label__icon" aria-hidden>
+                                  <TimesCircleIcon />
+                                </span>
+                                <span className="editable-dashboard-toolbar-icon-label__label">Close</span>
+                              </span>
+                            </TabTitleText>
+                          }
+                        />
+                      </Tabs>
+                    ) : (
+                      <Button
+                        variant="plain"
+                        className="editable-dashboard-toolbar-plain-icon-action"
+                        onClick={toggleWidgetDrawer}
+                        isDisabled={isConsoleDefault}
+                        title={
+                          isConsoleDefault
+                            ? 'Widgets cannot be added to the built-in Console default dashboard.'
+                            : undefined
+                        }
+                      >
+                        <span className="editable-dashboard-toolbar-icon-label__inner">
+                          <span className="editable-dashboard-toolbar-icon-label__icon" aria-hidden>
+                            <PlusCircleIcon />
+                          </span>
+                          <span className="editable-dashboard-toolbar-icon-label__label">Add widgets</span>
+                        </span>
+                      </Button>
+                    )}
                   </FlexItem>
                   <FlexItem>
                     <Dropdown
@@ -1113,18 +1239,25 @@ const EditableDashboard: React.FunctionComponent = () => {
                 </Flex>
             </div>
           </div>
+
+          {!isConsoleDefault && (
+            <AddWidgetsDrawer
+              isOpen={isWidgetDrawerOpen}
+              removedWidgets={removedWidgets}
+              onAddWidget={handleAddWidgetFromBank}
+            />
+          )}
+          </div>
         </PageSection>
 
-        {!isConsoleDefault && (
-          <AddWidgetsDrawer
-            isOpen={isWidgetDrawerOpen}
-            onClose={() => setIsWidgetDrawerOpen(false)}
-            removedWidgets={removedWidgets}
-            onAddWidget={handleAddWidgetFromBank}
-          />
-        )}
-
-        <PageSection>
+        <PageSection
+          className="hcc-editable-dashboard-canvas-section"
+          style={
+            isAddWidgetsDrawerChromeOpen
+              ? { paddingTop: 'var(--pf-t--global--spacer--sm)' }
+              : undefined
+          }
+        >
           <EditableDashboardCanvas
             key={dashboard.id}
             canvasTitle={canvasSectionTitle}
@@ -1142,7 +1275,10 @@ const EditableDashboard: React.FunctionComponent = () => {
   ) : null;
 
   return (
-    <div className="editable-dashboard-page">
+    <div
+      className="editable-dashboard-page"
+      data-widget-drawer-open={isAddWidgetsDrawerChromeOpen ? '' : undefined}
+    >
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
           <BreadcrumbItem to="/">Home</BreadcrumbItem>

@@ -44,7 +44,7 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
     .widget-drawer-panel .pf-v6-c-panel__main {
       min-height: 0;
     }
-    
+
     .widget-drawer-section-card {
       --pf-v6-c-card--BorderColor: transparent !important;
       --pf-v6-c-card--BorderWidth: 0 !important;
@@ -207,6 +207,26 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
     .bank-widget-wrapper:hover .bank-widget-card {
       border-color: var(--pf-v6-global--primary-color--100);
       box-shadow: var(--pf-v6-global--BoxShadow--sm);
+    }
+
+    .bank-widget-card__action-slot.pf-v6-l-flex__item,
+    .bank-widget-card__action-slot {
+      flex-shrink: 0;
+      width: 2.25rem;
+      min-height: 2.25rem;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bank-widget-card__action-slot svg {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+
+    .bank-widget-card__action-slot .pf-v6-c-button.pf-m-plain {
+      --pf-v6-c-button--PaddingInlineStart: var(--pf-t--global--spacer--xs);
+      --pf-v6-c-button--PaddingInlineEnd: var(--pf-t--global--spacer--xs);
     }
 
     .drag-overlay {

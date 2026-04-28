@@ -882,14 +882,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-3"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      RHEL
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 512 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M480 160H32c-17.673 0-32-14.327-32-32V64c0-17.673 14.327-32 32-32h448c17.673 0 32 14.327 32 32v64c0 17.673-14.327 32-32 32zm-48-88c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24zm-64 0c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24zm112 248H32c-17.673 0-32-14.327-32-32v-64c0-17.673 14.327-32 32-32h448c17.673 0 32 14.327 32 32v64c0 17.673-14.327 32-32 32zm-48-88c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24zm-64 0c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24zm112 248H32c-17.673 0-32-14.327-32-32v-64c0-17.673 14.327-32 32-32h448c17.673 0 32 14.327 32 32v64c0 17.673-14.327 32-32 32zm-48-88c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24zm-64 0c-13.255 0-24 10.745-24 24s10.745 24 24 24 24-10.745 24-24-10.745-24-24-24z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-3"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          RHEL
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr
@@ -962,14 +992,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-4"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      OpenShift
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 640 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M537.6 226.6c4.1-10.7 6.4-22.4 6.4-34.6 0-53-43-96-96-96-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32c-88.4 0-160 71.6-160 160 0 2.7.1 5.4.2 8.1C40.2 219.8 0 273.2 0 336c0 79.5 64.5 144 144 144h368c70.7 0 128-57.3 128-128 0-61.9-44-113.6-102.4-125.4z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-4"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          OpenShift
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr
@@ -1042,14 +1102,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-5"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      Ansible
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 1024 1024"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M512,0 C229.26,0 0,229.26 0,512 C0,794.74 229.26,1024 512,1024 C794.74,1024 1024,794.74 1024,512 C1024,229.26 794.74,0 512,0 Z M759.09,730.29 C759.09,751.77 741.71,766.86 721.83,766.86 C711.54,766.86 704,762.97 693.49,754.29 L429,541 L340.57,762.74 L264.23,762.74 L487.77,224.74 C493.49,210.79 506.06,203.25 520.23,203.25 C534.4,203.25 546.06,210.56 551.77,224.74 L755.89,715.2 C758.4,721.14 759.31,726.63 759.09,730.29 Z M520.69,312.69 L653.26,640 L453.26,482.51 L520.69,312.69 Z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-5"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          Ansible
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr
@@ -1122,14 +1212,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-6"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      Explore capabilities
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 512 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-6"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          Explore capabilities
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr
@@ -1409,14 +1529,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-12"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      My account
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 448 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-12"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          My account
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr
@@ -1456,14 +1606,44 @@ exports[`App tests should render default App component 1`] = `
                                   <div
                                     class="pf-v6-c-card__header-main"
                                   >
-                                    <h4
-                                      class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
-                                      data-ouia-component-id="OUIA-Generated-Title-13"
-                                      data-ouia-component-type="PF6/Title"
-                                      data-ouia-safe="true"
+                                    <div
+                                      class="pf-v6-l-flex pf-m-space-items-sm pf-m-align-items-center"
                                     >
-                                      Recently visited
-                                    </h4>
+                                      <div
+                                        class=""
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          class="widget-title-lead-icon"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            class="pf-v6-svg"
+                                            fill="currentColor"
+                                            height="1em"
+                                            role="img"
+                                            viewBox="0 0 512 512"
+                                            width="1em"
+                                          >
+                                            <path
+                                              d="M504 255.531c.253 136.64-111.18 248.372-247.82 248.468-59.015.042-113.223-20.53-155.822-54.911-11.077-8.94-11.905-25.541-1.839-35.607l11.267-11.267c8.609-8.609 22.353-9.551 31.891-1.984C173.062 425.135 212.781 440 256 440c101.705 0 184-82.311 184-184 0-101.705-82.311-184-184-184-48.814 0-93.149 18.969-126.068 49.932l50.754 50.754c10.08 10.08 2.941 27.314-11.313 27.314H24c-8.837 0-16-7.163-16-16V38.627c0-14.254 17.234-21.393 27.314-11.314l49.372 49.372C129.209 34.136 189.552 8 256 8c136.81 0 247.747 110.78 248 247.531zm-180.912 78.784l9.823-12.63c8.138-10.463 6.253-25.542-4.21-33.679L288 256.349V152c0-13.255-10.745-24-24-24h-16c-13.255 0-24 10.745-24 24v135.651l65.409 50.874c10.463 8.137 25.541 6.253 33.679-4.21z"
+                                            />
+                                          </svg>
+                                        </span>
+                                      </div>
+                                      <div
+                                        class="pf-m-flex-1"
+                                      >
+                                        <h4
+                                          class="pf-v6-c-title pf-m-h4 pf-v6-c-card__title"
+                                          data-ouia-component-id="OUIA-Generated-Title-13"
+                                          data-ouia-component-type="PF6/Title"
+                                          data-ouia-safe="true"
+                                        >
+                                          Recently visited
+                                        </h4>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                                 <hr

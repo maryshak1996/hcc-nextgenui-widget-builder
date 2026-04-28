@@ -42,6 +42,7 @@ import {
   ServerIcon,
   ShieldAltIcon
 } from '@patternfly/react-icons';
+import { WidgetTitleLeadIcon } from '@app/Homepage/homepageWidgetHeaderIcons';
 import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -200,6 +201,8 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
 // Generic Widget Card Component
 interface WidgetCardProps {
   title: string;
+  /** Catalog widget id — used for header lead icon */
+  widgetId: string;
   children: React.ReactNode;
   footerContent?: React.ReactNode;
   headerExtra?: React.ReactNode;
@@ -212,7 +215,8 @@ interface WidgetCardProps {
 }
 
 export const WidgetCard: React.FC<WidgetCardProps> = ({ 
-  title, 
+  title,
+  widgetId,
   children, 
   footerContent, 
   headerExtra, 
@@ -244,9 +248,16 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
       <Card isFullHeight={isFullHeight} className={`widget-card ${className}`}>
         <CardHeader>
           {headerExtra || (
-            <Title headingLevel="h4" className="pf-v6-c-card__title">
-              {title}
-            </Title>
+            <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+              <FlexItem>
+                <WidgetTitleLeadIcon widgetId={widgetId} />
+              </FlexItem>
+              <FlexItem flex={{ default: 'flex_1' }}>
+                <Title headingLevel="h4" className="pf-v6-c-card__title">
+                  {title}
+                </Title>
+              </FlexItem>
+            </Flex>
           )}
         </CardHeader>
         <Divider />
@@ -264,9 +275,16 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
         <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
           <FlexItem>
             {headerExtra || (
-              <Title headingLevel="h4" className="pf-v6-c-card__title">
-                {title}
-              </Title>
+              <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                <FlexItem>
+                  <WidgetTitleLeadIcon widgetId={widgetId} />
+                </FlexItem>
+                <FlexItem flex={{ default: 'flex_1' }}>
+                  <Title headingLevel="h4" className="pf-v6-c-card__title">
+                    {title}
+                  </Title>
+                </FlexItem>
+              </Flex>
             )}
           </FlexItem>
           <FlexItem>
@@ -338,7 +356,8 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard
             onRemove={onRemove} 
-            title={widget.title} 
+            title={widget.title}
+            widgetId={widget.id} 
             dragHandleProps={dragHandleProps}
             readOnly={readOnly}
             footerContent={
@@ -357,6 +376,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -376,6 +396,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -395,6 +416,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -442,6 +464,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -461,6 +484,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -599,6 +623,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -619,6 +644,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -653,6 +679,7 @@ export function renderHomepageWidgetContent(
         return (
           <WidgetCard 
             title={widget.title}
+            widgetId={widget.id}
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}

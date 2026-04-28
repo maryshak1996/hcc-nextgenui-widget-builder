@@ -25,14 +25,105 @@ body,
   box-sizing: border-box;
 }
 
+.hcc-editable-dashboard-toolbar-section.pf-v6-c-page__main-section {
+  /* Extra space before canvas / widget strip so fields aren’t flush to the panel below */
+  --pf-v6-c-page__main-section--PaddingBlockEnd: var(--pf-t--global--spacer--md);
+}
+
+.hcc-editable-dashboard-canvas-section.pf-v6-c-page__main-section {
+  --pf-v6-c-page__main-section--PaddingBlockStart: var(--pf-t--global--spacer--sm);
+}
+
 .editable-dashboard-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  /* Bottom-align with labeled name/description fields (avoid gap above actions vs drawer) */
+  align-items: flex-end;
+  /* row-gap between wrapped lines; column-gap between meta column and actions */
+  gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--xl);
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+
+/*
+ * Help panel — Dashboard widgets tab: same grid + bank card styles as Find widgets (drawer injects these globally;
+ * mirror here so the tab matches when drawer styles are not loaded).
+ */
+.dashboard-widgets-help-panel .removed-widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dashboard-widgets-help-panel .removed-widgets-grid.add-widgets-bank-grid {
+  margin-top: 0;
+  gap: 8px;
+}
+
+.dashboard-widgets-help-panel .add-widgets-bank-add {
+  flex-shrink: 0;
+}
+
+.dashboard-widgets-help-panel .bank-widget-wrapper {
+  cursor: default;
+}
+
+.dashboard-widgets-help-panel .bank-widget-card {
+  transition: all 0.2s ease-in-out;
+  border: 2px dashed var(--pf-v6-global--BorderColor--100);
+  background-color: var(--pf-v6-global--BackgroundColor--100);
+}
+
+.dashboard-widgets-help-panel .bank-widget-wrapper:hover .bank-widget-card {
+  border-color: var(--pf-v6-global--primary-color--100);
+  box-shadow: var(--pf-v6-global--BoxShadow--sm);
+}
+
+/* Fixed slot for + vs check so compact bank cards don’t change size */
+.bank-widget-card__action-slot.pf-v6-l-flex__item,
+.bank-widget-card__action-slot {
+  flex-shrink: 0;
+  width: 2.25rem;
+  min-height: 2.25rem;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-widget-card__action-slot svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.bank-widget-card__action-slot .pf-v6-c-button.pf-m-plain {
+  --pf-v6-c-button--PaddingInlineStart: var(--pf-t--global--spacer--xs);
+  --pf-v6-c-button--PaddingInlineEnd: var(--pf-t--global--spacer--xs);
+}
+
+/* Blue lead icon before widget titles (Find widgets, help panel bank, dashboard grid).
+ * Use brand icon token — same as editable-dashboard-toolbar-icon-label__icon — so icons match PF/RHDS blue,
+ * not --pf-v6-global--primary-color--100 (often resolves to neutral text in this theme). */
+.widget-title-lead-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+  color: var(--pf-t--global--icon--color--brand--default);
+}
+
+.widget-title-lead-icon svg,
+.widget-title-lead-icon .pf-v6-svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: inherit;
+  fill: currentColor;
+}
+
+.widget-title-lead-icon svg path,
+.widget-title-lead-icon .pf-v6-svg path {
+  fill: currentColor;
 }
 
 /* Name + description stay one unit; actions wrap to the next row when space runs out */
@@ -62,8 +153,50 @@ body,
   width: 100%;
 }
 
+.editable-dashboard-toolbar-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-width: 0;
+}
+
+/* FormGroup labels above name / description fields in dashboard toolbar */
+.editable-dashboard-toolbar-form-group.pf-v6-c-form__group {
+  margin: 0;
+  width: 100%;
+}
+
+/* Toolbar meta uses <Form>; PF .pf-v6-c-form is display:grid — keep name + description columns in a row */
+form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-form {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: var(--pf-t--global--spacer--sm);
+}
+
+.editable-dashboard-toolbar-form-group .editable-dashboard-name-input,
+.editable-dashboard-toolbar-form-group .editable-dashboard-description-input {
+  width: 100%;
+}
+
+.editable-dashboard-toolbar-field__row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--sm);
+  min-width: 0;
+  width: 100%;
+}
+
+.editable-dashboard-toolbar-field--description {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(36rem, 100%);
+}
+
 .editable-dashboard-description-input-wrap {
-  flex: 1 1 6rem;
+  flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -90,12 +223,8 @@ body,
   caret-color: transparent;
 }
 
-/* Name + description + inline apply/cancel on one line */
+/* Name + description columns (layout on form.editable-dashboard-name-group — see rule above) */
 .editable-dashboard-name-group {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: var(--pf-t--global--spacer--sm);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -118,7 +247,14 @@ body,
   flex: 0 0 auto;
 }
 
-.editable-dashboard-name-input-wrap--home .editable-dashboard-name-input {
+/* In-field home icon sits in a layer aligned to the input only (not the FormGroup label) */
+.editable-dashboard-name-input-inner {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.editable-dashboard-name-input-inner--home .editable-dashboard-name-input {
   /* Reserve space for the in-field home icon (right) */
   padding-inline-end: calc(
     var(--pf-t--global--spacer--2xl) + var(--pf-t--global--spacer--md)
@@ -163,6 +299,99 @@ body,
   min-width: 0;
   max-width: 100%;
   margin-inline-start: auto;
+}
+
+/* Boxed secondary Tabs — Close state only; hug contents in toolbar row */
+.editable-dashboard-widget-panel-tabs.pf-v6-c-tabs {
+  width: auto;
+  /* Drawer seam tweaks zero bottom padding elsewhere — keep item/link vertically symmetric so Close aligns with Share / plain actions */
+  --pf-v6-c-tabs__item--PaddingBlockStart: 0;
+  --pf-v6-c-tabs__item--PaddingBlockEnd: 0;
+  /* Extra air below the top accent line, above the icon + “Close” label */
+  --pf-v6-c-tabs__link--PaddingBlockStart: var(--pf-t--global--spacer--md);
+  --pf-v6-c-tabs__link--PaddingBlockEnd: var(--pf-t--global--spacer--sm);
+}
+
+/*
+ * Close tab + Add widgets drawer: pull strip and drawer together (no white seam / rounded gap).
+ * Uses .editable-dashboard-page[data-widget-drawer-open] from EditableDashboard.
+ */
+.editable-dashboard-page[data-widget-drawer-open] .editable-dashboard-widget-panel-tabs.pf-v6-c-tabs {
+  margin-block-end: -4px;
+}
+
+.editable-dashboard-page[data-widget-drawer-open]
+  .editable-dashboard-widget-panel-tabs.pf-v6-c-tabs.pf-m-box {
+  --pf-v6-c-tabs__link--before--BorderBlockEndWidth: 0;
+}
+
+.editable-dashboard-page[data-widget-drawer-open] .widget-drawer.open .widget-drawer-panel.pf-v6-c-panel {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
+.editable-dashboard-page[data-widget-drawer-open] .widget-drawer.open .widget-drawer-panel.pf-v6-c-panel::before {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
+/*
+ * Toolbar icon + label — plain actions (Share, Add widgets) and Close (boxed tab).
+ */
+.editable-dashboard-toolbar-plain-icon-action.pf-v6-c-button.pf-m-plain {
+  --pf-v6-c-button--m-plain--Color: var(--pf-t--global--text--color--regular);
+}
+
+.editable-dashboard-toolbar-plain-icon-action.pf-v6-c-button.pf-m-plain:hover {
+  --pf-v6-c-button--m-plain--Color: var(--pf-t--global--text--color--regular);
+}
+
+.editable-dashboard-toolbar-icon-label__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--sm);
+}
+
+.editable-dashboard-toolbar-icon-label__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  color: var(--pf-t--global--icon--color--brand--default);
+}
+
+.editable-dashboard-toolbar-plain-icon-action:not(:disabled):not(.pf-m-disabled):not(.pf-m-aria-disabled):hover
+  .editable-dashboard-toolbar-icon-label__icon {
+  color: var(--pf-t--global--icon--color--brand--hover);
+}
+
+.editable-dashboard-widget-panel-tabs.pf-v6-c-tabs
+  .pf-v6-c-tabs__link:not(:disabled):not([aria-disabled='true']):hover
+  .editable-dashboard-toolbar-icon-label__icon {
+  color: var(--pf-t--global--icon--color--brand--hover);
+}
+
+.editable-dashboard-toolbar-plain-icon-action:is(:disabled, .pf-m-disabled, .pf-m-aria-disabled)
+  .editable-dashboard-toolbar-icon-label__icon {
+  color: var(--pf-t--global--icon--color--disabled);
+}
+
+.editable-dashboard-widget-panel-tabs.pf-v6-c-tabs
+  .pf-v6-c-tabs__link:is(:disabled, [aria-disabled='true'])
+  .editable-dashboard-toolbar-icon-label__icon {
+  color: var(--pf-t--global--icon--color--disabled);
+}
+
+.editable-dashboard-toolbar-icon-label__icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: currentColor;
+  color: inherit;
+}
+
+.editable-dashboard-toolbar-icon-label__label {
+  color: var(--pf-t--global--text--color--regular);
 }
 
 /* Home route: top hero (greeting + homepage menu), full main width */
