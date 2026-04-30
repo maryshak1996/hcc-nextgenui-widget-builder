@@ -18,21 +18,18 @@ import {
 import { CodeIcon } from '@patternfly/react-icons';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
-import { mergeCanvasWidgetsWithCatalog, writeDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
-import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
-import type { Widget } from '@app/Homepage/widgetTypes';
+import {
+  mergeCanvasWidgetsWithCatalog,
+  parseDashboardConfigClipboardText,
+  writeDashboardCanvasWidgets
+} from '@app/DashboardHub/dashboardCanvasStorage';
 
 const IMPORT_CONFIG_FORM_ID = 'import-config-string-form';
 const IMPORT_NAME_DUPLICATE_ID = 'import-config-name-duplicate-error';
+const IMPORT_CONFIG_PARSE_ERROR_ID = 'import-config-parse-error';
 
 /** Replace when the product documentation URL for config strings is finalized. */
 const CONFIG_STRING_HELP_PLACEHOLDER_URL = 'https://www.redhat.com/';
-
-function buildImportStarterCanvasWidgets(): Widget[] {
-  const all = createHomepageWidgetClones();
-  const ids = ['recently-visited', 'events', 'openshift', 'rhel'];
-  return ids.map((id) => all.find((w) => w.id === id)).filter((w): w is Widget => w !== undefined);
-}
 
 export type ImportConfigStringModalProps = {
   isOpen: boolean;
@@ -68,26 +65,39 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
 
   const nameTrimmed = newDashboardName.trim();
   const configTrimmed = configString.trim();
+
+  const parsedConfig = React.useMemo(() => {
+    if (!configTrimmed) {
+      return { status: 'empty' as const };
+    }
+    const result = parseDashboardConfigClipboardText(configTrimmed);
+    if (!result.ok) {
+      return { status: 'error' as const, message: result.message };
+    }
+    return { status: 'ok' as const, widgets: result.widgets };
+  }, [configTrimmed]);
+
   const nameIsDuplicate = nameTrimmed.length > 0 && isDashboardNameTaken(nameTrimmed);
+  const configParseOk = parsedConfig.status === 'ok';
   const isImportFormValid =
-    configTrimmed.length > 0 && nameTrimmed.length > 0 && !nameIsDuplicate;
+    configParseOk && configTrimmed.length > 0 && nameTrimmed.length > 0 && !nameIsDuplicate;
 
   const handleClose = React.useCallback(() => {
     onClose();
   }, [onClose]);
 
   const handleCreateImportedDashboard = React.useCallback(() => {
-    if (!isImportFormValid) {
+    if (!isImportFormValid || parsedConfig.status !== 'ok') {
       return;
     }
     const newId = addDashboard({ name: nameTrimmed, setAsHomepage });
     if (!newId) {
       return;
     }
-    const starter = buildImportStarterCanvasWidgets();
-    writeDashboardCanvasWidgets(newId, mergeCanvasWidgetsWithCatalog(starter));
+    const merged = mergeCanvasWidgetsWithCatalog(parsedConfig.widgets);
+    writeDashboardCanvasWidgets(newId, merged);
     onSuccess(newId);
-  }, [addDashboard, isImportFormValid, nameTrimmed, onSuccess, setAsHomepage]);
+  }, [addDashboard, isImportFormValid, nameTrimmed, onSuccess, parsedConfig, setAsHomepage]);
 
   const handleFormSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -138,8 +148,20 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
               resizeOrientation="vertical"
               aria-label="Paste configuration string"
               className="hcc-import-config-code-editor"
-              placeholder="{ … }"
+              placeholder={'{\n  "dashboardId": "…",\n  "name": "…",\n  "widgets": [ … ]\n}'}
+              validated={parsedConfig.status === 'error' ? 'error' : 'default'}
+              aria-invalid={parsedConfig.status === 'error'}
+              aria-describedby={
+                parsedConfig.status === 'error' ? IMPORT_CONFIG_PARSE_ERROR_ID : undefined
+              }
             />
+            {parsedConfig.status === 'error' && (
+              <HelperText isLiveRegion>
+                <HelperTextItem id={IMPORT_CONFIG_PARSE_ERROR_ID} variant="error" component="div">
+                  {parsedConfig.message}
+                </HelperTextItem>
+              </HelperText>
+            )}
           </FormGroup>
           <FormGroup isRequired fieldId="import-new-dashboard-name" label="New dashboard name">
             <TextInput

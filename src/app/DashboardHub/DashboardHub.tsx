@@ -53,12 +53,13 @@ import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
-import { resolveDashboardCanvasWidgets } from '@app/DashboardHub/dashboardCanvasStorage';
+import { resolveDashboardCanvasWidgets, serializeDashboardConfigPayload } from '@app/DashboardHub/dashboardCanvasStorage';
 import { isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { ImportConfigStringModal } from '@app/DashboardHub/ImportConfigStringModal';
 import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
+import { useCopyConfigRowFeedback } from '@app/useCopyConfigFeedback';
 
 const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
 const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
@@ -118,6 +119,7 @@ const DashboardHub: React.FunctionComponent = () => {
   const [importModalInitialHomepage, setImportModalInitialHomepage] = React.useState(false);
   const [deleteTargetRow, setDeleteTargetRow] = React.useState<HubRow | null>(null);
   const [shareTargetRow, setShareTargetRow] = React.useState<HubRow | null>(null);
+  const { copiedFeedbackRowId, triggerCopiedFeedbackForRow } = useCopyConfigRowFeedback();
 
   type HubNavFromHome = { fromHome?: { openCreate?: 'blank' | 'import' | 'duplicate' } };
 
@@ -233,16 +235,26 @@ const DashboardHub: React.FunctionComponent = () => {
     }
   }, [location.state, location.pathname, navigate]);
 
-  const handleCopyRowConfiguration = React.useCallback((row: HubRow) => {
-    const raw = resolveDashboardCanvasWidgets(row);
-    const payload = {
-      dashboardId: row.id,
-      name: row.name,
-      widgets: raw ?? []
-    };
-    void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setOpenActionsRowId(null);
-  }, []);
+  const handleCopyRowConfiguration = React.useCallback(
+    (row: HubRow) => {
+      const raw = resolveDashboardCanvasWidgets(row);
+      void navigator.clipboard
+        .writeText(
+          serializeDashboardConfigPayload({
+            dashboardId: row.id,
+            name: row.name,
+            widgets: raw ?? []
+          })
+        )
+        .then(() => {
+          triggerCopiedFeedbackForRow(row.id);
+        })
+        .finally(() => {
+          setOpenActionsRowId(null);
+        });
+    },
+    [triggerCopiedFeedbackForRow]
+  );
 
   const handleTableSort: OnSort = React.useCallback((_event, columnIndex) => {
     setTableSort((prev) => {
@@ -464,18 +476,27 @@ const DashboardHub: React.FunctionComponent = () => {
                     onOpenChange={(isOpen: boolean) => setOpenActionsRowId(isOpen ? row.id : null)}
                     popperProps={{ position: 'end' }}
                     toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
-                      <MenuToggle
-                        ref={toggleRef}
-                        variant="plain"
-                        aria-label={`Actions for ${row.name}`}
-                        isExpanded={openActionsRowId === row.id}
-                        onClick={() => {
-                          setOpenActionsRowId((current) => (current === row.id ? null : row.id));
-                          setIsCreateDashboardMenuOpen(false);
-                        }}
+                      <Tooltip
+                        content="Copied!"
+                        trigger="manual"
+                        isVisible={copiedFeedbackRowId === row.id}
+                        entryDelay={0}
+                        position="bottom"
+                        aria-live="polite"
                       >
-                        <EllipsisVIcon />
-                      </MenuToggle>
+                        <MenuToggle
+                          ref={toggleRef}
+                          variant="plain"
+                          aria-label={`Actions for ${row.name}`}
+                          isExpanded={openActionsRowId === row.id}
+                          onClick={() => {
+                            setOpenActionsRowId((current) => (current === row.id ? null : row.id));
+                            setIsCreateDashboardMenuOpen(false);
+                          }}
+                        >
+                          <EllipsisVIcon />
+                        </MenuToggle>
+                      </Tooltip>
                     )}
                     shouldFocusToggleOnSelect
                   >
@@ -672,6 +693,15 @@ const DashboardHub: React.FunctionComponent = () => {
         onClose={closeShareDashboardModal}
         dashboardId={shareTargetRow?.id ?? ''}
         dashboardName={shareTargetRow?.name ?? ''}
+        configurationClipboardText={
+          shareTargetRow
+            ? serializeDashboardConfigPayload({
+                dashboardId: shareTargetRow.id,
+                name: shareTargetRow.name,
+                widgets: resolveDashboardCanvasWidgets(shareTargetRow) ?? []
+              })
+            : ''
+        }
       />
 
       <DeleteDashboardModal

@@ -52,7 +52,11 @@ import { AddWidgetsDrawer } from '@app/Homepage/AddWidgetsDrawer';
 import { setDashboardBankBridgeState } from '@app/Homepage/dashboardBankBridge';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
 import {
+  computeDashboardWidgetPlacements,
   GAP,
+  getDashboardGridColumnCount,
+  getEffectiveColumnSpan,
+  getPixelWidthForColSpan,
   ReadOnlyHomepageWidgetFrame,
   renderHomepageWidgetContent,
   ROW_HEIGHT,
@@ -83,11 +87,13 @@ import {
   mergeCanvasWidgetsWithCatalog,
   readDashboardCanvasWidgets,
   resolveDashboardCanvasWidgets,
+  serializeDashboardConfigPayload,
   writeDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
+import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 
 type PersistIndicator = 'saved' | 'saving';
 
@@ -165,6 +171,11 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
     () => (activeId ? canvasWidgets.find((w) => w.id === activeId) : null),
     [activeId, canvasWidgets]
   );
+
+  const dashboardPlacements = React.useMemo(() => {
+    const n = getDashboardGridColumnCount(gridWidth);
+    return computeDashboardWidgetPlacements(canvasWidgets, n);
+  }, [canvasWidgets, gridWidth]);
 
   const [isEditingSectionTitle, setIsEditingSectionTitle] = React.useState(false);
   const [draftSectionTitle, setDraftSectionTitle] = React.useState(() => canvasTitle);
@@ -325,12 +336,18 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
               <>
                 <style>{WIDGET_GRID_STYLES}</style>
                 <div
+                  ref={gridRef}
                   className="widgets-grid homepage-readonly-grid"
                   style={{ width: '100%', minWidth: 0 }}
                   aria-label="Dashboard widgets (read-only)"
                 >
                   {canvasWidgets.map((widget) => (
-                    <ReadOnlyHomepageWidgetFrame key={widget.id} widget={widget}>
+                    <ReadOnlyHomepageWidgetFrame
+                      key={widget.id}
+                      widget={widget}
+                      gridWidth={gridWidth}
+                      placement={dashboardPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
+                    >
                       {renderHomepageWidgetContent(widget, {
                         navigate,
                         readOnly: true
@@ -364,13 +381,14 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
               onDragEnd={handleDragEnd}
             >
               <style>{WIDGET_GRID_STYLES}</style>
-              <div ref={gridRef} style={{ width: '100%', minWidth: 0 }}>
+              <div style={{ width: '100%', minWidth: 0 }}>
                 <SortableContext items={canvasWidgets.map((w) => w.id)} strategy={rectSortingStrategy}>
-                  <div className="widgets-grid">
+                  <div ref={gridRef} className="widgets-grid">
                     {canvasWidgets.map((widget) => (
                       <SortableWidgetCard
                         key={widget.id}
                         widget={widget}
+                        placement={dashboardPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
                         onSizeChange={onSizeChange}
                         onRemove={onRemoveWidget}
                         gridWidth={gridWidth}
@@ -385,9 +403,13 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
                     <div
                       className="drag-overlay"
                       style={{
-                        width: `calc(${activeWidget.colSpan * 25}% - ${GAP}px)`,
-                        height: (ROW_HEIGHT * activeWidget.rowSpan) + (GAP * (activeWidget.rowSpan - 1)),
-                        minWidth: '280px'
+                        width: getPixelWidthForColSpan(
+                          gridWidth,
+                          getEffectiveColumnSpan(gridWidth, activeWidget.colSpan)
+                        ),
+                        height: ROW_HEIGHT * activeWidget.rowSpan + GAP * (activeWidget.rowSpan - 1),
+                        maxWidth: '100%',
+                        boxSizing: 'border-box'
                       }}
                     >
                       {renderHomepageWidgetContent(activeWidget, { navigate })}
@@ -433,6 +455,7 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const [autosaveEnabled, setAutosaveEnabled] = React.useState(true);
   const [isKebabOpen, setIsKebabOpen] = React.useState(false);
+  const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
@@ -734,10 +757,21 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     const raw = resolveDashboardCanvasWidgets(dashboard);
-    const payload = { dashboardId: dashboard.id, name: dashboard.name, widgets: raw ?? [] };
-    void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setIsKebabOpen(false);
-  }, [dashboard]);
+    void navigator.clipboard
+      .writeText(
+        serializeDashboardConfigPayload({
+          dashboardId: dashboard.id,
+          name: dashboard.name,
+          widgets: raw ?? []
+        })
+      )
+      .then(() => {
+        triggerCopiedFeedback();
+      })
+      .finally(() => {
+        setIsKebabOpen(false);
+      });
+  }, [dashboard, triggerCopiedFeedback]);
 
   const handleKebabDuplicate = React.useCallback(() => {
     if (!dashboard) {
@@ -1170,15 +1204,24 @@ const EditableDashboard: React.FunctionComponent = () => {
                       onOpenChange={setIsKebabOpen}
                       popperProps={{ position: 'right' }}
                       toggle={(toggleRef) => (
-                        <MenuToggle
-                          ref={toggleRef}
-                          aria-label="Dashboard actions"
-                          variant="plain"
-                          isExpanded={isKebabOpen}
-                          onClick={() => setIsKebabOpen(!isKebabOpen)}
+                        <Tooltip
+                          content="Copied!"
+                          trigger="manual"
+                          isVisible={copiedTooltipVisible}
+                          entryDelay={0}
+                          position="bottom"
+                          aria-live="polite"
                         >
-                          <EllipsisVIcon />
-                        </MenuToggle>
+                          <MenuToggle
+                            ref={toggleRef}
+                            aria-label="Dashboard actions"
+                            variant="plain"
+                            isExpanded={isKebabOpen}
+                            onClick={() => setIsKebabOpen(!isKebabOpen)}
+                          >
+                            <EllipsisVIcon />
+                          </MenuToggle>
+                        </Tooltip>
                       )}
                       shouldFocusToggleOnSelect
                     >
@@ -1335,6 +1378,11 @@ const EditableDashboard: React.FunctionComponent = () => {
             onClose={() => setIsShareModalOpen(false)}
             dashboardId={dashboard.id}
             dashboardName={dashboard.name}
+            configurationClipboardText={serializeDashboardConfigPayload({
+              dashboardId: dashboard.id,
+              name: dashboard.name,
+              widgets: resolveDashboardCanvasWidgets(dashboard) ?? []
+            })}
           />
         </>
       ) : null}

@@ -44,6 +44,8 @@ body,
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  /* Lets description max-width use cqw relative to this toolbar (see .editable-dashboard-toolbar-field--description). */
+  container-type: inline-size;
 }
 
 /*
@@ -190,9 +192,16 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
 }
 
 .editable-dashboard-toolbar-field--description {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
-  max-width: min(36rem, 100%);
+  max-width: min(40rem, 100%);
+}
+
+/* Half of `.editable-dashboard-toolbar` width when container query units are available (toolbar sets `container-type`). */
+@supports (width: 1cqw) {
+  .editable-dashboard-toolbar-field--description {
+    max-width: min(50cqw, 100%);
+  }
 }
 
 .editable-dashboard-description-input-wrap {
@@ -530,6 +539,10 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
 
 .hcc-share-dashboard-modal-intro p {
   margin: 0;
+}
+
+.hcc-share-dashboard-modal-intro p + p {
+  margin-block-start: var(--pf-t--global--spacer--sm);
 }
 
 .hcc-share-dashboard-modal-divider {

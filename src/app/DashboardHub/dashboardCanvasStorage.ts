@@ -38,6 +38,81 @@ function isValidWidget(x: unknown): x is { id: string; title: string; type: stri
   );
 }
 
+/** Validates each entry like session storage; returns null if any item is invalid. */
+function normalizeWidgetsFromUnknownArray(items: unknown[]): Widget[] | null {
+  const out: Widget[] = [];
+  for (const item of items) {
+    if (!isValidWidget(item)) {
+      return null;
+    }
+    const ext = item as { navigateTo?: unknown; footerText?: unknown };
+    const w: Widget = {
+      id: item.id,
+      title: item.title,
+      type: item.type as Widget['type'],
+      colSpan: item.colSpan as Widget['colSpan'],
+      rowSpan: item.rowSpan as Widget['rowSpan'],
+      navigateTo: typeof ext.navigateTo === 'string' ? ext.navigateTo : undefined,
+      footerText: typeof ext.footerText === 'string' ? ext.footerText : undefined
+    };
+    out.push(w);
+  }
+  return out;
+}
+
+/** Shape produced by “Copy configuration string” (homepage, hub row, detail kebab). */
+export type DashboardClipboardPayload = {
+  dashboardId: string;
+  name: string;
+  widgets: Widget[];
+};
+
+export function serializeDashboardConfigPayload(payload: DashboardClipboardPayload): string {
+  return JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Parses JSON from the import modal / pasted clipboard. Accepts the exported object
+ * `{ dashboardId, name, widgets }` or a raw `widgets` array for compatibility.
+ */
+export function parseDashboardConfigClipboardText(text: string): { ok: true; widgets: Widget[] } | { ok: false; message: string } {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { ok: false, message: 'This text is not valid JSON. Paste the complete configuration string.' };
+  }
+
+  if (Array.isArray(data)) {
+    const widgets = normalizeWidgetsFromUnknownArray(data);
+    if (!widgets) {
+      return { ok: false, message: 'One or more widgets in the configuration are invalid.' };
+    }
+    return { ok: true, widgets };
+  }
+
+  if (typeof data !== 'object' || data === null) {
+    return {
+      ok: false,
+      message: 'Configuration must be a JSON object with a widgets array (use Copy configuration string from a dashboard).'
+    };
+  }
+
+  const o = data as Record<string, unknown>;
+  if (!Array.isArray(o.widgets)) {
+    return {
+      ok: false,
+      message: 'Missing widgets array. Paste the exported configuration from Copy configuration string.'
+    };
+  }
+
+  const widgets = normalizeWidgetsFromUnknownArray(o.widgets);
+  if (!widgets) {
+    return { ok: false, message: 'One or more widgets in the configuration are invalid.' };
+  }
+  return { ok: true, widgets };
+}
+
 /** Merges stored widgets with the catalog so definitions stay current; layout (span) comes from storage. */
 export function mergeCanvasWidgetsWithCatalog(stored: Widget[], catalog: Widget[] = createHomepageWidgetClones()): Widget[] {
   const byId = new Map(catalog.map((w) => [w.id, w] as const));
@@ -76,24 +151,7 @@ export function readDashboardCanvasWidgets(dashboardId: string): Widget[] | null
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return null;
     }
-    const out: Widget[] = [];
-    for (const item of parsed) {
-      if (!isValidWidget(item)) {
-        return null;
-      }
-      const ext = item as { navigateTo?: unknown; footerText?: unknown };
-      const w: Widget = {
-        id: item.id,
-        title: item.title,
-        type: item.type as Widget['type'],
-        colSpan: item.colSpan as Widget['colSpan'],
-        rowSpan: item.rowSpan as Widget['rowSpan'],
-        navigateTo: typeof ext.navigateTo === 'string' ? ext.navigateTo : undefined,
-        footerText: typeof ext.footerText === 'string' ? ext.footerText : undefined
-      };
-      out.push(w);
-    }
-    return out;
+    return normalizeWidgetsFromUnknownArray(parsed);
   } catch {
     return null;
   }

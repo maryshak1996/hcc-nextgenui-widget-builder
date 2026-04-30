@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -41,10 +41,14 @@ import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
 import {
   mergeCanvasWidgetsWithCatalog,
   onDashboardCanvasUpdated,
-  resolveDashboardCanvasWidgets
+  resolveDashboardCanvasWidgets,
+  serializeDashboardConfigPayload
 } from '@app/DashboardHub/dashboardCanvasStorage';
+import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 import type { Widget } from '@app/Homepage/widgetTypes';
 import {
+  computeDashboardWidgetPlacements,
+  getDashboardGridColumnCount,
   ReadOnlyHomepageWidgetFrame,
   WIDGET_GRID_STYLES,
   renderHomepageWidgetContent
@@ -111,10 +115,13 @@ const Homepage: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const { rows, setDashboardAsHomepage } = useDashboardData();
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
+  const homepageWidgetsGridRef = useRef<HTMLDivElement>(null);
+  const [homepageGridWidth, setHomepageGridWidth] = useState(1200);
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
 
   const closeHomepageHeroMenu = useCallback(() => {
     setIsHomepageHeroMenuOpen(false);
@@ -145,6 +152,11 @@ const Homepage: React.FunctionComponent = () => {
     [rows]
   );
 
+  const homepageWidgetPlacements = useMemo(() => {
+    const n = getDashboardGridColumnCount(homepageGridWidth);
+    return computeDashboardWidgetPlacements(displayWidgets, n);
+  }, [displayWidgets, homepageGridWidth]);
+
   const refreshFromStorage = useCallback(() => {
     if (!homepageDashboard) {
       setDisplayWidgets([]);
@@ -161,6 +173,18 @@ const Homepage: React.FunctionComponent = () => {
   useEffect(() => {
     refreshFromStorage();
   }, [refreshFromStorage]);
+
+  useEffect(() => {
+    const el = homepageWidgetsGridRef.current;
+    if (!el) {
+      return;
+    }
+    const update = () => setHomepageGridWidth(el.offsetWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [displayWidgets.length]);
 
   useEffect(() => {
     return onDashboardCanvasUpdated((detail) => {
@@ -202,14 +226,21 @@ const Homepage: React.FunctionComponent = () => {
       return;
     }
     const raw = resolveDashboardCanvasWidgets(homepageDashboard);
-    const payload = {
-      dashboardId: homepageDashboard.id,
-      name: homepageDashboard.name,
-      widgets: raw ?? []
-    };
-    void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    closeHomepageKebab();
-  }, [closeHomepageKebab, homepageDashboard]);
+    void navigator.clipboard
+      .writeText(
+        serializeDashboardConfigPayload({
+          dashboardId: homepageDashboard.id,
+          name: homepageDashboard.name,
+          widgets: raw ?? []
+        })
+      )
+      .then(() => {
+        triggerCopiedFeedback();
+      })
+      .finally(() => {
+        closeHomepageKebab();
+      });
+  }, [closeHomepageKebab, homepageDashboard, triggerCopiedFeedback]);
 
   return (
     <>
@@ -451,17 +482,26 @@ const Homepage: React.FunctionComponent = () => {
                         onOpenChange={setIsHomepageKebabOpen}
                         popperProps={{ position: 'end' }}
                         toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
-                          <MenuToggle
-                            ref={toggleRef}
-                            variant="plain"
-                            isExpanded={isHomepageKebabOpen}
-                            aria-label="Homepage dashboard actions"
-                            onClick={() => {
-                              setIsHomepageKebabOpen((o) => !o);
-                            }}
+                          <Tooltip
+                            content="Copied!"
+                            trigger="manual"
+                            isVisible={copiedTooltipVisible}
+                            entryDelay={0}
+                            position="bottom"
+                            aria-live="polite"
                           >
-                            <EllipsisVIcon />
-                          </MenuToggle>
+                            <MenuToggle
+                              ref={toggleRef}
+                              variant="plain"
+                              isExpanded={isHomepageKebabOpen}
+                              aria-label="Homepage dashboard actions"
+                              onClick={() => {
+                                setIsHomepageKebabOpen((o) => !o);
+                              }}
+                            >
+                              <EllipsisVIcon />
+                            </MenuToggle>
+                          </Tooltip>
                         )}
                         shouldFocusToggleOnSelect
                       >
@@ -572,12 +612,18 @@ const Homepage: React.FunctionComponent = () => {
               </div>
               {displayWidgets.length > 0 ? (
                 <div
+                  ref={homepageWidgetsGridRef}
                   className="widgets-grid homepage-readonly-grid"
                   style={{ minWidth: 0, width: '100%' }}
                   aria-label="Read-only preview of your homepage dashboard"
                 >
                   {displayWidgets.map((widget) => (
-                    <ReadOnlyHomepageWidgetFrame key={widget.id} widget={widget}>
+                    <ReadOnlyHomepageWidgetFrame
+                      key={widget.id}
+                      widget={widget}
+                      gridWidth={homepageGridWidth}
+                      placement={homepageWidgetPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
+                    >
                       {renderHomepageWidgetContent(widget, {
                         navigate,
                         readOnly: true
@@ -640,6 +686,15 @@ const Homepage: React.FunctionComponent = () => {
         onClose={closeShareModal}
         dashboardId={homepageDashboard?.id ?? ''}
         dashboardName={homepageDashboard?.name ?? ''}
+        configurationClipboardText={
+          homepageDashboard
+            ? serializeDashboardConfigPayload({
+                dashboardId: homepageDashboard.id,
+                name: homepageDashboard.name,
+                widgets: resolveDashboardCanvasWidgets(homepageDashboard) ?? []
+              })
+            : ''
+        }
       />
       <DuplicateDashboardModal
         isOpen={isDuplicateModalOpen && Boolean(homepageDashboard)}

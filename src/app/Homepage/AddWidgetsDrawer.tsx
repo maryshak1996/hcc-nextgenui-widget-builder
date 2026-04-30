@@ -1,35 +1,264 @@
 import * as React from 'react';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Button,
   Card,
   CardBody,
   CardHeader,
   Content,
+  Dropdown,
+  DropdownItem,
+  DropdownList,
   EmptyState,
   EmptyStateBody,
   EmptyStateFooter,
   ExpandableSection,
   Flex,
   FlexItem,
+  FormGroup,
   List,
   ListItem,
+  MenuToggle,
+  type MenuToggleElement,
   Panel,
   PanelMain,
   PanelMainBody,
+  TextInput,
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
-  Title
+  Title,
+  Tooltip
 } from '@patternfly/react-core';
-import { AngleRightIcon, CubesIcon, PanelOpenIcon, TimesIcon } from '@patternfly/react-icons';
-import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
+import { CodeEditor, CodeEditorControl, Language } from '@patternfly/react-code-editor';
+import type { editor } from 'monaco-editor';
+import {
+  CodeIcon,
+  CopyIcon,
+  CubesIcon,
+  ExternalLinkAltIcon,
+  OpenDrawerRightIcon,
+  PanelOpenIcon,
+  PlusCircleIcon,
+  RedoIcon,
+  SearchIcon,
+  SyncAltIcon,
+  TimesIcon,
+  UndoIcon
+} from '@patternfly/react-icons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 import { EXAMPLE_BANK_SEARCH_PROMPTS, filterCatalogWidgetsBySearch } from '@app/Homepage/bankWidgetSearch';
+import { AiSearchInputIcon } from '@app/Homepage/AiSearchInputIcon';
 import { BankWidgetCard } from '@app/Homepage/BankWidgetCard';
 import { ADD_WIDGETS_DRAWER_STYLES } from '@app/Homepage/addWidgetsDrawerStyles';
 import { HOMEPAGE_WIDGET_CATALOG } from '@app/Homepage/homepageWidgetCatalog';
 import type { Widget } from '@app/Homepage/widgetTypes';
+import {
+  WIDGET_BUILDER_DEFAULT_TITLE,
+  WIDGET_BUILDER_FORMAT_LABELS,
+  WIDGET_BUILDER_SAMPLES,
+  type WidgetBuilderFormat
+} from '@app/Homepage/widgetBuilderSamples';
+import {
+  WIDGET_BUILDER_DEFAULT_HEADER_ICON_ID,
+  WIDGET_BUILDER_HEADER_ICON_OPTIONS,
+  getWidgetBuilderHeaderIconComponent,
+  getWidgetBuilderHeaderIconLabel,
+  type WidgetBuilderHeaderIconId
+} from '@app/Homepage/widgetBuilderHeaderIcons';
+import {
+  DEFAULT_WIDGET_BUILDER_PREVIEW_MODEL,
+  parseWidgetBuilderCode,
+  type WidgetBuilderPreviewModel
+} from '@app/Homepage/widgetBuilderPreviewParser';
+import { WidgetBuilderPreviewCard } from '@app/Homepage/WidgetBuilderPreviewCard';
+
+const WIDGET_BUILDER_FORMAT_TO_LANGUAGE: Record<WidgetBuilderFormat, Language> = {
+  yaml: Language.yaml,
+  json: Language.json,
+  markdown: Language.markdown
+};
+
+const WIDGET_BUILDER_FORMAT_MENU_ORDER: readonly WidgetBuilderFormat[] = ['markdown', 'yaml', 'json'];
+
+/** Debounce before re-parsing widget definition into the preview (manual Refresh applies immediately). */
+const WIDGET_BUILDER_PREVIEW_DEBOUNCE_MS = 200;
+
+/** Find widgets bank: green check duration before dissolve-out, then handoff to parent `onAddWidget`. */
+const BANK_WIDGET_ADD_CELEBRATION_SUCCESS_MS = 1700;
+const BANK_WIDGET_ADD_CELEBRATION_EXIT_MS = 320;
+
+type WidgetBuilderCodeEditorToolbarProps = {
+  monacoRef: React.RefObject<editor.IStandaloneCodeEditor | null>;
+  /** From Monaco model undo stack — false until there is something to undo. */
+  canUndo: boolean;
+  /** From Monaco model redo stack — false until an undo left redo entries (standard redo semantics). */
+  canRedo: boolean;
+  widgetBuilderFormat: WidgetBuilderFormat;
+  languageMenuOpen: boolean;
+  onLanguageMenuOpenChange: (open: boolean) => void;
+  onLanguageMenuSelect: (
+    _event: React.MouseEvent<Element, MouseEvent> | undefined,
+    value?: string | number
+  ) => void;
+  toggleLanguageMenu: () => void;
+  /** After “Add to dashboard”, lock header actions until Reset. */
+  builderLocked: boolean;
+};
+
+/** Renders inside PatternFly CodeEditor (under CodeEditorContext) — gray toolbar + compact white language strip. */
+const WidgetBuilderCodeEditorToolbar: React.FC<WidgetBuilderCodeEditorToolbarProps> = ({
+  monacoRef,
+  canUndo,
+  canRedo,
+  widgetBuilderFormat,
+  languageMenuOpen,
+  onLanguageMenuOpenChange,
+  onLanguageMenuSelect,
+  toggleLanguageMenu,
+  builderLocked
+}) => {
+  const [copyTooltipSuccess, setCopyTooltipSuccess] = useState(false);
+
+  return (
+    <div className="add-widgets-builder-code-editor-header-toolbar">
+      <div className="add-widgets-builder-code-editor-toolbar-gray">
+        <CodeEditorControl
+          icon={<CopyIcon />}
+          aria-label="Copy to clipboard"
+          isDisabled={builderLocked}
+          tooltipProps={{
+            content: copyTooltipSuccess ? 'Copied!' : 'Copy to clipboard',
+            position: 'top',
+            'aria-live': 'polite',
+            entryDelay: 0,
+            exitDelay: copyTooltipSuccess ? 1600 : 300,
+            onTooltipHidden: () => setCopyTooltipSuccess(false)
+          }}
+          onClick={(code) => {
+            void navigator.clipboard.writeText(code);
+            setCopyTooltipSuccess(true);
+          }}
+        />
+      <Tooltip content="Undo" position="top">
+        <span style={{ display: 'inline-flex' }}>
+          <Button
+            variant="plain"
+            type="button"
+            icon={<UndoIcon />}
+            aria-label="Undo"
+            isDisabled={builderLocked || !canUndo}
+            onClick={() => {
+              applyWidgetBuilderMonacoUndoRedo(monacoRef.current, 'undo');
+            }}
+          />
+        </span>
+      </Tooltip>
+      <Tooltip content="Redo" position="top">
+        <span style={{ display: 'inline-flex' }}>
+          <Button
+            variant="plain"
+            type="button"
+            icon={<RedoIcon />}
+            aria-label="Redo"
+            isDisabled={builderLocked || !canRedo}
+            onClick={() => {
+              applyWidgetBuilderMonacoUndoRedo(monacoRef.current, 'redo');
+            }}
+          />
+        </span>
+      </Tooltip>
+      <span className="add-widgets-builder-code-editor-toolbar-gray-spacer" aria-hidden />
+    </div>
+    <div className="add-widgets-builder-code-editor-toolbar-white">
+      <Dropdown
+        className="add-widgets-builder-language-dropdown"
+        isOpen={builderLocked ? false : languageMenuOpen}
+        onOpenChange={(open) => {
+          if (builderLocked) {
+            return;
+          }
+          onLanguageMenuOpenChange(open);
+        }}
+        onSelect={onLanguageMenuSelect}
+        shouldFocusToggleOnSelect
+        popperProps={{ position: 'end' }}
+        toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+          <MenuToggle
+            ref={toggleRef}
+            id="widget-builder-language-toggle"
+            variant="plainText"
+            onClick={() => {
+              if (!builderLocked) {
+                toggleLanguageMenu();
+              }
+            }}
+            isExpanded={builderLocked ? false : languageMenuOpen}
+            isDisabled={builderLocked}
+            aria-label={`Definition language, ${WIDGET_BUILDER_FORMAT_LABELS[widgetBuilderFormat]}. Open menu.`}
+          >
+            <span className="add-widgets-builder-language-toggle-content">
+              <CodeIcon className="add-widgets-builder-language-toggle-icon" aria-hidden />
+              {WIDGET_BUILDER_FORMAT_LABELS[widgetBuilderFormat]}
+            </span>
+          </MenuToggle>
+        )}
+      >
+        <DropdownList>
+          {WIDGET_BUILDER_FORMAT_MENU_ORDER.map((fmt) => (
+            <DropdownItem
+              key={fmt}
+              value={fmt}
+              isSelected={widgetBuilderFormat === fmt}
+              id={`widget-builder-fmt-${fmt}`}
+            >
+              {WIDGET_BUILDER_FORMAT_LABELS[fmt]}
+            </DropdownItem>
+          ))}
+        </DropdownList>
+      </Dropdown>
+    </div>
+  </div>
+  );
+};
+
+const WIDGET_BUILDER_EDITOR_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
+  wordWrap: 'on',
+  scrollBeyondLastLine: false
+};
+
+/**
+ * Apply undo/redo on the standalone editor. `editor.trigger('editor.action.undo')` often no-ops when
+ * invoked from external toolbar buttons; prefer `getAction(...).run()`, then `ITextModel.undo/redo`.
+ */
+function applyWidgetBuilderMonacoUndoRedo(ed: editor.IStandaloneCodeEditor | null, direction: 'undo' | 'redo'): void {
+  if (!ed) {
+    return;
+  }
+  ed.focus();
+  const actionId = direction === 'undo' ? 'editor.action.undo' : 'editor.action.redo';
+  const action = ed.getAction(actionId);
+  if (action?.isSupported()) {
+    void action.run();
+    return;
+  }
+  const model = ed.getModel();
+  if (!model) {
+    return;
+  }
+  if (direction === 'undo') {
+    if (!model.canUndo()) {
+      return;
+    }
+    void Promise.resolve(model.undo());
+    return;
+  }
+  if (!model.canRedo()) {
+    return;
+  }
+  void Promise.resolve(model.redo());
+}
 
 /** Shown at the bottom when search is empty; order matches product ask. */
 const FEATURED_BANK_WIDGET_IDS: readonly string[] = [
@@ -93,7 +322,7 @@ export interface AddWidgetsDrawerProps {
   removedWidgets: Widget[];
   /** Add a pre-configured widget to the page/canvas (no bank drag). */
   onAddWidget: (widget: Widget) => void;
-  /** Max width wrapper (matches Homepage layout) */
+  /** Optional CSS max-width on the drawer shell (default full width of the parent). */
   maxWidth?: string;
 }
 
@@ -105,19 +334,212 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   isOpen,
   removedWidgets,
   onAddWidget,
-  maxWidth = '1566px'
+  maxWidth = '100%'
 }) => {
-  const [selectedBuilderOption, setSelectedBuilderOption] = useState<string>('ai-generate');
+  const [widgetBuilderCode, setWidgetBuilderCode] = useState(() => WIDGET_BUILDER_SAMPLES.markdown);
+  const [widgetBuilderFormat, setWidgetBuilderFormat] = useState<WidgetBuilderFormat>('markdown');
+  const [widgetBuilderTitle, setWidgetBuilderTitle] = useState(WIDGET_BUILDER_DEFAULT_TITLE);
+  const [widgetBuilderHeaderIconId, setWidgetBuilderHeaderIconId] =
+    useState<WidgetBuilderHeaderIconId>(WIDGET_BUILDER_DEFAULT_HEADER_ICON_ID);
+  const [isWidgetBuilderIconMenuOpen, setIsWidgetBuilderIconMenuOpen] = useState(false);
+  const [widgetBuilderPreviewModel, setWidgetBuilderPreviewModel] = useState<WidgetBuilderPreviewModel>(
+    () =>
+      parseWidgetBuilderCode(WIDGET_BUILDER_SAMPLES.markdown, 'markdown') ?? DEFAULT_WIDGET_BUILDER_PREVIEW_MODEL
+  );
+  const [widgetBuilderPreviewError, setWidgetBuilderPreviewError] = useState<string | null>(null);
+  const [isWidgetBuilderLanguageMenuOpen, setIsWidgetBuilderLanguageMenuOpen] = useState(false);
+  const widgetBuilderMonacoEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const [widgetBuilderUndoRedo, setWidgetBuilderUndoRedo] = useState({ canUndo: false, canRedo: false });
+  const [widgetBuilderAddedToDashboard, setWidgetBuilderAddedToDashboard] = useState(false);
+
+  const refreshWidgetBuilderUndoRedoState = useCallback((targetEditor?: editor.IStandaloneCodeEditor | null) => {
+    const model = (targetEditor ?? widgetBuilderMonacoEditorRef.current)?.getModel();
+    setWidgetBuilderUndoRedo({
+      canUndo: model?.canUndo() ?? false,
+      canRedo: model?.canRedo() ?? false
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setWidgetBuilderAddedToDashboard(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (widgetBuilderAddedToDashboard) {
+      setIsWidgetBuilderIconMenuOpen(false);
+      setIsWidgetBuilderLanguageMenuOpen(false);
+    }
+  }, [widgetBuilderAddedToDashboard]);
+
+  useEffect(() => {
+    const sample = WIDGET_BUILDER_SAMPLES[widgetBuilderFormat];
+    setWidgetBuilderAddedToDashboard(false);
+    setWidgetBuilderCode(sample);
+    setWidgetBuilderTitle(WIDGET_BUILDER_DEFAULT_TITLE);
+    setWidgetBuilderHeaderIconId(WIDGET_BUILDER_DEFAULT_HEADER_ICON_ID);
+    setIsWidgetBuilderIconMenuOpen(false);
+    setIsWidgetBuilderLanguageMenuOpen(false);
+    setWidgetBuilderPreviewModel(parseWidgetBuilderCode(sample, widgetBuilderFormat) ?? DEFAULT_WIDGET_BUILDER_PREVIEW_MODEL);
+    setWidgetBuilderPreviewError(null);
+  }, [widgetBuilderFormat]);
+
+  const syncWidgetBuilderPreviewFromCode = useCallback((code: string, format: WidgetBuilderFormat) => {
+    const parsed = parseWidgetBuilderCode(code, format);
+    if (parsed) {
+      setWidgetBuilderPreviewModel(parsed);
+      setWidgetBuilderPreviewError(null);
+    } else {
+      setWidgetBuilderPreviewError(
+        'Could not parse the widget definition for this format. Fix the code and try again.'
+      );
+    }
+  }, []);
+
+  /** Live preview: re-parse after edits (debounced). Use Refresh to apply immediately without waiting. */
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      syncWidgetBuilderPreviewFromCode(widgetBuilderCode, widgetBuilderFormat);
+    }, WIDGET_BUILDER_PREVIEW_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [widgetBuilderCode, widgetBuilderFormat, syncWidgetBuilderPreviewFromCode]);
+
+  const previewFormatLabel = useMemo(
+    () => ({ yaml: 'YAML', json: 'JSON', markdown: 'Markdown' }[widgetBuilderFormat]),
+    [widgetBuilderFormat]
+  );
+
+  const handleWidgetBuilderRefreshPreview = useCallback(() => {
+    syncWidgetBuilderPreviewFromCode(widgetBuilderCode, widgetBuilderFormat);
+  }, [widgetBuilderCode, widgetBuilderFormat, syncWidgetBuilderPreviewFromCode]);
+
+  const handleWidgetBuilderReset = useCallback(() => {
+    const sample = WIDGET_BUILDER_SAMPLES[widgetBuilderFormat];
+    setWidgetBuilderAddedToDashboard(false);
+    setWidgetBuilderCode(sample);
+    setWidgetBuilderTitle(WIDGET_BUILDER_DEFAULT_TITLE);
+    setWidgetBuilderHeaderIconId(WIDGET_BUILDER_DEFAULT_HEADER_ICON_ID);
+    setIsWidgetBuilderIconMenuOpen(false);
+    setIsWidgetBuilderLanguageMenuOpen(false);
+    setWidgetBuilderPreviewModel(parseWidgetBuilderCode(sample, widgetBuilderFormat) ?? DEFAULT_WIDGET_BUILDER_PREVIEW_MODEL);
+    setWidgetBuilderPreviewError(null);
+  }, [widgetBuilderFormat]);
+
+  const handleWidgetBuilderIconMenuSelect = useCallback(
+    (_event: React.MouseEvent<Element, MouseEvent> | undefined, value?: string | number) => {
+      if (widgetBuilderAddedToDashboard) {
+        return;
+      }
+      if (typeof value === 'string' && WIDGET_BUILDER_HEADER_ICON_OPTIONS.some((o) => o.id === value)) {
+        setWidgetBuilderHeaderIconId(value as WidgetBuilderHeaderIconId);
+      }
+      setIsWidgetBuilderIconMenuOpen(false);
+    },
+    [widgetBuilderAddedToDashboard]
+  );
+
+  const toggleWidgetBuilderIconMenu = useCallback(() => {
+    if (widgetBuilderAddedToDashboard) {
+      return;
+    }
+    setIsWidgetBuilderIconMenuOpen((open) => !open);
+  }, [widgetBuilderAddedToDashboard]);
+
+  const handleWidgetBuilderLanguageMenuSelect = useCallback(
+    (_event: React.MouseEvent<Element, MouseEvent> | undefined, value?: string | number) => {
+      if (value === 'yaml' || value === 'json' || value === 'markdown') {
+        setWidgetBuilderFormat(value);
+      }
+      setIsWidgetBuilderLanguageMenuOpen(false);
+    },
+    []
+  );
+
+  const toggleWidgetBuilderLanguageMenu = useCallback(() => {
+    setIsWidgetBuilderLanguageMenuOpen((open) => !open);
+  }, []);
+
+  const handleWidgetBuilderAddToDashboard = useCallback(() => {
+    onAddWidget({
+      id: `widget-builder-${Date.now()}`,
+      title: widgetBuilderTitle.trim() || WIDGET_BUILDER_DEFAULT_TITLE,
+      type: 'placeholder',
+      colSpan: 2,
+      rowSpan: 4
+    });
+    setWidgetBuilderAddedToDashboard(true);
+  }, [onAddWidget, widgetBuilderTitle]);
   const [bankSearchInput, setBankSearchInput] = useState('');
   const [bankSearchQuery, setBankSearchQuery] = useState('');
-  const [isPreConfiguredExpanded, setIsPreConfiguredExpanded] = useState(true);
-  const [isBuilderExpanded, setIsBuilderExpanded] = useState(true);
   const [isExamplePromptsExpanded, setIsExamplePromptsExpanded] = useState(false);
+  const [pendingBankAddCelebration, setPendingBankAddCelebration] = useState<
+    null | { widget: Widget; phase: 'success' | 'exit' }
+  >(null);
   const helpPanelContext = useContext(HelpPanelContext);
 
   const visiblePreconfigured = useMemo(
     () => getVisiblePreconfiguredBankWidgets(removedWidgets, bankSearchQuery),
     [removedWidgets, bankSearchQuery]
+  );
+
+  const handleBankWidgetAdd = useCallback((widget: Widget) => {
+    setPendingBankAddCelebration((current) => {
+      if (current !== null) {
+        return current;
+      }
+      return { widget, phase: 'success' };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pendingBankAddCelebration || pendingBankAddCelebration.phase !== 'success') {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setPendingBankAddCelebration((prev) =>
+        prev?.phase === 'success' ? { ...prev, phase: 'exit' } : prev
+      );
+    }, BANK_WIDGET_ADD_CELEBRATION_SUCCESS_MS);
+    return () => clearTimeout(id);
+  }, [pendingBankAddCelebration]);
+
+  useEffect(() => {
+    if (!pendingBankAddCelebration || pendingBankAddCelebration.phase !== 'exit') {
+      return;
+    }
+    const widget = pendingBankAddCelebration.widget;
+    const id = window.setTimeout(() => {
+      onAddWidget(widget);
+      setPendingBankAddCelebration(null);
+    }, BANK_WIDGET_ADD_CELEBRATION_EXIT_MS);
+    return () => clearTimeout(id);
+  }, [pendingBankAddCelebration, onAddWidget]);
+
+  /** Custom code editor header: gray toolbar (copy / undo / redo), compact white language strip. */
+  const widgetBuilderEditorCustomControls = useMemo(
+    () => (
+      <WidgetBuilderCodeEditorToolbar
+        monacoRef={widgetBuilderMonacoEditorRef}
+        canUndo={widgetBuilderUndoRedo.canUndo}
+        canRedo={widgetBuilderUndoRedo.canRedo}
+        widgetBuilderFormat={widgetBuilderFormat}
+        languageMenuOpen={isWidgetBuilderLanguageMenuOpen}
+        onLanguageMenuOpenChange={setIsWidgetBuilderLanguageMenuOpen}
+        onLanguageMenuSelect={handleWidgetBuilderLanguageMenuSelect}
+        toggleLanguageMenu={toggleWidgetBuilderLanguageMenu}
+        builderLocked={widgetBuilderAddedToDashboard}
+      />
+    ),
+    [
+      handleWidgetBuilderLanguageMenuSelect,
+      isWidgetBuilderLanguageMenuOpen,
+      toggleWidgetBuilderLanguageMenu,
+      widgetBuilderFormat,
+      widgetBuilderAddedToDashboard,
+      widgetBuilderUndoRedo.canRedo,
+      widgetBuilderUndoRedo.canUndo
+    ]
   );
 
   /** When the field is empty (cleared, deleted, or only spaces), show featured + example prompts again. */
@@ -151,33 +573,6 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   }, [helpPanelContext]);
 
   const widgetBankEmptyActions = (
-    <EmptyStateFooter>
-      <Flex spaceItems={{ default: 'spaceItemsSm' }} flexWrap={{ default: 'wrap' }}>
-        <Button
-          variant="primary"
-          size="sm"
-          type="button"
-          icon={<PanelOpenIcon aria-hidden />}
-          iconPosition="end"
-          onClick={openDashboardWidgetsHelpTab}
-        >
-          View all widgets
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          type="button"
-          icon={<PanelOpenIcon aria-hidden />}
-          iconPosition="end"
-          onClick={openRequestNewWidgetTab}
-        >
-          Request a new widget
-        </Button>
-      </Flex>
-    </EmptyStateFooter>
-  );
-
-  const widgetBankEmptyActionsCentered = (
     <EmptyStateFooter>
       <Flex
         justifyContent={{ default: 'justifyContentCenter' }}
@@ -213,7 +608,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   return (
     <div style={{ width: '100%', minWidth: 0 }}>
       <style>{ADD_WIDGETS_DRAWER_STYLES}</style>
-      <div className={`widget-drawer ${isOpen ? 'open' : ''}`} style={{ maxWidth, margin: '0 auto', width: '100%' }}>
+      <div className={`widget-drawer ${isOpen ? 'open' : ''}`} style={{ maxWidth, margin: 0, width: '100%' }}>
         <Panel className="widget-drawer-panel">
           <PanelMain>
             <PanelMainBody>
@@ -222,35 +617,21 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                   direction={{ default: 'row' }}
                   spaceItems={{ default: 'spaceItemsMd' }}
                   alignItems={{ default: 'alignItemsStretch' }}
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', minHeight: 0 }}
                 >
                   <FlexItem className="add-widgets-find-column">
                     <Card isFullHeight className="widget-drawer-section-card widget-drawer-subsection-card">
-                      <div
-                        className="widget-drawer-subsection-toggle"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setIsPreConfiguredExpanded((e) => !e)}
-                        onKeyDown={(ev) => {
-                          if (ev.key === 'Enter' || ev.key === ' ') {
-                            ev.preventDefault();
-                            setIsPreConfiguredExpanded((e) => !e);
-                          }
-                        }}
-                        aria-expanded={isPreConfiguredExpanded}
-                        aria-controls="add-widgets-preco-section"
-                      >
+                      <div className="widget-drawer-subsection-heading">
                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                          <span className="widget-drawer-caret" aria-hidden>
-                            <AngleRightIcon />
+                          <span className="widget-drawer-subsection-heading__icon" aria-hidden>
+                            <SearchIcon />
                           </span>
-                          <Title headingLevel="h4" size="md" style={{ margin: 0 }}>
+                          <Title headingLevel="h2" size="xl">
                             Find widgets
                           </Title>
                         </Flex>
                       </div>
-                      {isPreConfiguredExpanded && (
-                        <CardBody id="add-widgets-preco-section">
+                      <CardBody id="add-widgets-preco-section">
                           <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }} style={{ width: '100%' }}>
                             <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }} style={{ width: '100%' }}>
                               <form
@@ -267,14 +648,9 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                   <TextInputGroupMain
                                     inputId="add-widgets-bank-search"
                                     icon={
-                                      <img
-                                        src={SparkleIcon}
-                                        alt=""
-                                        aria-hidden
-                                        width={16}
-                                        height={16}
-                                        style={{ display: 'block' }}
-                                      />
+                                      <span className="add-widgets-bank-search-ai-icon" aria-hidden>
+                                        <AiSearchInputIcon width={16} height={16} />
+                                      </span>
                                     }
                                     placeholder="What do you need your widget to do?"
                                     value={bankSearchInput}
@@ -343,7 +719,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                 <EmptyStateBody>
                                   All available pre-configured widgets are already displayed in your dashboard.
                                 </EmptyStateBody>
-                                {widgetBankEmptyActionsCentered}
+                                {widgetBankEmptyActions}
                               </EmptyState>
                             ) : visiblePreconfigured.length === 0 ? (
                               <EmptyState variant="xs" headingLevel="h4" titleText="No matching widgets" icon={CubesIcon}>
@@ -353,161 +729,344 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                 {widgetBankEmptyActions}
                               </EmptyState>
                             ) : !bankSearchQuery.trim() ? (
-                              <section aria-labelledby="add-widgets-recommended-label">
+                              <section
+                                aria-labelledby="add-widgets-recommended-label"
+                                className="add-widgets-recommended-section"
+                              >
                                 <Flex
-                                  justifyContent={{ default: 'justifyContentSpaceBetween' }}
-                                  alignItems={{ default: 'alignItemsCenter' }}
-                                  flexWrap={{ default: 'nowrap' }}
-                                  style={{ width: '100%', gap: 'var(--pf-t--global--spacer--sm)' }}
+                                  direction={{ default: 'column' }}
+                                  spaceItems={{ default: 'spaceItemsMd' }}
+                                  style={{ width: '100%' }}
                                 >
-                                  <FlexItem>
-                                    <Title
-                                      headingLevel="h5"
-                                      size="md"
-                                      id="add-widgets-recommended-label"
-                                      style={{
-                                        fontSize: 'var(--pf-v6-global--FontSize--sm)',
-                                        lineHeight: 'var(--pf-v6-global--LineHeight--sm)'
-                                      }}
-                                    >
-                                      Recommended for you
-                                    </Title>
-                                  </FlexItem>
-                                  <FlexItem>
-                                    <Button
-                                      variant="tertiary"
-                                      size="sm"
-                                      type="button"
-                                      onClick={() => helpPanelContext?.openHelpPanelWithTab('Dashboard widgets')}
-                                      icon={<PanelOpenIcon aria-hidden />}
-                                      iconPosition="end"
-                                    >
-                                      All widgets
-                                    </Button>
-                                  </FlexItem>
+                                  <Flex
+                                    justifyContent={{ default: 'justifyContentSpaceBetween' }}
+                                    alignItems={{ default: 'alignItemsCenter' }}
+                                    flexWrap={{ default: 'nowrap' }}
+                                    style={{ width: '100%', gap: 'var(--pf-t--global--spacer--sm)' }}
+                                  >
+                                    <FlexItem>
+                                      <Title
+                                        headingLevel="h5"
+                                        size="md"
+                                        id="add-widgets-recommended-label"
+                                        style={{
+                                          fontSize: 'var(--pf-v6-global--FontSize--sm)',
+                                          lineHeight: 'var(--pf-v6-global--LineHeight--sm)'
+                                        }}
+                                      >
+                                        Recommended for you
+                                      </Title>
+                                    </FlexItem>
+                                    <FlexItem>
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        type="button"
+                                        onClick={() => helpPanelContext?.openHelpPanelWithTab('Dashboard widgets')}
+                                        icon={<OpenDrawerRightIcon aria-hidden />}
+                                        iconPosition="end"
+                                      >
+                                        All widgets
+                                      </Button>
+                                    </FlexItem>
+                                  </Flex>
+                                  <div className="removed-widgets-grid add-widgets-bank-grid">
+                                    {visiblePreconfigured.map((widget) => (
+                                      <BankWidgetCard
+                                        key={widget.id}
+                                        widget={widget}
+                                        onAdd={handleBankWidgetAdd}
+                                        celebrationPhase={
+                                          pendingBankAddCelebration?.widget.id === widget.id
+                                            ? pendingBankAddCelebration.phase
+                                            : undefined
+                                        }
+                                      />
+                                    ))}
+                                  </div>
                                 </Flex>
-                                <div
-                                  className="removed-widgets-grid add-widgets-bank-grid"
-                                  style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}
-                                >
-                                  {visiblePreconfigured.map((widget) => (
-                                    <BankWidgetCard key={widget.id} widget={widget} onAdd={onAddWidget} />
-                                  ))}
-                                </div>
                               </section>
                             ) : (
                               <div className="removed-widgets-grid add-widgets-bank-grid">
                                 {visiblePreconfigured.map((widget) => (
-                                  <BankWidgetCard key={widget.id} widget={widget} onAdd={onAddWidget} />
+                                  <BankWidgetCard
+                                    key={widget.id}
+                                    widget={widget}
+                                    onAdd={handleBankWidgetAdd}
+                                    celebrationPhase={
+                                      pendingBankAddCelebration?.widget.id === widget.id
+                                        ? pendingBankAddCelebration.phase
+                                        : undefined
+                                    }
+                                  />
                                 ))}
                               </div>
                             )}
                           </Flex>
                         </CardBody>
-                      )}
                     </Card>
                   </FlexItem>
-                  <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: 0, flex: '1 1 0%' }}>
-                    <Card isFullHeight className="widget-drawer-section-card widget-drawer-subsection-card">
-                      <div
-                        className="widget-drawer-subsection-toggle"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setIsBuilderExpanded((e) => !e)}
-                        onKeyDown={(ev) => {
-                          if (ev.key === 'Enter' || ev.key === ' ') {
-                            ev.preventDefault();
-                            setIsBuilderExpanded((e) => !e);
-                          }
-                        }}
-                        aria-expanded={isBuilderExpanded}
-                        aria-controls="add-widgets-builder-section"
-                      >
+                  <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: 0, minHeight: 0, flex: '1 1 0%' }}>
+                    <Card isFullHeight className="widget-drawer-section-card widget-drawer-subsection-card add-widgets-builder-card">
+                      <div className="widget-drawer-subsection-heading">
                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                          <span className="widget-drawer-caret" aria-hidden>
-                            <AngleRightIcon />
+                          <span className="widget-drawer-subsection-heading__icon" aria-hidden>
+                            <CodeIcon />
                           </span>
-                          <Title headingLevel="h4" size="md" style={{ margin: 0 }}>
+                          <Title headingLevel="h2" size="xl">
                             Widget builder
                           </Title>
                         </Flex>
                       </div>
-                      {isBuilderExpanded && (
-                        <CardBody id="add-widgets-builder-section">
+                      <CardBody id="add-widgets-builder-section" className="add-widgets-builder-section-body">
+                          <Content component="p" className="add-widgets-builder-intro">
+                            Create custom widget in Markdown, YAML, or JSON. The title and icon are required before you can
+                            edit the widget code.{' '}
+                            <Button
+                              variant="link"
+                              isInline
+                              icon={<ExternalLinkAltIcon aria-hidden />}
+                              iconPosition="end"
+                              component="a"
+                              href="https://example.com/custom-widgets"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Learn more about creating custom widgets
+                            </Button>
+                          </Content>
                           <div className="add-widgets-builder-row">
-                            <div className="add-widgets-builder-row__options">
-                              <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }}>
-                                <FlexItem>
-                                  <Card isSelectable isCompact isSelected={selectedBuilderOption === 'ai-generate'}>
-                                    <CardHeader
-                                      selectableActions={{
-                                        selectableActionId: 'ai-generate-option',
-                                        selectableActionAriaLabelledby: 'ai-generate-title',
-                                        name: 'widget-builder-option',
-                                        variant: 'single',
-                                        onChange: (_event, checked) => {
-                                          if (checked) {
-                                            setSelectedBuilderOption('ai-generate');
+                            <div className="add-widgets-builder-row__editor">
+                              <div className="add-widgets-builder-editor-stack">
+                                <div className="add-widgets-builder-title-icon-row">
+                                  <div className="add-widgets-builder-title-icon-row__field add-widgets-builder-title-icon-row__field--title">
+                                    <label className="pf-v6-c-form__label" htmlFor="widget-builder-title">
+                                      <span className="pf-v6-c-form__label-text">Title</span>
+                                      <span className="pf-v6-c-form__label-required" aria-hidden="true">
+                                        {' '}
+                                        *
+                                      </span>
+                                    </label>
+                                    <div className="add-widgets-builder-title-icon-row__control">
+                                      <TextInput
+                                        id="widget-builder-title"
+                                        type="text"
+                                        value={widgetBuilderTitle}
+                                        onChange={(_e, v) => setWidgetBuilderTitle(v)}
+                                        aria-label="Widget title shown in the preview header"
+                                        isDisabled={widgetBuilderAddedToDashboard}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="add-widgets-builder-title-icon-row__field add-widgets-builder-title-icon-row__field--icon">
+                                    <label className="pf-v6-c-form__label" htmlFor="widget-builder-header-icon">
+                                      <span className="pf-v6-c-form__label-text">Icon</span>
+                                      <span className="pf-v6-c-form__label-required" aria-hidden="true">
+                                        {' '}
+                                        *
+                                      </span>
+                                    </label>
+                                    <div className="add-widgets-builder-title-icon-row__control add-widgets-builder-title-icon-row__control--icon">
+                                      <Dropdown
+                                        className="add-widgets-builder-icon-dropdown"
+                                        isOpen={widgetBuilderAddedToDashboard ? false : isWidgetBuilderIconMenuOpen}
+                                        onOpenChange={(open) => {
+                                          if (widgetBuilderAddedToDashboard) {
+                                            return;
                                           }
-                                        }
+                                          setIsWidgetBuilderIconMenuOpen(open);
+                                        }}
+                                        onSelect={handleWidgetBuilderIconMenuSelect}
+                                        shouldFocusToggleOnSelect
+                                        popperProps={{ position: 'start' }}
+                                        toggle={(toggleRef: React.Ref<MenuToggleElement>) => {
+                                          const SelectedIcon = getWidgetBuilderHeaderIconComponent(widgetBuilderHeaderIconId);
+                                          const iconLabel = getWidgetBuilderHeaderIconLabel(widgetBuilderHeaderIconId);
+                                          return (
+                                            <div
+                                              ref={toggleRef as React.Ref<HTMLDivElement>}
+                                              id="widget-builder-header-icon"
+                                              className={
+                                                widgetBuilderAddedToDashboard
+                                                  ? 'add-widgets-builder-header-icon-trigger add-widgets-builder-header-icon-trigger--locked'
+                                                  : 'add-widgets-builder-header-icon-trigger'
+                                              }
+                                              role="button"
+                                              tabIndex={widgetBuilderAddedToDashboard ? -1 : 0}
+                                              aria-haspopup="listbox"
+                                              aria-expanded={widgetBuilderAddedToDashboard ? false : isWidgetBuilderIconMenuOpen}
+                                              aria-disabled={widgetBuilderAddedToDashboard}
+                                              aria-label={`Icon: ${iconLabel}. Open icon menu.`}
+                                              onClick={toggleWidgetBuilderIconMenu}
+                                              onKeyDown={(event) => {
+                                                if (widgetBuilderAddedToDashboard) {
+                                                  return;
+                                                }
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                  event.preventDefault();
+                                                  toggleWidgetBuilderIconMenu();
+                                                }
+                                              }}
+                                            >
+                                              <TextInputGroup>
+                                                <TextInputGroupMain
+                                                  icon={
+                                                    <SelectedIcon
+                                                      style={{
+                                                        width: '1.125rem',
+                                                        height: '1.125rem',
+                                                        color: 'var(--pf-t--global--icon--color--brand--default)'
+                                                      }}
+                                                      aria-hidden
+                                                    />
+                                                  }
+                                                  value=""
+                                                  onChange={() => {}}
+                                                  aria-label=""
+                                                  inputProps={{
+                                                    readOnly: true,
+                                                    tabIndex: -1,
+                                                    'aria-hidden': true,
+                                                    style: { pointerEvents: 'none' as const }
+                                                  }}
+                                                />
+                                              </TextInputGroup>
+                                            </div>
+                                          );
+                                        }}
+                                      >
+                                        <DropdownList className="add-widgets-builder-icon-menu-grid">
+                                          {WIDGET_BUILDER_HEADER_ICON_OPTIONS.map(({ id, label, Icon }) => (
+                                            <DropdownItem
+                                              key={id}
+                                              value={id}
+                                              className="add-widgets-builder-icon-menu-item"
+                                              aria-label={label}
+                                              icon={<Icon aria-hidden />}
+                                              isSelected={widgetBuilderHeaderIconId === id}
+                                            >
+                                              <span className="pf-v6-u-screen-reader">{label}</span>
+                                            </DropdownItem>
+                                          ))}
+                                        </DropdownList>
+                                      </Dropdown>
+                                    </div>
+                                  </div>
+                                </div>
+                                <FormGroup
+                                  className="add-widgets-builder-form-group"
+                                  fieldId="widget-builder-code-editor"
+                                  aria-label="Markdown editor"
+                                >
+                                  <div id="widget-builder-code-editor">
+                                    <CodeEditor
+                                      key={widgetBuilderFormat}
+                                      className="add-widgets-builder-code-editor"
+                                      code={widgetBuilderCode}
+                                      onCodeChange={setWidgetBuilderCode}
+                                      language={WIDGET_BUILDER_FORMAT_TO_LANGUAGE[widgetBuilderFormat]}
+                                      height="100%"
+                                      width="100%"
+                                      isFullHeight
+                                      isReadOnly={widgetBuilderAddedToDashboard}
+                                      isLanguageLabelVisible={false}
+                                      customControls={widgetBuilderEditorCustomControls}
+                                      isLineNumbersVisible={false}
+                                      isMinimapVisible={false}
+                                      isCopyEnabled={false}
+                                      isDownloadEnabled={false}
+                                      isUploadEnabled={false}
+                                      onEditorDidMount={(ed) => {
+                                        widgetBuilderMonacoEditorRef.current = ed;
+                                        refreshWidgetBuilderUndoRedoState(ed);
+                                        ed.onDidChangeModelContent(() => refreshWidgetBuilderUndoRedoState(ed));
+                                        ed.onDidChangeModel(() => refreshWidgetBuilderUndoRedoState(ed));
+                                        requestAnimationFrame(() => refreshWidgetBuilderUndoRedoState(ed));
                                       }}
-                                    >
-                                      <Title headingLevel="h5" size="md" id="ai-generate-title">
-                                        Use generative AI to create one for you
-                                      </Title>
-                                    </CardHeader>
-                                    <CardBody>
-                                      <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                                        Describe the widget you want and AI will generate it for you.
-                                      </Content>
-                                    </CardBody>
-                                  </Card>
-                                </FlexItem>
-                                <FlexItem>
-                                  <Card isSelectable isCompact isSelected={selectedBuilderOption === 'static-markdown'}>
-                                    <CardHeader
-                                      selectableActions={{
-                                        selectableActionId: 'static-markdown-option',
-                                        selectableActionAriaLabelledby: 'static-markdown-title',
-                                        name: 'widget-builder-option',
-                                        variant: 'single',
-                                        onChange: (_event, checked) => {
-                                          if (checked) {
-                                            setSelectedBuilderOption('static-markdown');
-                                          }
-                                        }
-                                      }}
-                                    >
-                                      <Title headingLevel="h5" size="md" id="static-markdown-title">
-                                        Create a static widget with markdown
-                                      </Title>
-                                    </CardHeader>
-                                    <CardBody>
-                                      <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                                        Write your own content using markdown formatting.
-                                      </Content>
-                                    </CardBody>
-                                  </Card>
-                                </FlexItem>
-                              </Flex>
+                                      options={WIDGET_BUILDER_EDITOR_OPTIONS}
+                                    />
+                                  </div>
+                                </FormGroup>
+                              </div>
                             </div>
                             <div className="add-widgets-builder-row__preview">
-                              <Card isFullHeight variant="secondary">
-                                <CardHeader>
-                                  <Title headingLevel="h5" size="md">
-                                    Widget preview
-                                  </Title>
+                              <Card variant="secondary" className="add-widgets-builder-preview-panel">
+                                <CardHeader className="add-widgets-builder-preview-panel-header">
+                                  <Flex
+                                    justifyContent={{ default: 'justifyContentSpaceBetween' }}
+                                    alignItems={{ default: 'alignItemsCenter' }}
+                                    flexWrap={{ default: 'wrap' }}
+                                    style={{ width: '100%', gap: 'var(--pf-t--global--spacer--sm)' }}
+                                  >
+                                    <FlexItem>
+                                      <Title headingLevel="h5" size="md" style={{ margin: 0 }}>
+                                        Preview: {previewFormatLabel}
+                                      </Title>
+                                    </FlexItem>
+                                    <FlexItem>
+                                      <Tooltip content="Refresh preview">
+                                        <span>
+                                          <Button
+                                            variant="plain"
+                                            type="button"
+                                            icon={<SyncAltIcon />}
+                                            aria-label="Refresh preview"
+                                            onClick={handleWidgetBuilderRefreshPreview}
+                                            isDisabled={widgetBuilderAddedToDashboard}
+                                          />
+                                        </span>
+                                      </Tooltip>
+                                    </FlexItem>
+                                  </Flex>
                                 </CardHeader>
-                                <CardBody>
-                                  <Content component="small" style={{ color: 'var(--pf-v6-global--Color--200)', textAlign: 'center' }}>
-                                    Your widget preview will appear here.
-                                  </Content>
+                                <CardBody className="add-widgets-builder-preview-panel-body">
+                                  {widgetBuilderPreviewError ? (
+                                    <Alert variant="danger" isInline title="Preview not updated">
+                                      {widgetBuilderPreviewError}
+                                    </Alert>
+                                  ) : null}
+                                  <WidgetBuilderPreviewCard
+                                    title={widgetBuilderTitle.trim() || WIDGET_BUILDER_DEFAULT_TITLE}
+                                    headerIconId={widgetBuilderHeaderIconId}
+                                    blocks={widgetBuilderPreviewModel.blocks}
+                                  />
+                                  <Flex
+                                    className="add-widgets-builder-preview-panel-actions"
+                                    justifyContent={{ default: 'justifyContentCenter' }}
+                                    alignItems={{ default: 'alignItemsCenter' }}
+                                    flexWrap={{ default: 'wrap' }}
+                                    spaceItems={{ default: 'spaceItemsMd' }}
+                                    fullWidth={{ default: 'fullWidth' }}
+                                  >
+                                    <FlexItem>
+                                      <Button
+                                        variant="link"
+                                        type="button"
+                                        onClick={handleWidgetBuilderReset}
+                                      >
+                                        Reset to default
+                                      </Button>
+                                    </FlexItem>
+                                    <FlexItem>
+                                      {widgetBuilderAddedToDashboard ? (
+                                        <Alert variant="success" isPlain isInline title="Added to dashboard!" />
+                                      ) : (
+                                        <Button
+                                          variant="primary"
+                                          type="button"
+                                          icon={<PlusCircleIcon />}
+                                          onClick={handleWidgetBuilderAddToDashboard}
+                                        >
+                                          Add to dashboard
+                                        </Button>
+                                      )}
+                                    </FlexItem>
+                                  </Flex>
                                 </CardBody>
                               </Card>
                             </div>
                           </div>
                         </CardBody>
-                      )}
                     </Card>
                   </FlexItem>
                 </Flex>

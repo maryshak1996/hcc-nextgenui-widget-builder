@@ -13,7 +13,8 @@ import {
   ModalVariant,
   Select,
   SelectList,
-  SelectOption
+  SelectOption,
+  Tooltip
 } from '@patternfly/react-core';
 import { ShareAltIcon, UserIcon, UsersIcon } from '@patternfly/react-icons';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
@@ -21,6 +22,7 @@ import { ShareRecipientTypeahead } from '@app/DashboardHub/ShareRecipientTypeahe
 import type { ShareDirectoryEntry, ShareDirectoryEntryKind } from '@app/DashboardHub/shareDashboardMockDirectory';
 import { SHARE_DIRECTORY, shareDirectoryEntryKey } from '@app/DashboardHub/shareDashboardMockDirectory';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
+import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 
 const SHARE_DASHBOARD_FORM_ID = 'share-dashboard-form';
 
@@ -84,6 +86,8 @@ export type ShareDashboardModalProps = {
   dashboardId: string;
   /** Dashboard title shown in the modal header (curly quotes are added around this value). */
   dashboardName: string;
+  /** Serialized dashboard JSON for “copy configuration string” (same payload as hub/homepage copy actions). */
+  configurationClipboardText: string;
   /** Called after the user saves (stub — wire to API later). */
   onSave?: (recipients: ShareRecipientRow[]) => void;
 };
@@ -93,9 +97,11 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
   onClose,
   dashboardId,
   dashboardName,
+  configurationClipboardText,
   onSave
 }) => {
   const { notifyShareSettingsSaved } = useDashboardData();
+  const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
   const [recipients, setRecipients] = React.useState<ShareRecipientRow[]>([]);
   const [permissionSelectOpenKey, setPermissionSelectOpenKey] = React.useState<string | null>(null);
 
@@ -169,6 +175,12 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
 
   const headerTitle = `Share dashboard, ‘${dashboardName}’?`;
 
+  const handleCopyConfigurationLinkClick = React.useCallback(() => {
+    void navigator.clipboard.writeText(configurationClipboardText).then(() => {
+      triggerCopiedFeedback();
+    });
+  }, [configurationClipboardText, triggerCopiedFeedback]);
+
   return (
     <Modal
       variant={ModalVariant.medium}
@@ -188,6 +200,30 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
             and groups that you share your dashboard with will receive an email inviting them to view your dashboard.
             Only the dashboard creator can edit the dashboard.
           </p>
+          {configurationClipboardText.length > 0 ? (
+            <p>
+              You may also{' '}
+              <Tooltip
+                content="Copied!"
+                trigger="manual"
+                isVisible={copiedTooltipVisible}
+                entryDelay={0}
+                position="bottom"
+                aria-live="polite"
+              >
+                <Button
+                  variant="link"
+                  isInline
+                  type="button"
+                  onClick={handleCopyConfigurationLinkClick}
+                  aria-label="Copy dashboard configuration string"
+                >
+                  copy the configuration string
+                </Button>
+              </Tooltip>{' '}
+              for this dashboard and share as needed.
+            </p>
+          ) : null}
         </Content>
         <Form id={SHARE_DASHBOARD_FORM_ID} onSubmit={handleFormSubmit}>
           <FormGroup fieldId="share-recipient-search" label="Add users and groups">

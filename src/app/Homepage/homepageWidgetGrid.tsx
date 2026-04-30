@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import {
   Alert,
@@ -50,11 +50,115 @@ import { Resizable, type ResizeCallback } from 're-resizable';
 
 
 export const ROW_HEIGHT = 80; // Base row height in pixels
-export const GAP = 16; // Grid gap
+
+/**
+ * Pixel gap between grid tracks — must match `gap` in `WIDGET_GRID_STYLES`
+ * (`var(--pf-t--global--spacer--md)`, 16px in default PatternFly tokens).
+ */
+export const GAP = 16;
+
+/** Matches `.widgets-grid` responsive `grid-template-columns` breakpoints. */
+export function getDashboardGridColumnCount(gridWidth: number): number {
+  if (gridWidth <= 768) {
+    return 1;
+  }
+  if (gridWidth <= 1200) {
+    return 2;
+  }
+  return 4;
+}
+
+export function getWidgetGridSingleColumnWidth(gridWidth: number): number {
+  const n = getDashboardGridColumnCount(gridWidth);
+  return (gridWidth - GAP * (n - 1)) / n;
+}
+
+/** Pixel width for `colSpan` consecutive columns at this grid width (incl. internal gaps). */
+export function getPixelWidthForColSpan(gridWidth: number, colSpan: ColumnSpan): number {
+  const cw = getWidgetGridSingleColumnWidth(gridWidth);
+  return cw * colSpan + GAP * (colSpan - 1);
+}
+
+/** Clamp catalog column span to the live grid so we never span past implicit columns (prevents overlap). */
+export function getEffectiveColumnSpan(gridWidth: number, colSpan: ColumnSpan): ColumnSpan {
+  const n = getDashboardGridColumnCount(gridWidth);
+  const capped = Math.min(colSpan, n);
+  return (capped >= 1 ? capped : 1) as ColumnSpan;
+}
+
+/** 1-based CSS grid line where the widget’s top-left cell starts (computed packing). */
+export interface DashboardWidgetPlacement {
+  columnStart: number;
+  rowStart: number;
+}
+
+/**
+ * First-fit packing in DOM order: assigns non-overlapping grid starts so resize/reflow shifts later widgets
+ * instead of painting on top of each other.
+ */
+export function computeDashboardWidgetPlacements(
+  widgets: readonly Widget[],
+  columnCount: number
+): Map<string, DashboardWidgetPlacement> {
+  const placements = new Map<string, DashboardWidgetPlacement>();
+  const cols = Math.max(1, columnCount);
+  const occupied: boolean[][] = [];
+  const maxScanRows = 1000;
+
+  const ensureRow = (r: number) => {
+    while (occupied.length <= r) {
+      occupied.push(Array.from({ length: cols }, () => false));
+    }
+  };
+
+  const canPlace = (row: number, col: number, cw: number, rh: number): boolean => {
+    if (col + cw > cols) {
+      return false;
+    }
+    for (let r = row; r < row + rh; r++) {
+      ensureRow(r);
+      for (let c = col; c < col + cw; c++) {
+        if (occupied[r][c]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  const mark = (row: number, col: number, cw: number, rh: number) => {
+    for (let r = row; r < row + rh; r++) {
+      ensureRow(r);
+      for (let c = col; c < col + cw; c++) {
+        occupied[r][c] = true;
+      }
+    }
+  };
+
+  for (const w of widgets) {
+    const cw = Math.min(w.colSpan, cols);
+    const rh = w.rowSpan;
+    let placed = false;
+    for (let row = 0; row < maxScanRows && !placed; row++) {
+      for (let col = 0; col <= cols - cw; col++) {
+        if (canPlace(row, col, cw, rh)) {
+          mark(row, col, cw, rh);
+          placements.set(w.id, { columnStart: col + 1, rowStart: row + 1 });
+          placed = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return placements;
+}
 
 // Sortable Widget Card Component with Resizable
 interface SortableWidgetCardProps {
   widget: Widget;
+  /** Pinned grid position from {@link computeDashboardWidgetPlacements} (reflows when sizes change). */
+  placement: DashboardWidgetPlacement;
   children: React.ReactElement<{
     dragHandleProps?: Record<string, unknown>;
     onRemove?: () => void;
@@ -64,7 +168,14 @@ interface SortableWidgetCardProps {
   gridWidth: number;
 }
 
-export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, children, onSizeChange, onRemove, gridWidth }) => {
+export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
+  widget,
+  placement,
+  children,
+  onSizeChange,
+  onRemove,
+  gridWidth
+}) => {
   const {
     attributes,
     listeners,
@@ -78,26 +189,27 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
   const [previewColSpan, setPreviewColSpan] = useState<ColumnSpan>(widget.colSpan);
   const [previewRowSpan, setPreviewRowSpan] = useState<RowSpan>(widget.rowSpan);
 
-  // Calculate column width (accounting for gaps)
-  const columnWidth = (gridWidth - (GAP * 3)) / 4;
+  const columnCount = getDashboardGridColumnCount(gridWidth);
+  const effectiveColSpan = getEffectiveColumnSpan(gridWidth, widget.colSpan);
 
-  // Calculate width for column span
-  const getWidthForSpan = (span: ColumnSpan): number => {
-    return (columnWidth * span) + (GAP * (span - 1));
-  };
+  const allowedColSpans = useMemo((): ColumnSpan[] => {
+    const max = Math.min(4, columnCount);
+    return [1, 2, 3, 4].filter((s) => s <= max) as ColumnSpan[];
+  }, [columnCount]);
 
-  // Calculate height for row span
   const getHeightForSpan = (span: RowSpan): number => {
-    return (ROW_HEIGHT * span) + (GAP * (span - 1));
+    return ROW_HEIGHT * span + GAP * (span - 1);
   };
 
-  // Determine column span from width
+  const getWidthForSpan = (span: ColumnSpan): number => {
+    return getPixelWidthForColSpan(gridWidth, span);
+  };
+
   const getColSpanFromWidth = (width: number): ColumnSpan => {
-    const spans: ColumnSpan[] = [1, 2, 3, 4];
-    let closestSpan: ColumnSpan = 1;
+    let closestSpan: ColumnSpan = allowedColSpans[0] ?? 1;
     let minDiff = Infinity;
 
-    for (const span of spans) {
+    for (const span of allowedColSpans) {
       const spanWidth = getWidthForSpan(span);
       const diff = Math.abs(width - spanWidth);
       if (diff < minDiff) {
@@ -109,7 +221,6 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
     return closestSpan;
   };
 
-  // Determine row span from height
   const getRowSpanFromHeight = (height: number): RowSpan => {
     const spans: RowSpan[] = [1, 2, 3, 4, 5, 6];
     let closestSpan: RowSpan = 2;
@@ -126,6 +237,11 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
 
     return closestSpan;
   };
+
+  useEffect(() => {
+    setPreviewColSpan(widget.colSpan);
+    setPreviewRowSpan(widget.rowSpan);
+  }, [widget.colSpan, widget.rowSpan]);
 
   const handleResizeStart = () => {
     setIsResizing(true);
@@ -154,27 +270,31 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
     transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : isResizing ? 999 : 'auto',
-    gridColumn: `span ${widget.colSpan}`,
-    gridRow: `span ${widget.rowSpan}`,
+    gridColumn: `${placement.columnStart} / span ${effectiveColSpan}`,
+    gridRow: `${placement.rowStart} / span ${widget.rowSpan}`,
+    minWidth: 0,
+    minHeight: 0,
+    boxSizing: 'border-box'
   };
 
-  const currentWidth = getWidthForSpan(widget.colSpan);
+  const currentWidth = getWidthForSpan(effectiveColSpan);
   const currentHeight = getHeightForSpan(widget.rowSpan);
 
   return (
     <div ref={setNodeRef} style={style} className={`widget-wrapper`}>
-        <Resizable
+      <Resizable
+        className={`widget-resizable-root ${isResizing ? 'resizing' : ''}`}
+        size={{ width: currentWidth, height: currentHeight }}
         handleClasses={{
           right: 'resize-handle resize-handle-right',
           bottom: 'resize-handle resize-handle-bottom',
-          bottomRight: 'resize-handle resize-handle-corner',
+          bottomRight: 'resize-handle resize-handle-corner'
         }}
-        className={isResizing ? 'resizing' : ''}
         snap={{
-          x: [1, 2, 3, 4].map(span => getWidthForSpan(span as ColumnSpan)),
-          y: [1, 2, 3, 4, 5, 6].map(span => getHeightForSpan(span as RowSpan)),
+          x: allowedColSpans.map((span) => getWidthForSpan(span)),
+          y: [1, 2, 3, 4, 5, 6].map((span) => getHeightForSpan(span as RowSpan))
         }}
-        snapGap={20}
+        snapGap={GAP}
       >
         <div className={`resize-preview-indicator ${isResizing ? 'visible' : ''}`}>
           {previewColSpan}×{previewRowSpan}
@@ -189,7 +309,7 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({ widget, 
           return React.isValidElement<InjectedChildProps>(children)
             ? React.cloneElement(children, {
                 dragHandleProps: { ...attributes, ...listeners },
-                onRemove: () => onRemove(widget.id),
+                onRemove: () => onRemove(widget.id)
               })
             : children;
         })()}
@@ -707,14 +827,24 @@ export function renderHomepageWidgetContent(
 /** Non-interactive grid cell — same grid placement as sortable widgets, without DnD or resize. */
 export function ReadOnlyHomepageWidgetFrame({
   widget,
+  gridWidth,
+  placement,
   children
 }: {
   widget: Widget;
+  /** Width of `.widgets-grid` (ResizeObserver); omit only if unavailable (falls back to wide desktop). */
+  gridWidth?: number;
+  placement: DashboardWidgetPlacement;
   children: React.ReactNode;
 }) {
+  const w = gridWidth ?? 1600;
+  const effectiveColSpan = getEffectiveColumnSpan(w, widget.colSpan);
   const style: React.CSSProperties = {
-    gridColumn: `span ${widget.colSpan}`,
-    gridRow: `span ${widget.rowSpan}`
+    gridColumn: `${placement.columnStart} / span ${effectiveColSpan}`,
+    gridRow: `${placement.rowStart} / span ${widget.rowSpan}`,
+    minWidth: 0,
+    minHeight: 0,
+    boxSizing: 'border-box'
   };
   return (
     <div className="widget-wrapper read-only-homepage-widget" style={style}>
@@ -739,14 +869,33 @@ export const WIDGET_GRID_STYLES = `
       transform: translateY(0px) !important;
     }
     
-    /* 4-column grid layout with auto rows */
+    /* Responsive columns — breakpoints must match getDashboardGridColumnCount() */
     .widgets-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       grid-auto-rows: ${ROW_HEIGHT}px;
-      grid-auto-flow: dense;
-      gap: ${GAP}px;
+      grid-auto-flow: row;
+      gap: var(--pf-t--global--spacer--md);
       align-items: stretch;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .widgets-grid > .widget-wrapper {
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+
+    .widget-resizable-root {
+      box-sizing: border-box;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      max-width: 100%;
+    }
+
+    .widget-resizable-root .widget-card {
+      min-width: 0;
     }
     
     /* Widget wrapper */
@@ -855,14 +1004,14 @@ export const WIDGET_GRID_STYLES = `
     /* Responsive: 2 columns on medium screens */
     @media (max-width: 1200px) {
       .widgets-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
     
     /* Responsive: 1 column on small screens */
     @media (max-width: 768px) {
       .widgets-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 `;

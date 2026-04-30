@@ -22,9 +22,14 @@ export interface BankWidgetCardProps {
   addAllowed?: boolean;
   /** Tooltip when add is disabled */
   disabledAddTooltip?: string;
+  /**
+   * Find-widgets bank: show green check like “already added”, then run exit animation before the card is removed.
+   */
+  celebrationPhase?: 'success' | 'exit';
 }
 
 const ADDED_TOOLTIP = 'Widget added to dashboard';
+const ADD_TO_DASHBOARD_TOOLTIP = 'Add to dashboard';
 
 /** Compact card as in Find widgets (title + add control or added state). */
 export const BankWidgetCard: React.FC<BankWidgetCardProps> = ({
@@ -32,7 +37,8 @@ export const BankWidgetCard: React.FC<BankWidgetCardProps> = ({
   onAdd,
   isAlreadyOnDashboard = false,
   addAllowed = true,
-  disabledAddTooltip = 'You cannot add this widget here.'
+  disabledAddTooltip = 'You cannot add this widget here.',
+  celebrationPhase
 }) => {
   const plusControl = (
     <Button
@@ -46,8 +52,10 @@ export const BankWidgetCard: React.FC<BankWidgetCardProps> = ({
     />
   );
 
+  const showCelebrationCheck = celebrationPhase === 'success' || celebrationPhase === 'exit';
+
   let action: React.ReactNode;
-  if (isAlreadyOnDashboard) {
+  if (isAlreadyOnDashboard || showCelebrationCheck) {
     action = (
       <Tooltip content={ADDED_TOOLTIP}>
         <span
@@ -70,11 +78,21 @@ export const BankWidgetCard: React.FC<BankWidgetCardProps> = ({
       </Tooltip>
     );
   } else {
-    action = plusControl;
+    action = (
+      <Tooltip content={ADD_TO_DASHBOARD_TOOLTIP}>
+        <span style={{ display: 'inline-flex' }}>{plusControl}</span>
+      </Tooltip>
+    );
   }
 
   return (
-    <div className="bank-widget-wrapper">
+    <div
+      className={
+        celebrationPhase === 'exit'
+          ? 'bank-widget-wrapper bank-widget-wrapper--celebrate-exit'
+          : 'bank-widget-wrapper'
+      }
+    >
       <Card className="bank-widget-card" isCompact>
         <CardBody
           style={{ paddingBlock: 8, paddingInline: 'var(--pf-t--global--spacer--md)' }}
