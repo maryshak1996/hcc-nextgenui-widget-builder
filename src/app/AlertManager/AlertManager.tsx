@@ -249,7 +249,7 @@ const AlertManager: React.FunctionComponent = () => {
                     iconPosition="end"
                     onClick={() => {
                       if (helpPanelContext) {
-                        helpPanelContext.openHelpPanelWithTab('Alert manager');
+                        helpPanelContext.openHelpPanelWithTab('Alert manager', { variant: 'in-page' });
                       }
                     }}
                   >

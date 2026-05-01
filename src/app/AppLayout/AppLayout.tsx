@@ -4,7 +4,7 @@ import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
-import CommentIcon from '@app/bgimages/comment-icon.svg';
+import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
 import BugIcon from '@app/bgimages/bug-icon.svg';
 import DirectionIcon from '@app/bgimages/direction-icon.svg';
@@ -77,7 +77,7 @@ import {
   Split,
   SplitItem,
   Tab,
-  TabAction,
+  TabTitleIcon,
   TabTitleText,
   Tabs,
   Title,
@@ -131,17 +131,6 @@ interface IAppLayout {
   children: React.ReactNode;
 }
 
-interface TabContent {
-  id: string;
-  title: string;
-  originalTitle: string;
-  type: 'overview' | 'analytics' | 'settings' | 'custom';
-  activeSubTab?: number;
-  closable?: boolean;
-  hasUserInteracted?: boolean;
-  searchQuery?: string;
-}
-
 interface MenuItem {
   id: string;
   name: string;
@@ -155,7 +144,8 @@ interface MenuItem {
 
 // Create a context for help panel functions
 interface HelpPanelContextType {
-  openHelpPanelWithTab: (title: string) => void;
+  /** `variant`: `quickstart` selects Learn + breadcrumb; `in-page` shows all tabs with none selected (default). */
+  openHelpPanelWithTab: (title: string, options?: { variant?: 'quickstart' | 'in-page' }) => void;
   /** Find help → Feedback → Share general feedback (breadcrumb screen). */
   openHelpPanelToShareGeneralFeedback: () => void;
 }
@@ -186,19 +176,24 @@ export const HelpPanelContext = React.createContext<HelpPanelContextType | undef
 const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [isDrawerExpanded, setIsDrawerExpanded] = React.useState(false);
-  const [activeTabKey, setActiveTabKey] = React.useState<string | number>('get-started');
-  const [tabCounter, setTabCounter] = React.useState(3);
+  /** Bottom help subtabs: Search, Learn (incl. KB content), APIs, Support, Feedback (0–4), Chat (5). Null while custom/article view is open. */
+  const [helpPanelSubTab, setHelpPanelSubTab] = React.useState<number | null>(0);
+  /** Topic opened via openHelpPanelWithTab — custom HTML in the scroll region. */
+  const [customHelpTitle, setCustomHelpTitle] = React.useState<string | null>(null);
+  /** When custom help is open: quickstart → Learn tab selected + breadcrumb; in-page → no tab selected. */
+  const [customHelpVariant, setCustomHelpVariant] = React.useState<'quickstart' | 'in-page' | null>(null);
+  /** Remount top help tabs when selection crosses into/out of `null` so PatternFly clears the tab accent (no matching `eventKey`). */
+  const [helpTopTabsMountKey, setHelpTopTabsMountKey] = React.useState(0);
+  const prevHelpPanelSubTabRef = React.useRef<number | null>(helpPanelSubTab);
+  React.useEffect(() => {
+    const prev = prevHelpPanelSubTabRef.current;
+    const cur = helpPanelSubTab;
+    if ((prev === null) !== (cur === null)) {
+      setHelpTopTabsMountKey((k) => k + 1);
+    }
+    prevHelpPanelSubTabRef.current = cur;
+  }, [helpPanelSubTab]);
   
-  // Sub-tab names mapping
-  const subTabNames = [
-    'Search',
-    'Learn', 
-    'Knowledgebase',
-    'APIs',
-    'Support',
-    'Ask Red Hat'
-  ];
-
   // Complete APIs tab data - all content (43 APIs from Red Hat API Catalog)
   const allApisContent = [
     { id: 'api-1', title: 'Advisor', breadcrumb1: 'API documentation', labels: ['RHEL'] },
@@ -246,7 +241,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { id: 'api-43', title: 'Case Management API', breadcrumb1: 'API documentation', labels: ['Ansible', 'RHEL', 'OpenShift'] }
   ];
 
-  // Complete Knowledgebase tab data - all content (117 articles)
+  // Knowledgebase article list (shown in the Learn tab)
   const allKnowledgebaseContent = [
     // Real articles from page 1
     { id: 'kb-1', title: 'How do I access Red Hat Enterprise Linux 7 Extended Life Cycle Support (ELS) content after Red Hat Enterprise Linux 7 transitions to Extended Life Phase?', breadcrumb1: 'Knowledgebase article', labels: ['RHEL', 'Subscription Services'] },
@@ -340,652 +335,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { id: 'learn-51', title: 'Configuring console event notifications in Slack', breadcrumb1: 'Learning resources', breadcrumb2: 'Quick start', labels: ['Settings'] }
   ];
 
-  const [tabs, setTabs] = React.useState<TabContent[]>([
-    { id: 'comments', title: '', originalTitle: '', type: 'custom', activeSubTab: 0, closable: false, hasUserInteracted: false },
-    { id: 'get-started', title: 'Find help', originalTitle: 'Find help', type: 'overview', activeSubTab: 0, closable: false, hasUserInteracted: false }
-  ]);
-  
-  // Create a ref to always have access to the current tabs state (for closures)
-  const tabsRef = React.useRef(tabs);
-  React.useEffect(() => {
-    tabsRef.current = tabs;
-  }, [tabs]);
 
-  const [searchValue, setSearchValue] = React.useState('');
-  const [overflowCount, setOverflowCount] = React.useState(0);
-  const [overflowTooltips, setOverflowTooltips] = React.useState<Array<{ selector: string; text: string }>>([]);
-  const [tabTooltips, setTabTooltips] = React.useState<Array<{ tabId: string; text: string }>>([]);
-  
-  // Update tab tooltips when tabs change
-  React.useEffect(() => {
-    const tooltipsToShow = tabs
-      .filter(tab => tab.id !== 'comments' && tab.title.length > 20)
-      .map(tab => ({ tabId: tab.id, text: tab.title }));
-    setTabTooltips(tooltipsToShow);
-  }, [tabs]);
-  
-  // Function to scroll active tab into view if it's partially hidden
-  const ensureActiveTabVisible = React.useCallback((tabIndex: number) => {
-    const tabsContainer = Array.from(document.querySelectorAll('.pf-v6-c-tabs')).find(tabs => 
-      tabs.querySelector('button[aria-label="Add tab"]') !== null
-    );
-    
-    if (!tabsContainer) return;
-    
-    const tabItems = Array.from(tabsContainer.querySelectorAll('.pf-v6-c-tabs__item'));
-    const activeTabItem = tabItems[tabIndex];
-    
-    if (activeTabItem) {
-      const activeTabButton = activeTabItem.querySelector('.pf-v6-c-tabs__link') as HTMLElement;
-      if (activeTabButton) {
-        // Scroll into view if partially hidden
-        const tabsScrollContainer = tabsContainer.querySelector('.pf-v6-c-tabs__list');
-        if (tabsScrollContainer && activeTabButton) {
-          const containerRect = tabsScrollContainer.getBoundingClientRect();
-          const buttonRect = activeTabButton.getBoundingClientRect();
-          
-          if (buttonRect.right > containerRect.right || buttonRect.left < containerRect.left) {
-            activeTabButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
-        }
-      }
-    }
-  }, []);
-  
-  // Update overflow button text
-  React.useEffect(() => {
-    // Only run if drawer is open
-    if (!isDrawerExpanded) {
-      return;
-    }
-    
-    const updateOverflowButton = () => {
-      
-      // Find the tabs with the add button (that's our help panel tabs)
-      const allTabs = Array.from(document.querySelectorAll('.pf-v6-c-tabs'));
-      const tabsContainer = allTabs.find(tabs => 
-        tabs.querySelector('button[aria-label="Add tab"]') !== null
-      );
-      
-      if (!tabsContainer) {
-        return;
-      }
-      
-      // Find the overflow button (has aria-haspopup="menu" and is NOT the Add tab button)
-      const allButtons = Array.from(tabsContainer.querySelectorAll('button'));
-      const overflowButton = allButtons.find(btn => 
-        btn.getAttribute('aria-haspopup') === 'menu' && 
-        btn.getAttribute('aria-label') !== 'Add tab'
-      );
-      
-      if (overflowButton) {
-        // Check if the overflow button is actually being used by PatternFly
-        const isButtonVisible = overflowButton.offsetParent !== null;
-        
-        // If button is visible, there IS overflow - PatternFly only shows it when needed
-        // Calculate count from our React state
-        const totalTabs = tabs.length;
-        
-        // Count visible tabs by checking which ones are actually rendered in the visible area
-        const visibleTabButtons = tabsContainer.querySelectorAll('.pf-v6-c-tabs__link[aria-label$=" tab"]');
-        const visibleCount = visibleTabButtons.length;
-        
-        // Hidden tabs = total tabs - visible tab buttons (exclude add button and overflow button)
-        let count = totalTabs - visibleCount;
-        
-        // Make sure count is at least 1 if button is visible
-        if (isButtonVisible && count < 1) {
-          count = 1; // If PatternFly shows the button, there's at least 1 hidden tab
-        }
-        
-        
-        // Only customize if button is visible (which means there's overflow)
-        if (isButtonVisible && count > 0) {
-          // Found overflow items - customize the button text
-          overflowButton.setAttribute('data-overflowing', 'true');
-          overflowButton.setAttribute('data-overflow-count', count.toString());
-          
-          // Simple "More (X) ›" text - standard PatternFly behavior
-          const buttonText = `More (${count}) `;
-          
-          // Get current text to see if we need to update
-          const currentText = overflowButton.textContent || '';
-          
-          if (currentText !== buttonText.trim()) {
-            // Find all text nodes
-            const textNodes: Node[] = [];
-            const walker = document.createTreeWalker(
-              overflowButton,
-              NodeFilter.SHOW_TEXT,
-              null
-            );
-            
-            let node;
-            while (node = walker.nextNode()) {
-              textNodes.push(node);
-            }
-            
-            // Remove text nodes only
-            textNodes.forEach(textNode => {
-              if (textNode.parentNode) {
-                textNode.parentNode.removeChild(textNode);
-              }
-            });
-            
-            // Add our custom text before the first child (likely the icon)
-            const firstChild = overflowButton.firstChild;
-            const newText = document.createTextNode(buttonText);
-            if (firstChild) {
-              overflowButton.insertBefore(newText, firstChild);
-            } else {
-              overflowButton.appendChild(newText);
-            }
-          }
-          
-          setOverflowCount(count);
-        } else {
-          // No overflow - let PatternFly handle the button completely
-          overflowButton.removeAttribute('data-overflowing');
-          overflowButton.removeAttribute('data-overflow-count');
-        }
-      }
-    };
-
-    // Run with staggered delays to catch PatternFly's rendering
-    // PatternFly takes time to move tabs into overflow after state changes
-    const timeoutId = setTimeout(updateOverflowButton, 50);
-    const timeoutId2 = setTimeout(updateOverflowButton, 150);
-    const timeoutId3 = setTimeout(updateOverflowButton, 300);
-    const timeoutId4 = setTimeout(updateOverflowButton, 500);
-    
-    // Set up MutationObserver to watch for DOM changes
-    let updateTimeout: NodeJS.Timeout;
-    const observer = new MutationObserver(() => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(updateOverflowButton, 50);
-    });
-    
-    const tabsContainerForObserver = document.querySelector('.pf-v6-c-tabs');
-    
-    if (tabsContainerForObserver) {
-      observer.observe(tabsContainerForObserver, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class', 'aria-hidden', 'style']
-      });
-    }
-
-    // Also update on window resize
-    const handleResize = () => {
-      setTimeout(updateOverflowButton, 100);
-    };
-    window.addEventListener('resize', handleResize);
-    
-    // Listen for clicks on any button in the tabs area to catch overflow button clicks
-    // Variable to hold the observer reference
-    let menuObserver: MutationObserver;
-    let menuCloseInterval: NodeJS.Timeout | null = null;
-    
-    // Add close buttons to overflow menu items
-    const addCloseButtonsToOverflowMenu = () => {
-      const overflowMenu = document.querySelector('.pf-v6-c-tabs [role="menu"]');
-      if (!overflowMenu) {
-        return;
-      }
-      
-      // Check if we've already processed this menu
-      if (overflowMenu.hasAttribute('data-close-buttons-added')) {
-        return;
-      }
-      
-      // Mark this menu as processed
-      overflowMenu.setAttribute('data-close-buttons-added', 'true');
-      
-      // Temporarily disconnect observer while we modify the menu
-      if (menuObserver) {
-        menuObserver.disconnect();
-      }
-      
-      // Dynamically position menu based on overflow button location
-      const menuElement = overflowMenu.parentElement;
-      if (menuElement) {
-        // Find the overflow button to align with
-        const overflowButton = document.querySelector('.pf-v6-c-tabs button[aria-haspopup="menu"]') as HTMLElement;
-        if (overflowButton) {
-          const buttonRect = overflowButton.getBoundingClientRect();
-          const menuRect = menuElement.getBoundingClientRect();
-          const menuWidth = 300; // Menu width as set in CSS
-          
-          // Find the drawer panel to get its width
-          const drawerPanel = overflowButton.closest('.pf-v6-c-drawer__panel') as HTMLElement;
-          const panelRect = drawerPanel ? drawerPanel.getBoundingClientRect() : null;
-          
-          if (panelRect && drawerPanel) {
-            // Calculate available space on each side of button relative to panel
-            const spaceOnLeft = buttonRect.left - panelRect.left;
-            const spaceOnRight = panelRect.right - buttonRect.right;
-            
-            // Determine if we should right-align based on available space
-            const shouldRightAlign = spaceOnLeft > spaceOnRight || spaceOnRight < menuWidth;
-            
-            // Get the menu's current positioning context
-            const menuContainer = menuElement.offsetParent as HTMLElement;
-            const containerRect = menuContainer ? menuContainer.getBoundingClientRect() : { left: 0, top: 0 };
-            
-            if (shouldRightAlign) {
-              // Right-align: position menu so its right edge doesn't exceed panel boundary
-              const idealMenuRight = buttonRect.right; // Align menu's right with button's right
-              const idealMenuLeft = idealMenuRight - menuWidth;
-              const panelLeftEdge = panelRect.left;
-              
-              // If menu would overflow left, push it right
-              const actualMenuLeft = Math.max(panelLeftEdge, idealMenuLeft);
-              
-              // Convert to position relative to the menu's offset parent
-              const relativeLeft = actualMenuLeft - containerRect.left;
-              
-              menuElement.style.left = `${relativeLeft}px`;
-              menuElement.style.right = 'auto';
-            } else {
-              // Left-align: position menu so its left edge aligns with button
-              const idealMenuLeft = buttonRect.left;
-              const idealMenuRight = idealMenuLeft + menuWidth;
-              const panelRightEdge = panelRect.right;
-              
-              // If menu would overflow right, push it left
-              const actualMenuLeft = idealMenuRight > panelRightEdge 
-                ? panelRightEdge - menuWidth 
-                : idealMenuLeft;
-              
-              // Convert to position relative to the menu's offset parent
-              const relativeLeft = actualMenuLeft - containerRect.left;
-              
-              menuElement.style.left = `${relativeLeft}px`;
-              menuElement.style.right = 'auto';
-            }
-            menuElement.style.transform = 'none';
-            menuElement.style.position = 'absolute'; // Keep it absolute, not fixed
-            menuElement.style.zIndex = '9999'; // Ensure menu appears above everything
-            
-            // Ensure drawer panel and its children allow overflow using setProperty with priority
-            drawerPanel.style.setProperty('overflow', 'visible', 'important');
-            const drawerPanelContent = drawerPanel.querySelector('.pf-v6-c-drawer__panel-content');
-            if (drawerPanelContent) {
-              (drawerPanelContent as HTMLElement).style.setProperty('overflow', 'visible', 'important');
-            }
-            const drawerBody = drawerPanel.querySelector('.pf-v6-c-drawer__body');
-            if (drawerBody) {
-              (drawerBody as HTMLElement).style.setProperty('overflow', 'visible', 'important');
-            }
-          }
-        }
-      }
-      
-      const menuItems = overflowMenu.querySelectorAll('button[role="menuitem"]');
-      
-      menuItems.forEach((menuItem, idx) => {
-        // Get the tab index from the menu item
-        const menuItemText = menuItem.textContent?.trim() || '';
-        
-        // Find matching tab - use tabsRef.current to get the latest state
-        const currentTabs = tabsRef.current;
-        const tabIndex = currentTabs.findIndex(tab => tab.title === menuItemText);
-        
-        // Wrap existing content in a span if not already wrapped (for ALL menu items)
-        let textWrapper = menuItem.querySelector('.menu-item-text-wrapper') as HTMLElement;
-        if (!textWrapper) {
-          textWrapper = document.createElement('span');
-          textWrapper.className = 'menu-item-text-wrapper';
-          textWrapper.style.cssText = `
-            flex: 1;
-            text-align: left;
-            display: block;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          `;
-          
-          // Move ALL existing children to the wrapper (not just text nodes)
-          while (menuItem.firstChild) {
-            textWrapper.appendChild(menuItem.firstChild);
-          }
-          
-          // Add wrapper back to menu item
-          menuItem.appendChild(textWrapper);
-          
-          // Ensure menu item has flex display for proper layout
-          (menuItem as HTMLElement).style.display = 'flex';
-          (menuItem as HTMLElement).style.alignItems = 'center';
-          (menuItem as HTMLElement).style.minWidth = '0';
-        }
-        
-        // Always check if text is truncated and add tooltip (even if wrapper already existed)
-        if (menuItemText) {
-          // Remove any existing title first to allow re-checking
-          menuItem.removeAttribute('title');
-          textWrapper.removeAttribute('title');
-          
-          setTimeout(() => {
-            // Save current styles
-            const originalOverflow = textWrapper.style.overflow;
-            const originalTextOverflow = textWrapper.style.textOverflow;
-            const originalWhiteSpace = textWrapper.style.whiteSpace;
-            const originalMaxWidth = textWrapper.style.maxWidth;
-            
-            // Temporarily remove truncation to get true width
-            textWrapper.style.overflow = 'visible';
-            textWrapper.style.textOverflow = 'clip';
-            textWrapper.style.whiteSpace = 'nowrap';
-            textWrapper.style.maxWidth = 'none';
-            
-            const fullWidth = textWrapper.scrollWidth;
-            
-            // Restore truncation styles
-            textWrapper.style.overflow = originalOverflow;
-            textWrapper.style.textOverflow = originalTextOverflow;
-            textWrapper.style.whiteSpace = originalWhiteSpace;
-            textWrapper.style.maxWidth = originalMaxWidth;
-            
-            const availableWidth = textWrapper.clientWidth;
-            // Also check text length as a fallback - if text is longer than 30 chars, likely truncated
-            const isTextTruncated = fullWidth > availableWidth || menuItemText.length > 30;
-            
-            if (isTextTruncated) {
-              // Add a unique data attribute to identify this menu item
-              const uniqueId = `overflow-menu-item-${tabIndex}-${Date.now()}`;
-              menuItem.setAttribute('data-tooltip-id', uniqueId);
-              
-              // Store tooltip info in state for PatternFly Tooltip rendering
-              setOverflowTooltips(prev => {
-                // Remove any existing tooltip for this menu item text
-                const filtered = prev.filter(t => t.text !== menuItemText);
-                return [...filtered, { selector: `[data-tooltip-id="${uniqueId}"]`, text: menuItemText }];
-              });
-              
-              // Also ensure the wrapper doesn't block hover events
-              textWrapper.style.pointerEvents = 'none';
-            }
-          }, 200);
-        }
-        
-        // Check if close button already exists or if tab is not closable
-        if (menuItem.querySelector('.tab-close-button') || tabIndex === -1 || !currentTabs[tabIndex].closable) {
-          return;
-        }
-        
-        // Create close button
-        const closeButton = document.createElement('span');
-        closeButton.className = 'tab-close-button';
-        closeButton.textContent = '×';
-        closeButton.style.cssText = `
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 24px;
-          padding: 2px 6px;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          font-size: 20px;
-          font-weight: normal;
-          color: var(--pf-v6-global--Color--200);
-          line-height: 1;
-          flex-shrink: 0;
-          min-width: 24px;
-          height: 24px;
-        `;
-        closeButton.setAttribute('role', 'button');
-        closeButton.setAttribute('aria-label', `Close ${menuItemText}`);
-        
-        // Handle close click
-        closeButton.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          handleCloseTab(e, tabIndex);
-          // Close the menu
-          const overflowButton = document.querySelector('.pf-v6-c-tabs button[aria-haspopup="menu"]') as HTMLElement;
-          if (overflowButton) {
-            overflowButton.click();
-          }
-        });
-        
-        // Add hover effect
-        closeButton.addEventListener('mouseenter', () => {
-          closeButton.style.color = 'var(--pf-v6-global--Color--100)';
-          closeButton.style.backgroundColor = 'var(--pf-v6-global--BackgroundColor--200)';
-          closeButton.style.borderRadius = '4px';
-        });
-        closeButton.addEventListener('mouseleave', () => {
-          closeButton.style.color = 'var(--pf-v6-global--Color--200)';
-          closeButton.style.backgroundColor = 'transparent';
-        });
-        
-        // Style the menu item to use flexbox
-        (menuItem as HTMLElement).style.cssText = `
-          display: flex !important;
-          flex-direction: row !important;
-          align-items: center !important;
-          justify-content: flex-start !important;
-          width: 100% !important;
-          gap: 8px !important;
-          text-align: left !important;
-        `;
-        
-        // Append close button
-        menuItem.appendChild(closeButton);
-      });
-      
-      // Add "Close all" button at the bottom if we have overflow items
-      const closableItems = Array.from(menuItems).filter((item) => {
-        const itemText = item.textContent?.trim() || '';
-        // Remove the × symbol from the text when matching
-        const cleanText = itemText.replace(/\s*×\s*$/, '').trim();
-        const currentTabs = tabsRef.current;
-        const tabIndex = currentTabs.findIndex(tab => tab.title === cleanText);
-        return tabIndex !== -1 && currentTabs[tabIndex].closable;
-      });
-      
-      if (closableItems.length > 0) {
-        // Remove existing close all button and divider if they exist
-        const existingButton = overflowMenu.querySelector('.close-all-tabs-button');
-        const existingDivider = overflowMenu.querySelector('.close-all-divider');
-        if (existingButton) {
-          existingButton.parentElement?.remove();
-        }
-        if (existingDivider) {
-          existingDivider.remove();
-        }
-        
-        // Always add the close all button
-          // Add a divider
-          const divider = document.createElement('li');
-          divider.setAttribute('role', 'separator');
-          divider.className = 'pf-v6-c-divider close-all-divider';
-          divider.style.cssText = `
-            margin: 8px 0;
-            border-top: 1px solid var(--pf-v6-global--BorderColor--100);
-          `;
-          overflowMenu.appendChild(divider);
-          
-          // Create close all button
-          const closeAllButton = document.createElement('button');
-          closeAllButton.setAttribute('role', 'menuitem');
-          closeAllButton.className = 'pf-v6-c-menu__item close-all-tabs-button';
-          closeAllButton.style.cssText = `
-            width: 100%;
-            padding: 8px 16px;
-            border: none;
-            background: transparent;
-            color: var(--pf-v6-global--danger-color--100, #c9190b);
-            font-size: 14px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-          `;
-          closeAllButton.textContent = `Close all (${closableItems.length}) hidden tabs`;
-          
-          // Handle close all click
-          closeAllButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            // Get the current tabs state - critical for avoiding stale closure
-            const currentTabs = tabsRef.current;
-            
-            // Re-query the menu items to get fresh DOM state
-            const freshOverflowMenu = document.querySelector('.pf-v6-c-tabs [role="menu"]');
-            if (!freshOverflowMenu) {
-              return;
-            }
-            
-            const freshMenuItems = freshOverflowMenu.querySelectorAll('button[role="menuitem"]:not(.close-all-tabs-button)');
-            
-            // The overflow menu contains tabs in the order they appear in the tabs array
-            // We need to figure out which tabs are in overflow by counting how many are visible
-            // Visible tabs = total tabs - overflow menu items
-            const visibleTabCount = currentTabs.length - freshMenuItems.length;
-            
-            // Collect all tab IDs to close
-            const tabIdsToClose: string[] = [];
-            
-            freshMenuItems.forEach((item, menuIndex) => {
-              // Map menu item index to tab index
-              // Menu items correspond to tabs starting from visibleTabCount
-              const tabIndex = visibleTabCount + menuIndex;
-              
-              if (tabIndex < currentTabs.length) {
-                const tab = currentTabs[tabIndex];
-                if (tab.closable) {
-                  tabIdsToClose.push(tab.id);
-                }
-              }
-            });
-            
-            if (tabIdsToClose.length === 0) {
-              return;
-            }
-            
-            // Close all tabs at once by filtering them out
-            const newTabs = currentTabs.filter(tab => !tabIdsToClose.includes(tab.id));
-            setTabs(newTabs);
-            
-            // If active tab was closed, switch to another tab
-            if (tabIdsToClose.includes(activeTabKey as string)) {
-              const getStartedTab = newTabs.find(t => t.id === 'get-started');
-              if (getStartedTab) {
-                setActiveTabKey('get-started');
-              } else if (newTabs.length > 0) {
-                setActiveTabKey(newTabs[0].id);
-              }
-            }
-            
-            // Close the menu
-            const overflowButton = document.querySelector('.pf-v6-c-tabs button[aria-haspopup="menu"]') as HTMLElement;
-            if (overflowButton) {
-              overflowButton.click();
-            }
-          });
-          
-          // Add hover effect
-          closeAllButton.addEventListener('mouseenter', () => {
-            closeAllButton.style.backgroundColor = 'var(--pf-v6-global--BackgroundColor--200, #f5f5f5)';
-            closeAllButton.style.color = 'var(--pf-v6-global--danger-color--200, #a30000)';
-          });
-          closeAllButton.addEventListener('mouseleave', () => {
-            closeAllButton.style.backgroundColor = 'transparent';
-            closeAllButton.style.color = 'var(--pf-v6-global--danger-color--100, #c9190b)';
-          });
-          
-          // Wrap in list item
-          const listItem = document.createElement('li');
-          listItem.setAttribute('role', 'none');
-          listItem.appendChild(closeAllButton);
-          overflowMenu.appendChild(listItem);
-      }
-    };
-    
-    // Watch for overflow menu opening
-    menuObserver = new MutationObserver((mutations) => {
-      // Check if the menu was added (opened)
-      const overflowMenu = document.querySelector('.pf-v6-c-tabs [role="menu"]');
-      
-      if (overflowMenu && !overflowMenu.hasAttribute('data-close-buttons-added')) {
-        // Menu is open and not yet processed
-        // Disconnect observer to prevent infinite loop
-        menuObserver.disconnect();
-        
-        // Clear any existing interval
-        if (menuCloseInterval) {
-          clearInterval(menuCloseInterval);
-        }
-        
-        // Process the menu
-        addCloseButtonsToOverflowMenu();
-        
-        // Set up a new observer to watch for menu closing
-        menuCloseInterval = setInterval(() => {
-          const menuStillExists = document.querySelector('.pf-v6-c-tabs [role="menu"]');
-          if (!menuStillExists) {
-            if (menuCloseInterval) {
-              clearInterval(menuCloseInterval);
-              menuCloseInterval = null;
-            }
-            
-            // Reconnect the main observer
-            menuObserver.observe(document.body, {
-              childList: true,
-              subtree: true
-            });
-          }
-        }, 100);
-      }
-    });
-    
-    // Observe the document for menu appearing
-    menuObserver.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.pf-v6-c-tabs__scroll-button') || target.closest('button[aria-haspopup="menu"]')) {
-        setTimeout(updateOverflowButton, 50);
-        setTimeout(addCloseButtonsToOverflowMenu, 100);
-      }
-    };
-    document.addEventListener('click', handleClick);
-
-    return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(timeoutId2);
-      clearTimeout(timeoutId3);
-      clearTimeout(timeoutId4);
-      observer.disconnect();
-      menuObserver.disconnect();
-      if (menuCloseInterval) {
-        clearInterval(menuCloseInterval);
-      }
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('click', handleClick);
-    };
-  }, [tabs, isDrawerExpanded, activeTabKey]);
-  
-  // Ensure active tab is always visible when activeTabKey changes
-  React.useEffect(() => {
-    if (isDrawerExpanded) {
-      const tabIndex = tabs.findIndex(t => t.id === activeTabKey);
-      if (tabIndex !== -1) {
-        setTimeout(() => {
-          ensureActiveTabVisible(tabIndex);
-        }, 150);
-      }
-    }
-  }, [activeTabKey, isDrawerExpanded, tabs]);
+  const [overflowTooltips] = React.useState<Array<{ selector: string; text: string }>>([]);
   
   // Feedback tab state
   const [feedbackView, setFeedbackView] = React.useState<'main' | 'general' | 'bug' | 'direction'>('main');
@@ -1239,6 +590,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [scopeFilter, setScopeFilter] = React.useState<'bundle' | 'all'>('bundle');
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
+  /** Pagination for Knowledgebase article list inside the Learn tab (independent from learning-resources pagination). */
+  const [kbPage, setKbPage] = React.useState(1);
+  const [kbPerPage, setKbPerPage] = React.useState(10);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [recentSearches, setRecentSearches] = React.useState<Array<{ query: string; count: number }>>([]);
   const [searchPage, setSearchPage] = React.useState(1);
@@ -1328,7 +682,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           breadcrumb1: item.breadcrumb1,
           breadcrumb2: '',
           labels: item.labels,
-          tab: 'Knowledgebase'
+          tab: 'Learn'
         });
       }
     });
@@ -1366,7 +720,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   };
 
   /**
-   * Enhanced search function that searches across all tabs (Learn, Knowledgebase, APIs, Support)
+   * Enhanced search function that searches across all tabs (Learn—including knowledgebase articles—APIs, Support)
    * Searches in: title, breadcrumbs (breadcrumb1, breadcrumb2), labels, and tab names
    * Also applies content type filters if any are selected
    */
@@ -1447,20 +801,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const searchStartIdx = (searchPage - 1) * searchPerPage;
   const searchEndIdx = searchStartIdx + searchPerPage;
   const visibleSearchResults = helpPanelSearchResults.slice(searchStartIdx, searchEndIdx);
-
-  // Handle search submission
-  const handleSearchSubmit = () => {
-    if (searchQuery.trim()) {
-      const newSearch = {
-        query: searchQuery.trim(),
-        count: totalSearchResults
-      };
-      
-      const updatedSearches = [newSearch, ...recentSearches.filter(s => s.query !== newSearch.query)].slice(0, 3);
-      setRecentSearches(updatedSearches);
-      localStorage.setItem('hcc-recent-searches', JSON.stringify(updatedSearches));
-    }
-  };
 
   // Reset search page when query changes
   React.useEffect(() => {
@@ -1563,6 +903,10 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   };
   
   const currentBundle = getCurrentBundle();
+
+  React.useEffect(() => {
+    setKbPage(1);
+  }, [scopeFilter, currentBundle]);
   
   // No app sidebar or masthead nav toggle: homepage, all services, or standalone Dashboard Hub
   const isPageWithoutNav =
@@ -1740,128 +1084,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     console.log('selectedMenuItem changed to:', selectedMenuItem);
   }, [selectedMenuItem]);
 
-  const handleTabClick = (
-    event: React.MouseEvent<any> | React.KeyboardEvent | MouseEvent,
-    tabIndex: string | number
-  ) => {
-    setActiveTabKey(tabIndex);
-    
-    // Restore the search query from the tab when switching to it
-    const tab = tabs.find(t => t.id === tabIndex);
-    if (tab && tab.searchQuery) {
-      setSearchQuery(tab.searchQuery);
-    } else {
-      setSearchQuery('');
-    }
-  };
-
-  const handleAddTab = () => {
-    setTabCounter(prevCounter => {
-      const newTabId = `tab-${prevCounter}`;
-      const newTab: TabContent = {
-        id: newTabId,
-        title: 'New tab',
-        originalTitle: 'New tab',
-        type: 'custom',
-        closable: true,
-        activeSubTab: 0,
-        hasUserInteracted: false
-      };
-      setTabs(prevTabs => {
-        const updatedTabs = [...prevTabs, newTab];
-        // Switch to the newly created tab
-        setActiveTabKey(newTabId);
-        // Clear search query when switching to new tab
-        setSearchQuery('');
-        return updatedTabs;
-      });
-      return prevCounter + 1;
-    });
-  };
-
-  const handleCloseTab = (
-    event: React.MouseEvent<any> | React.KeyboardEvent | MouseEvent,
-    tabIndexOrId: string | number
-  ) => {
-    event.stopPropagation();
-    
-    // Convert numeric index to tab ID if needed (for backward compatibility)
-    let tabId: string;
-    if (typeof tabIndexOrId === 'number') {
-      tabId = tabs[tabIndexOrId]?.id || '';
-    } else {
-      tabId = tabIndexOrId;
-    }
-    
-    // Find the tab to close
-    const tabToClose = tabs.find(t => t.id === tabId);
-    if (!tabToClose || tabToClose.closable === false) {
-      return;
-    }
-    
-    // Remove the tab
-    const newTabs = tabs.filter(t => t.id !== tabId);
-    setTabs(newTabs);
-    
-    // If we're closing the active tab, switch to another tab
-    if (activeTabKey === tabId) {
-      // Switch to 'get-started' tab if it exists, otherwise the first tab
-      const getStartedTab = newTabs.find(t => t.id === 'get-started');
-      if (getStartedTab) {
-        setActiveTabKey('get-started');
-      } else if (newTabs.length > 0) {
-        setActiveTabKey(newTabs[0].id);
-      }
-    }
-  };
-
-  const handleSubTabClick = (tabIndex: number, subTabIndex: number) => {
-    const newTabs = [...tabs];
-    newTabs[tabIndex].activeSubTab = subTabIndex;
-    
-    newTabs[tabIndex].hasUserInteracted = true;
-    
-    // Reset feedback view when clicking on the Feedback tab (subTabIndex 5)
-    if (subTabIndex === 5) {
+  const selectHelpPanelSubTab = React.useCallback((subTabIndex: number) => {
+    setCustomHelpTitle(null);
+    setCustomHelpVariant(null);
+    setHelpPanelSubTab(subTabIndex);
+    setSearchQuery('');
+    if (subTabIndex === 4) {
       setFeedbackView('main');
     }
-    
-    // Always update title with sub-tab name when switching sub-tabs
-    if (newTabs[tabIndex].type === 'overview' || newTabs[tabIndex].type === 'custom') {
-      // Use "Feedback" for subTabIndex 5 instead of "Ask Red Hat"
-      const newTitle = subTabIndex === 5 ? 'Feedback' : subTabNames[subTabIndex];
-      newTabs[tabIndex].title = newTitle;
-      newTabs[tabIndex].originalTitle = newTitle;
-      // Clear search query when switching away from Search tab
-      newTabs[tabIndex].searchQuery = '';
-    }
-    
-    // Clear the search input if we're on this tab
-    const currentTab = tabs.find(t => t.id === activeTabKey);
-    if (currentTab && tabs.indexOf(currentTab) === tabIndex) {
-      setSearchQuery('');
-    }
-    
-    setTabs(newTabs);
-  };
-
-  const handleContentInteraction = (tabIndex: number) => {
-    const newTabs = [...tabs];
-    if (!newTabs[tabIndex].hasUserInteracted) {
-      newTabs[tabIndex].hasUserInteracted = true;
-      
-      // Update title with sub-tab name on first interaction if no custom title set
-      if (newTabs[tabIndex].type === 'overview' || newTabs[tabIndex].type === 'custom') {
-        const activeSubTab = newTabs[tabIndex].activeSubTab || 0;
-        // Use "Feedback" for subTabIndex 5 instead of "Ask Red Hat"
-        const newTitle = activeSubTab === 5 ? 'Feedback' : subTabNames[activeSubTab];
-        newTabs[tabIndex].title = newTitle;
-        newTabs[tabIndex].originalTitle = newTitle;
-      }
-      
-      setTabs(newTabs);
-    }
-  };
+  }, []);
 
   const onDrawerToggle = () => {
     const newDrawerState = !isDrawerExpanded;
@@ -1897,91 +1128,25 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setIsNotificationActionsOpen(false); // Close actions dropdown when drawer closes
   };
 
-  // Function to open help panel with a new tab
-  const openHelpPanelWithTab = (title: string) => {
-    // Check if a tab with this title already exists
-    const existingTab = tabs.find(tab => tab.title === title);
-    
-    if (existingTab) {
-      // Tab already exists, just switch to it
-      setActiveTabKey(existingTab.id);
-      
-      // Clear search query when switching tabs
-      setSearchQuery('');
-      
-      // Ensure the tab is visible (not in overflow)
-      const tabIndex = tabs.findIndex(tab => tab.id === existingTab.id);
-      if (tabIndex !== -1) {
-        setTimeout(() => {
-          ensureActiveTabVisible(tabIndex);
-        }, 100);
-      }
-    } else {
-      // Tab doesn't exist, create a new one
-      setTabCounter(prevCounter => {
-        const newTabId = `tab-${prevCounter}`;
-        // Create new tab
-        const newTab: TabContent = {
-          id: newTabId,
-          title: title,
-          originalTitle: title,
-          type: 'custom',
-          closable: true,
-          activeSubTab: 0,
-          hasUserInteracted: false
-        };
-        
-        // Add the new tab
-        setTabs(prevTabs => {
-          const updatedTabs = [...prevTabs, newTab];
-          // Switch to the new tab using its ID
-          setActiveTabKey(newTabId);
-          
-          // Clear search query when switching to new tab
-          setSearchQuery('');
-          
-          // Ensure the new active tab is visible (not in overflow)
-          const newTabIndex = updatedTabs.length - 1;
-          setTimeout(() => {
-            ensureActiveTabVisible(newTabIndex);
-          }, 100);
-          
-          return updatedTabs;
-        });
-        
-        return prevCounter + 1;
-      });
-    }
-    
-    // Open the drawer if it's not already open
+  const openHelpPanelWithTab = (title: string, options?: { variant?: 'quickstart' | 'in-page' }) => {
+    const variant = options?.variant ?? 'in-page';
+    setCustomHelpTitle(title);
+    setCustomHelpVariant(variant);
+    setHelpPanelSubTab(variant === 'quickstart' ? 1 : null);
+    setSearchQuery('');
+
     if (!isDrawerExpanded) {
       setIsDrawerExpanded(true);
     }
-    
-    // Close notification drawer if open
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
   };
 
   const openHelpPanelToShareGeneralFeedback = React.useCallback(() => {
-    setTabs((prevTabs) => {
-      const idx = prevTabs.findIndex((t) => t.id === 'get-started');
-      if (idx === -1) {
-        return prevTabs;
-      }
-      const newTabs = [...prevTabs];
-      newTabs[idx] = {
-        ...newTabs[idx],
-        activeSubTab: 5,
-        hasUserInteracted: true,
-        title: 'Feedback',
-        originalTitle: 'Feedback',
-        searchQuery: ''
-      };
-      return newTabs;
-    });
-    setActiveTabKey('get-started');
+    setCustomHelpTitle(null);
+    setCustomHelpVariant(null);
+    setHelpPanelSubTab(4);
     setSearchQuery('');
     setFeedbackView('general');
 
@@ -1991,47 +1156,19 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
+  }, [isDrawerExpanded, isNotificationDrawerOpen]);
 
-    setTimeout(() => {
-      const idx = tabsRef.current.findIndex((t) => t.id === 'get-started');
-      if (idx !== -1) {
-        ensureActiveTabVisible(idx);
-      }
-    }, 100);
-  }, [ensureActiveTabVisible, isDrawerExpanded, isNotificationDrawerOpen]);
-
-  const onSearchChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
-    setSearchValue(value);
-  };
-
-  const onSearchClear = () => {
-    setSearchValue('');
-  };
-
-  const createSearchHandlers = (currentTabIndex: number) => {
+  const createSearchHandlers = () => {
     const onSearchSubmit = (value: string) => {
-      console.log('onSearchSubmit called with:', value, 'for tab index:', currentTabIndex);
       if (value.trim()) {
-        const newTabs = [...tabs];
-        
-        console.log('Before update - tabs:', newTabs.map(t => ({ id: t.id, title: t.title })));
-        
-        // Update the specific tab with the search query
-        newTabs[currentTabIndex].searchQuery = value.trim();
-        newTabs[currentTabIndex].title = value.trim();
-        newTabs[currentTabIndex].hasUserInteracted = true;
-        
-        console.log('After update - tabs:', newTabs.map(t => ({ id: t.id, title: t.title })));
-        
-        setTabs(newTabs);
+        setSearchQuery(value.trim());
       }
     };
 
     const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-      console.log('Key pressed:', event.key, 'Search value:', searchValue);
       if (event.key === 'Enter') {
         event.preventDefault();
-        onSearchSubmit(searchValue);
+        onSearchSubmit((event.currentTarget as HTMLInputElement).value);
       }
     };
 
@@ -2111,16 +1248,455 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
   };
 
-  const renderSubTabs = (tabIndex: number, tab: TabContent, ariaLabel: string) => {
-    const { onSearchSubmit, handleSearchKeyDown } = createSearchHandlers(tabIndex);
-    
-    return (
-    <Tabs
-      isSubtab
-      activeKey={tab.activeSubTab || 0}
-      onSelect={(event, subTabIndex) => handleSubTabClick(tabIndex, subTabIndex as number)}
-      aria-label={ariaLabel}
+  const renderHelpChatPanel = () => (
+    <div
+      data-help-panel="chat"
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0' }}
     >
+      <div
+        style={{
+          padding: '16px',
+          borderBottom: '1px solid #d2d2d2',
+          backgroundColor: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Button variant="plain" style={{ padding: '4px', color: '#666' }} aria-label="Chat options menu">
+            <BarsIcon style={{ width: '16px', height: '16px' }} />
+          </Button>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <CommentsIcon style={{ width: '16px', height: '16px', color: 'white' }} />
+          </div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#151515' }}>Ask Red Hat</div>
+        </div>
+        <div style={{ width: '100%' }}>
+          <Dropdown
+            isOpen={false}
+            onSelect={() => {}}
+            toggle={(toggleRef: React.Ref<any>) => (
+              <MenuToggle
+                ref={toggleRef}
+                isExpanded={false}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: '#151515',
+                  textAlign: 'left',
+                  justifyContent: 'flex-start',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #d2d2d2',
+                  borderRadius: '4px'
+                }}
+              >
+                Agent: General Red Hat
+              </MenuToggle>
+            )}
+            shouldFocusToggleOnSelect
+          >
+            <DropdownList>
+              <DropdownItem>Agent: General Red Hat</DropdownItem>
+              <DropdownItem>Support Agent</DropdownItem>
+              <DropdownItem>Feedback Bot</DropdownItem>
+            </DropdownList>
+          </Dropdown>
+        </div>
+      </div>
+      <div
+        style={{
+          flex: 1,
+          padding: '16px',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          minHeight: '0'
+        }}
+      >
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
+          </div>
+          <div
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: '12px 16px',
+              borderRadius: '18px 18px 18px 4px',
+              maxWidth: '70%',
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}
+          >
+            Hi! I'm here to help with your questions and feedback. How can I assist you today?
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'flex-end' }}>
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: '18px 18px 4px 18px',
+              maxWidth: '70%',
+              fontSize: '14px',
+              lineHeight: '1.4',
+              color: 'white',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)'
+            }}
+          >
+            I have a question about the new features
+          </div>
+          <div
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: '#d2d2d2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <UserIcon style={{ width: '12px', height: '12px', color: '#666' }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
+          </div>
+          <div
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: '12px 16px',
+              borderRadius: '18px 18px 18px 4px',
+              maxWidth: '70%',
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}
+          >
+            I'd be happy to help! What specific features would you like to know more about? I can provide information about:
+            <br />• New dashboard capabilities
+            <br />• Updated user interface
+            <br />• Enhanced security features
+            <br />• Performance improvements
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
+          </div>
+          <div
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: '12px 16px',
+              borderRadius: '18px 18px 18px 4px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#999',
+                animation: 'typing 1.4s infinite ease-in-out'
+              }}
+            />
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#999',
+                animation: 'typing 1.4s infinite ease-in-out 0.2s'
+              }}
+            />
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#999',
+                animation: 'typing 1.4s infinite ease-in-out 0.4s'
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        style={{
+          padding: '16px',
+          borderTop: '1px solid #d2d2d2',
+          backgroundColor: 'white',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Type your message..."
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              border: '1px solid #d2d2d2',
+              borderRadius: '24px',
+              fontSize: '14px',
+              outline: 'none',
+              backgroundColor: 'white'
+            }}
+            disabled
+          />
+          <Button
+            variant="primary"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+              border: 'none'
+            }}
+            disabled
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
+          </Button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes typing {
+          0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.4;
+          }
+          30% {
+            transform: translateY(-10px);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </div>
+  );
+
+  const renderCustomHelpByTitle = (title: string) => {
+    if (title === 'Alert manager') {
+      return (
+        <div style={{ padding: '24px' }}>
+          <Content>
+            <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
+              Alert Manager Help
+            </Title>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73' }}>
+              This section provides information and guidance about using the Alert Manager feature. Configure alert default settings for your workspace and learn how fired events can alert users and groups through various communication channels.
+            </p>
+          </Content>
+        </div>
+      );
+    }
+    if (title === 'Dashboard widgets') {
+      return <DashboardWidgetsHelpPanelContent />;
+    }
+    if (title === 'Configuring console event notifications in Slack') {
+      return (
+        <div style={{ padding: '24px' }}>
+          <Content>
+            <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
+              Configuring console event notifications in Slack
+            </Title>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '24px' }}>
+              Follow these steps to configure your console event notifications to be sent to Slack channels.
+            </p>
+            <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
+              Prerequisites
+            </Title>
+            <ul style={{ fontSize: '14px', lineHeight: '1.8', color: '#6a6e73', marginBottom: '24px' }}>
+              <li>Active Slack workspace with admin permissions</li>
+              <li>Red Hat Hybrid Cloud Console account</li>
+              <li>Webhook URL from your Slack workspace</li>
+            </ul>
+            <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
+              Step 1: Create a Slack webhook
+            </Title>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
+              Navigate to your Slack workspace settings and create a new incoming webhook for the channel where you want to receive notifications.
+            </p>
+            <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
+              Step 2: Configure integration in console
+            </Title>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
+              Go to Settings → Integrations and add a new Slack integration using your webhook URL.
+            </p>
+            <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
+              Step 3: Configure notification rules
+            </Title>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
+              Set up which events should trigger Slack notifications in the Alert Manager settings.
+            </p>
+          </Content>
+        </div>
+      );
+    }
+    return (
+      <div style={{ padding: '24px' }}>
+        <Content>
+          <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
+            {title}
+          </Title>
+          <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73' }}>Help content for this topic.</p>
+        </Content>
+      </div>
+    );
+  };
+
+  /**
+   * Sentinel `activeKey` so no top tab matches (`eventKey` is 0–5 only). PatternFly leaves none selected;
+   * we remount when crossing into/out of `null` so the tab underline accent resets.
+   */
+  const HELP_PANEL_TOP_TABS_NONE_KEY = -1;
+
+  /** Static help subtabs — always at top of panel; selection mirrors `helpPanelSubTab` (null = none selected). */
+  const renderHelpPanelTopTabs = () => {
+    const topActiveKey = helpPanelSubTab !== null ? helpPanelSubTab : HELP_PANEL_TOP_TABS_NONE_KEY;
+
+    return (
+      <div
+        className="help-panel-top-tabs-strip"
+        style={{
+          flexShrink: 0,
+          paddingTop: 'var(--pf-v6-global--spacer--xs)',
+          paddingBottom: 'var(--pf-v6-global--spacer--xs)',
+          paddingLeft: 'var(--pf-v6-global--spacer--sm)',
+          paddingRight: 0,
+          backgroundColor: 'var(--pf-v6-global--BackgroundColor--100)'
+        }}
+      >
+        <Tabs
+          key={`hcc-help-top-${helpTopTabsMountKey}`}
+          id="hcc-help-panel-top-tabs"
+          hasNoBorderBottom
+          activeKey={topActiveKey}
+          onSelect={(_event, key) => {
+            if (key === HELP_PANEL_TOP_TABS_NONE_KEY) {
+              return;
+            }
+            selectHelpPanelSubTab(typeof key === 'number' ? key : Number(key));
+          }}
+          aria-label="Help navigation"
+        >
+          <Tab
+            eventKey={0}
+            title={
+              <TabTitleIcon>
+                <SearchIcon aria-label="Search" />
+              </TabTitleIcon>
+            }
+            aria-label="Search sub tab"
+          >
+            <span className="pf-v6-u-screen-reader">Search</span>
+          </Tab>
+          <Tab eventKey={1} title={<TabTitleText>Learn</TabTitleText>} aria-label="Learn sub tab">
+            <span className="pf-v6-u-screen-reader">Learn</span>
+          </Tab>
+          <Tab eventKey={2} title={<TabTitleText>APIs</TabTitleText>} aria-label="APIs sub tab">
+            <span className="pf-v6-u-screen-reader">APIs</span>
+          </Tab>
+          <Tab eventKey={3} title={<TabTitleText>Support</TabTitleText>} aria-label="Support sub tab">
+            <span className="pf-v6-u-screen-reader">Support</span>
+          </Tab>
+          <Tab eventKey={4} title={<TabTitleText>Feedback</TabTitleText>} aria-label="Feedback sub tab">
+            <span className="pf-v6-u-screen-reader">Feedback</span>
+          </Tab>
+          <Tab
+            eventKey={5}
+            className="help-panel-chat-tab"
+            title={
+              <TabTitleIcon>
+                <img
+                  src={HappyRobotIcon}
+                  alt=""
+                  aria-hidden
+                  style={{
+                    width: '24px',
+                    height: 'auto',
+                    aspectRatio: '1 / 1',
+                    display: 'block',
+                    objectFit: 'contain'
+                  }}
+                />
+              </TabTitleIcon>
+            }
+            aria-label="Chat sub tab"
+          >
+            <span className="pf-v6-u-screen-reader">Chat</span>
+          </Tab>
+        </Tabs>
+      </div>
+    );
+  };
+
+  const renderFindHelpSubTabs = () => {
+    const { onSearchSubmit, handleSearchKeyDown } = createSearchHandlers();
+
+    return (
+      <div
+        className="help-panel-inner-tabs-shell"
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      >
+      <Tabs
+        activeKey={helpPanelSubTab ?? 0}
+        onSelect={(_event, subTabIndex) => selectHelpPanelSubTab(subTabIndex as number)}
+        aria-label="Find help sub tabs"
+      >
       <Tab 
         eventKey={0} 
         title={<SearchIcon aria-label="Search" />}
@@ -2260,35 +1836,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
               <SearchInput
                 placeholder="Search documentation, APIs, and resources..."
                 value={searchQuery}
-                onChange={(_event, value) => {
-                  setSearchQuery(value);
-                  // Update the active tab's title with the search query
-                  const newTabs = [...tabs];
-                  const currentTabIndex = tabs.findIndex(tab => tab.id === activeTabKey);
-                  if (currentTabIndex !== -1) {
-                    if (value.trim()) {
-                      newTabs[currentTabIndex].title = value.trim();
-                      newTabs[currentTabIndex].searchQuery = value.trim();
-                      newTabs[currentTabIndex].hasUserInteracted = true;
-                    } else {
-                      // Reset to original title when search becomes empty
-                      newTabs[currentTabIndex].title = newTabs[currentTabIndex].originalTitle;
-                      newTabs[currentTabIndex].searchQuery = '';
-                    }
-                    setTabs(newTabs);
-                  }
-                }}
-                onClear={() => {
-                  setSearchQuery('');
-                  // Reset the tab title to original when clearing search
-                  const newTabs = [...tabs];
-                  const currentTabIndex = tabs.findIndex(tab => tab.id === activeTabKey);
-                  if (currentTabIndex !== -1) {
-                    newTabs[currentTabIndex].title = newTabs[currentTabIndex].originalTitle;
-                    newTabs[currentTabIndex].searchQuery = '';
-                    setTabs(newTabs);
-                  }
-                }}
+                onChange={(_event, value) => setSearchQuery(value)}
+                onClear={() => setSearchQuery('')}
+                onKeyDown={handleSearchKeyDown}
                 aria-label="Search help resources"
               />
             </div>
@@ -2455,7 +2005,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                               {result.title === 'Configuring console event notifications in Slack' ? (
                                 <div 
                                   className="menu-item-title"
-                                  onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack')}
+                                  onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack', { variant: 'quickstart' })}
                                   style={{ display: 'inline', flex: 1, cursor: 'pointer' }}
                                 >
                                   {result.title}
@@ -2624,7 +2174,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                           {item.title === 'Configuring console event notifications in Slack' ? (
                             <div 
                               className="menu-item-title"
-                              onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack')}
+                              onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack', { variant: 'quickstart' })}
                               style={{ display: 'inline', flex: 1, cursor: 'pointer' }}
                             >
                               {item.title}
@@ -2806,7 +2356,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         `}</style>
         <div className="learn-menu">
           <div style={{ padding: '16px 16px 12px 16px', fontSize: '14px', lineHeight: '1.5', color: 'var(--pf-v6-global--Color--200)' }}>
-            Find product documentation, quick starts, learning paths, and more related to services available on the Hybrid Cloud Console. For more details, browse the <a href="https://console.redhat.com/learning-resources?tab=all" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>All Learning Catalog</a>.
+            Find product documentation, quick starts, learning paths, knowledgebase articles, and more related to services on the Hybrid Cloud Console. For learning resources, browse the <a href="https://console.redhat.com/learning-resources?tab=all" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>All Learning Catalog</a>. For broader knowledgebase and support content, see the <a href="https://access.redhat.com/kb/search?document_kinds=Article&start=0&products=Red+Hat+Hybrid+Cloud+Console" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Customer Portal</a>.
           </div>
           <div style={{ padding: '0 16px 16px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Dropdown
@@ -2966,7 +2516,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                           {item.title === 'Configuring console event notifications in Slack' ? (
                             <div 
                               className="menu-item-title"
-                              onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack')}
+                              onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack', { variant: 'quickstart' })}
                               style={{ display: 'inline', flex: 1, cursor: 'pointer' }}
                             >
                               {item.title}
@@ -3025,148 +2575,32 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
               variant="bottom"
             />
           </div>
-        </div>
-      </Tab>
-      <Tab 
-        eventKey={2} 
-        title={<TabTitleText>Knowledgebase</TabTitleText>}
-        aria-label="Knowledgebase sub tab"
-      >
-        <style>{`
-          .learn-menu .pf-v6-c-menu {
-            box-shadow: none !important;
-            border: none !important;
-            width: 100% !important;
-          }
-          .learn-menu .pf-v6-c-menu__list {
-            padding: 0 !important;
-          }
-          .learn-menu .pf-v6-c-menu__list-item {
-            width: 100% !important;
-          }
-          .learn-menu .pf-v6-c-menu__item-main {
-            display: flex !important;
-            align-items: flex-start !important;
-            gap: 12px !important;
-            padding-right: 0 !important;
-          }
-          .learn-menu .pf-v6-c-menu__item-text {
-            padding-right: 0 !important;
-          }
-          .learn-menu .menu-item-content {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            gap: 4px;
-            min-width: 0;
-            width: 100%;
-          }
-          .learn-menu .menu-item-title-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            min-width: 0;
-          }
-          .learn-menu .menu-item-title-row button {
-            padding: 4px !important;
-          }
-          .learn-menu .menu-item-breadcrumb-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-          }
-          .learn-menu .menu-item-title {
-            color: var(--pf-v6-global--link--Color, #0066cc);
-            cursor: pointer;
-            text-decoration: none;
-            flex: 1;
-            min-width: 0;
-            word-wrap: break-word;
-            word-break: break-word;
-          }
-          .learn-menu .menu-item-title:hover {
-            color: var(--pf-v6-global--link--Color--hover, #004080);
-            text-decoration: underline;
-          }
-          .learn-menu .menu-item-label {
-            pointer-events: none;
-          }
-          /* Remove hover background on menu items - multiple selectors for specificity */
-          .learn-menu .pf-v6-c-menu__list-item:hover,
-          .learn-menu .pf-v6-c-menu__list-item:hover .pf-v6-c-menu__item,
-          .learn-menu .pf-v6-c-menu__item:hover,
-          .learn-menu .pf-v6-c-menu__item-main:hover,
-          .learn-menu .pf-v6-c-menu__list-item:hover .pf-v6-c-menu__item-main {
-            background-color: transparent !important;
-          }
-          /* Override PatternFly CSS variables for hover */
-          .learn-menu .pf-v6-c-menu__list-item {
-            --pf-v6-c-menu__list-item--hover--BackgroundColor: transparent !important;
-          }
-          .learn-menu .pf-v6-c-menu__item {
-            --pf-v6-c-menu__item--hover--BackgroundColor: transparent !important;
-          }
-          /* Make the menu item itself non-clickable */
-          .learn-menu .pf-v6-c-menu__item {
-            pointer-events: none !important;
-          }
-          /* Re-enable pointer events for specific clickable elements */
-          .learn-menu .pf-v6-c-menu__item button,
-          .learn-menu .pf-v6-c-menu__item .menu-item-title {
-            pointer-events: auto !important;
-          }
-          /* Bookmark icon colors */
-          .learn-menu .bookmark-icon {
-            color: var(--pf-t--global--icon--color--disabled, #6a6e73);
-            transition: color 0.2s ease;
-          }
-          .learn-menu .bookmark-icon.bookmarked {
-            color: var(--pf-t--global--color--brand--default, #0066cc);
-          }
-          /* Hide pagination options menu toggle */
-          .learn-menu .pf-v6-c-pagination .pf-v6-c-menu-toggle.pf-m-plain.pf-m-text {
-            display: none !important;
-          }
-          /* Ensure menu items can wrap */
-          .learn-menu .pf-v6-c-menu__item {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .learn-menu .pf-v6-c-menu__item-text {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-        `}</style>
-        <div className="learn-menu">
-          <div style={{ padding: '16px 16px 12px 16px', fontSize: '14px', lineHeight: '1.5', color: 'var(--pf-v6-global--Color--200)' }}>
-            Find knowledgebase articles. See all knowledgebase and support content on the <a href="https://access.redhat.com/kb/search?document_kinds=Article&start=0&products=Red+Hat+Hybrid+Cloud+Console" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Customer Portal</a>.
-          </div>
+          <Divider inset={{ default: 'insetNone' }} />
           <div style={{ padding: '16px 16px 8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{ fontSize: 'var(--pf-t--global--font--size--body--lg, 18px)', fontWeight: '400' }}>
                 Knowledgebase articles ({scopeFilter === 'bundle' && currentBundle ? allKnowledgebaseContent.filter(item => item.labels.includes(currentBundle)).length : allKnowledgebaseContent.length})
               </span>
               {currentBundle ? (
-                <ToggleGroup aria-label="Scope filter" isCompact>
+                <ToggleGroup aria-label="Knowledgebase scope filter" isCompact>
                   <ToggleGroupItem
                     text={currentBundle}
-                    buttonId="scope-bundle"
+                    buttonId="kb-scope-bundle"
                     isSelected={scopeFilter === 'bundle'}
                     onChange={() => setScopeFilter('bundle')}
                   />
                   <ToggleGroupItem
                     text="All"
-                    buttonId="scope-all"
+                    buttonId="kb-scope-all"
                     isSelected={scopeFilter === 'all'}
                     onChange={() => setScopeFilter('all')}
                   />
                 </ToggleGroup>
               ) : (
-                <ToggleGroup aria-label="Scope filter" isCompact>
+                <ToggleGroup aria-label="Knowledgebase scope filter" isCompact>
                   <ToggleGroupItem
                     text="All"
-                    buttonId="scope-all"
+                    buttonId="kb-scope-all-only"
                     isSelected={true}
                     onChange={() => {}}
                   />
@@ -3175,10 +2609,10 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             </div>
             <Pagination
               itemCount={scopeFilter === 'bundle' && currentBundle ? allKnowledgebaseContent.filter(item => item.labels.includes(currentBundle)).length : allKnowledgebaseContent.length}
-              perPage={perPage}
-              page={page}
-              onSetPage={(_event, pageNumber) => setPage(pageNumber)}
-              onPerPageSelect={(_event, perPage) => setPerPage(perPage)}
+              perPage={kbPerPage}
+              page={kbPage}
+              onSetPage={(_event, pageNumber) => setKbPage(pageNumber)}
+              onPerPageSelect={(_event, p) => setKbPerPage(p)}
               variant="top"
               isCompact
               toggleTemplate={() => <></>}
@@ -3186,22 +2620,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           </div>
           <Menu>
             <MenuList>
-              {/* Dynamic filtering based on bundle selection */}
               {(() => {
-                // Filter content based on bundle selection
-                const filteredContent = scopeFilter === 'bundle' && currentBundle
+                const filteredKb = scopeFilter === 'bundle' && currentBundle
                   ? allKnowledgebaseContent.filter(item => item.labels.includes(currentBundle))
                   : allKnowledgebaseContent;
-                
-                // Sort alphabetically
-                const sortedContent = [...filteredContent].sort((a, b) => a.title.localeCompare(b.title));
-                
-                // Pagination: show only items for current page (10 per page)
-                const startIdx = (page - 1) * perPage;
-                const endIdx = startIdx + perPage;
-                const paginatedContent = sortedContent.slice(startIdx, endIdx);
-                
-                return paginatedContent.map((item, idx) => (
+                const sortedKb = [...filteredKb].sort((a, b) => a.title.localeCompare(b.title));
+                const kbStart = (kbPage - 1) * kbPerPage;
+                const kbEnd = kbStart + kbPerPage;
+                const paginatedKb = sortedKb.slice(kbStart, kbEnd);
+                return paginatedKb.map((item, idx) => (
                   <React.Fragment key={item.id}>
                     {idx > 0 && <Divider component="li" />}
                     <MenuItem itemId={item.id}>
@@ -3217,7 +2644,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                             </BreadcrumbItem>
                           </Breadcrumb>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', alignItems: 'center' }}>
-                            {/* Show first 2 labels, then "(X) more" if needed */}
                             {item.labels.slice(0, 2).map((label, labelIdx) => (
                               <Label key={labelIdx} className="menu-item-label" color="grey" isCompact>
                                 {label}
@@ -3225,13 +2651,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                             ))}
                             {item.labels.length > 2 && (
                               <span style={{ display: 'inline-block' }}>
-                                <Tooltip
-                                  content={item.labels.slice(2).join(', ')}
-                                >
-                                  <Label 
-                                    className="menu-item-label overflow-label" 
-                                    color="grey" 
-                                    isCompact 
+                                <Tooltip content={item.labels.slice(2).join(', ')}>
+                                  <Label
+                                    className="menu-item-label overflow-label"
+                                    color="grey"
+                                    isCompact
                                     style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                                   >
                                     ({item.labels.length - 2}) more
@@ -3251,17 +2675,17 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           <div style={{ padding: '16px', borderTop: '1px solid var(--pf-v6-global--BorderColor--100)' }}>
             <Pagination
               itemCount={scopeFilter === 'bundle' && currentBundle ? allKnowledgebaseContent.filter(item => item.labels.includes(currentBundle)).length : allKnowledgebaseContent.length}
-              perPage={perPage}
-              page={page}
-              onSetPage={(_event, pageNumber) => setPage(pageNumber)}
-              onPerPageSelect={(_event, perPage) => setPerPage(perPage)}
+              perPage={kbPerPage}
+              page={kbPage}
+              onSetPage={(_event, pageNumber) => setKbPage(pageNumber)}
+              onPerPageSelect={(_event, p) => setKbPerPage(p)}
               variant="bottom"
             />
           </div>
         </div>
       </Tab>
       <Tab 
-        eventKey={3} 
+        eventKey={2} 
         title={<TabTitleText>APIs</TabTitleText>}
         aria-label="APIs sub tab"
       >
@@ -3515,7 +2939,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </div>
       </Tab>
       <Tab 
-        eventKey={4} 
+        eventKey={3} 
         title={<TabTitleText>Support</TabTitleText>}
         aria-label="Support sub tab"
       >
@@ -3698,7 +3122,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </div>
       </Tab>
       <Tab 
-        eventKey={5} 
+        eventKey={4} 
         title={<TabTitleText>Feedback</TabTitleText>}
         aria-label="Feedback sub tab"
       >
@@ -3879,443 +3303,67 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           );
         })()}
       </Tab>
+      <Tab
+        eventKey={5}
+        className="help-panel-chat-tab"
+        title={
+          <TabTitleIcon>
+            <img
+              src={HappyRobotIcon}
+              alt=""
+              aria-hidden
+              style={{
+                width: '24px',
+                height: 'auto',
+                aspectRatio: '1 / 1',
+                display: 'block',
+                objectFit: 'contain'
+              }}
+            />
+          </TabTitleIcon>
+        }
+        aria-label="Chat sub tab"
+      >
+        {renderHelpChatPanel()}
+      </Tab>
     </Tabs>
+      </div>
     );
   };
 
-  const renderTabContent = (tab: TabContent, tabIndex: number) => {
-    switch (tab.type) {
-      case 'overview':
-        return renderSubTabs(tabIndex, tab, "Find help sub tabs");
-      
-      case 'analytics':
-        return (
-          <Tabs
-            isSubtab
-            activeKey={tab.activeSubTab || 0}
-            onSelect={(event, subTabIndex) => handleSubTabClick(tabIndex, subTabIndex as number)}
-            aria-label="Analytics sub tabs"
+  const renderHelpPanelBody = () => (
+    <div data-hcc-help-shell="top-tabs-v2" style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {renderHelpPanelTopTabs()}
+      <Divider
+        component="hr"
+        inset={{ default: 'insetNone' }}
+        className="help-panel-header-divider"
+      />
+      {customHelpTitle && customHelpVariant === 'quickstart' && (
+        <div style={{ padding: '12px 16px 0', flexShrink: 0 }}>
+          <Breadcrumb>
+            <BreadcrumbItem component="button" onClick={() => selectHelpPanelSubTab(1)}>
+              Learn
+            </BreadcrumbItem>
+            <BreadcrumbItem isActive>{customHelpTitle}</BreadcrumbItem>
+          </Breadcrumb>
+        </div>
+      )}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {customHelpTitle ? (
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>{renderCustomHelpByTitle(customHelpTitle)}</div>
+        ) : (
+          <div
+            className="help-panel-hide-native-tab-list"
+            style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
-            <Tab 
-              eventKey={0} 
-              title={<TabTitleText>Performance Metrics</TabTitleText>}
-              aria-label="Performance Metrics sub tab"
-            >
-                  <Content>
-                    <h3>Performance Metrics</h3>
-                    <p>Monitor key performance indicators and system metrics to ensure optimal operation.</p>
-                    <ul>
-                      <li>CPU Usage: 45%</li>
-                      <li>Memory Usage: 68%</li>
-                      <li>Disk I/O: 2.3 MB/s</li>
-                      <li>Network Throughput: 150 Mbps</li>
-                    </ul>
-                  </Content>
-            </Tab>
-            <Tab 
-              eventKey={1} 
-              title={<TabTitleText>User Engagement</TabTitleText>}
-              aria-label="User Engagement sub tab"
-            >
-                  <Content>
-                    <h3>User Engagement</h3>
-                    <p>Analyze user behavior patterns and engagement metrics across the platform.</p>
-                    <ul>
-                      <li>Active Users: 1,247</li>
-                      <li>Session Duration: 8m 32s</li>
-                      <li>Page Views: 15,892</li>
-                      <li>Bounce Rate: 23%</li>
-                    </ul>
-                  </Content>
-            </Tab>
-            <Tab 
-              eventKey={2} 
-              title={<TabTitleText>Revenue Reports</TabTitleText>}
-              aria-label="Revenue Reports sub tab"
-            >
-                  <Content>
-                    <h3>Revenue Reports</h3>
-                    <p>Track financial performance and revenue trends across different time periods.</p>
-                    <ul>
-                      <li>Monthly Revenue: $127,450</li>
-                      <li>Growth Rate: +12.5%</li>
-                      <li>Top Revenue Source: Premium Subscriptions</li>
-                      <li>Conversion Rate: 3.2%</li>
-                    </ul>
-                  </Content>
-            </Tab>
-          </Tabs>
-        );
-      
-      case 'settings':
-        return (
-              <Content>
-                <h3>Dashboard Settings</h3>
-                <p>Configure dashboard preferences, notifications, and display options.</p>
-                <ul>
-                  <li>Theme: Light/Dark mode toggle</li>
-                  <li>Refresh interval: 30 seconds</li>
-                  <li>Email notifications: Enabled</li>
-                  <li>Data retention: 90 days</li>
-                </ul>
-              </Content>
-        );
-      
-      case 'custom':
-        if (tab.id === 'comments') {
-          return (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0' }}>
-              {/* Chat Header */}
-              <div style={{ 
-                padding: '16px', 
-                borderBottom: '1px solid #d2d2d2', 
-                backgroundColor: 'white',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                flexShrink: 0
-              }}>
-                {/* First row: Hamburger, Icon, Title */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Button
-                    variant="plain"
-                    style={{
-                      padding: '4px',
-                      color: '#666'
-                    }}
-                    aria-label="Chat options menu"
-                  >
-                    <BarsIcon style={{ width: '16px', height: '16px' }} />
-                  </Button>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <CommentsIcon style={{ width: '16px', height: '16px', color: 'white' }} />
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#151515' }}>
-                    Ask Red Hat
-                  </div>
-                </div>
-                
-                {/* Second row: Full width dropdown */}
-                <div style={{ width: '100%' }}>
-                  <Dropdown
-                    isOpen={false}
-                    onSelect={() => {}}
-                    toggle={(toggleRef: React.Ref<any>) => (
-                      <MenuToggle
-                        ref={toggleRef}
-                        isExpanded={false}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
-                          color: '#151515',
-                          textAlign: 'left',
-                          justifyContent: 'flex-start',
-                          backgroundColor: 'transparent',
-                          border: '1px solid #d2d2d2',
-                          borderRadius: '4px'
-                        }}
-                      >
-                        Agent: General Red Hat
-                      </MenuToggle>
-                    )}
-                    shouldFocusToggleOnSelect
-                  >
-                    <DropdownList>
-                      <DropdownItem>Agent: General Red Hat</DropdownItem>
-                      <DropdownItem>Support Agent</DropdownItem>
-                      <DropdownItem>Feedback Bot</DropdownItem>
-                    </DropdownList>
-                  </Dropdown>
-                </div>
-              </div>
+            {renderFindHelpSubTabs()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
-              {/* Chat Messages */}
-              <div style={{ 
-                flex: 1, 
-                padding: '16px', 
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                minHeight: '0'
-              }}>
-                {/* Bot Message */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-                  </div>
-                  <div style={{
-                    backgroundColor: '#f0f0f0',
-                    padding: '12px 16px',
-                    borderRadius: '18px 18px 18px 4px',
-                    maxWidth: '70%',
-                    fontSize: '14px',
-                    lineHeight: '1.4'
-                  }}>
-                    Hi! I'm here to help with your questions and feedback. How can I assist you today?
-                  </div>
-                </div>
-
-                {/* User Message */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'flex-end' }}>
-                  <div style={{
-                    backgroundColor: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                    padding: '12px 16px',
-                    borderRadius: '18px 18px 4px 18px',
-                    maxWidth: '70%',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    color: 'white',
-                    background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)'
-                  }}>
-                    I have a question about the new features
-                  </div>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: '#d2d2d2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <UserIcon style={{ width: '12px', height: '12px', color: '#666' }} />
-                  </div>
-                </div>
-
-                {/* Bot Message */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-                  </div>
-                  <div style={{
-                    backgroundColor: '#f0f0f0',
-                    padding: '12px 16px',
-                    borderRadius: '18px 18px 18px 4px',
-                    maxWidth: '70%',
-                    fontSize: '14px',
-                    lineHeight: '1.4'
-                  }}>
-                    I'd be happy to help! What specific features would you like to know more about? I can provide information about:
-                    <br />• New dashboard capabilities
-                    <br />• Updated user interface
-                    <br />• Enhanced security features
-                    <br />• Performance improvements
-                  </div>
-                </div>
-
-                {/* Typing Indicator */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-                  </div>
-                  <div style={{
-                    backgroundColor: '#f0f0f0',
-                    padding: '12px 16px',
-                    borderRadius: '18px 18px 18px 4px',
-                    fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <div style={{ 
-                      width: '6px', 
-                      height: '6px', 
-                      borderRadius: '50%', 
-                      backgroundColor: '#999',
-                      animation: 'typing 1.4s infinite ease-in-out'
-                    }}></div>
-                    <div style={{ 
-                      width: '6px', 
-                      height: '6px', 
-                      borderRadius: '50%', 
-                      backgroundColor: '#999',
-                      animation: 'typing 1.4s infinite ease-in-out 0.2s'
-                    }}></div>
-                    <div style={{ 
-                      width: '6px', 
-                      height: '6px', 
-                      borderRadius: '50%', 
-                      backgroundColor: '#999',
-                      animation: 'typing 1.4s infinite ease-in-out 0.4s'
-                    }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chat Input - Pinned to Bottom */}
-              <div style={{ 
-                padding: '16px', 
-                borderTop: '1px solid #d2d2d2',
-                backgroundColor: 'white',
-                flexShrink: 0
-              }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    placeholder="Type your message..."
-                    style={{
-                      flex: 1,
-                      padding: '12px 16px',
-                      border: '1px solid #d2d2d2',
-                      borderRadius: '24px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      backgroundColor: 'white'
-                    }}
-                    disabled
-                  />
-                  <Button
-                    variant="primary"
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                      border: 'none'
-                    }}
-                    disabled
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-
-              {/* Typing Animation CSS */}
-              <style>{`
-                @keyframes typing {
-                  0%, 60%, 100% {
-                    transform: translateY(0);
-                    opacity: 0.4;
-                  }
-                  30% {
-                    transform: translateY(-10px);
-                    opacity: 1;
-                  }
-                }
-              `}</style>
-            </div>
-          );
-        }
-        
-        // Check if this is the Alert manager tab
-        if (tab.title === 'Alert manager') {
-          return (
-            <div style={{ padding: '24px' }}>
-              <Content>
-                <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
-                  Alert Manager Help
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73' }}>
-                  This section provides information and guidance about using the Alert Manager feature. 
-                  Configure alert default settings for your workspace and learn how fired events can alert 
-                  users and groups through various communication channels.
-                </p>
-              </Content>
-            </div>
-          );
-        }
-        
-        if (tab.title === 'Dashboard widgets') {
-          return <DashboardWidgetsHelpPanelContent />;
-        }
-
-        if (tab.title === 'Configuring console event notifications in Slack') {
-          return (
-            <div style={{ padding: '24px' }}>
-              <Content>
-                <Title headingLevel="h2" size="xl" style={{ marginBottom: '16px' }}>
-                  Configuring console event notifications in Slack
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '24px' }}>
-                  Follow these steps to configure your console event notifications to be sent to Slack channels.
-                </p>
-                
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
-                  Prerequisites
-                </Title>
-                <ul style={{ fontSize: '14px', lineHeight: '1.8', color: '#6a6e73', marginBottom: '24px' }}>
-                  <li>Active Slack workspace with admin permissions</li>
-                  <li>Red Hat Hybrid Cloud Console account</li>
-                  <li>Webhook URL from your Slack workspace</li>
-                </ul>
-                
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
-                  Step 1: Create a Slack webhook
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
-                  Navigate to your Slack workspace settings and create a new incoming webhook for the channel where you want to receive notifications.
-                </p>
-                
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
-                  Step 2: Configure integration in console
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
-                  Go to Settings → Integrations and add a new Slack integration using your webhook URL.
-                </p>
-                
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
-                  Step 3: Configure notification rules
-                </Title>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#6a6e73', marginBottom: '16px' }}>
-                  Set up which events should trigger Slack notifications in the Alert Manager settings.
-                </p>
-              </Content>
-            </div>
-          );
-        }
-        
-        return renderSubTabs(tabIndex, tab, "New tab sub tabs");
-      
-      default:
-        return (
-              <Content>
-                <h3>Default Content</h3>
-                <p>Default tab content</p>
-              </Content>
-        );
-    }
-  };
 
   const masthead = (
     <Masthead>
@@ -4571,8 +3619,18 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 aria-label="Help"
                 aria-expanded={isDrawerExpanded}
                 className={isDrawerExpanded ? 'pf-m-clicked' : ''}
+                icon={
+                  <img
+                    src={SparkleIcon}
+                    alt=""
+                    aria-hidden
+                    width={20}
+                    height={20}
+                    style={{ display: 'block' }}
+                  />
+                }
+                iconPosition="start"
               >
-                <img src={SparkleIcon} alt="" style={{ width: '16px', height: '16px', marginRight: '4px' }} />
                 Help
               </Button>
             </Tooltip>
@@ -4957,15 +4015,86 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             width: 300px !important;
           }
           
-          /* Make only the comments tab content fill full height */
-          .pf-v6-c-tabs__panel:has([data-tab-id="comments"]) {
+          /* Top strip uses its own Tabs row; hide empty tab panels rendered by that duplicate Tabs */
+          .help-panel-top-tabs-strip .pf-v6-c-tab-content {
+            display: none !important;
+          }
+
+          /*
+           * Avoid horizontal scroll + PatternFly scroll Buttons (plain Button chevrons) on the top strip.
+           * Full-width flex row so margin-inline-start: auto on Chat absorbs remaining space and pins it right.
+           */
+          .help-panel-top-tabs-strip .pf-v6-c-tabs {
+            overflow: visible !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .help-panel-top-tabs-strip .pf-v6-c-tabs__list {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            row-gap: var(--pf-t--global--spacer--xs);
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            justify-content: flex-start !important;
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+          }
+          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab {
+            margin-inline-start: auto !important;
+            flex-shrink: 0 !important;
+          }
+          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab .pf-v6-c-tabs__link {
+            min-width: 2.75rem !important;
+            justify-content: center !important;
+          }
+          .help-panel-top-tabs-strip .pf-v6-c-tabs.pf-m-scrollable .pf-v6-c-tabs__scroll-button {
+            display: none !important;
+          }
+
+          /* Full-bleed grey rule under tab strip (separator from scroll content; insetNone = panel width) */
+          .help-panel-header-divider.pf-v6-c-divider {
+            width: 100% !important;
+            align-self: stretch !important;
+            flex-shrink: 0 !important;
+          }
+
+          /* Duplicate tab row is rendered above; hide PatternFly's tab buttons inside the scroll region */
+          .help-panel-hide-native-tab-list .pf-v6-c-tabs__scroll-buttons,
+          .help-panel-hide-native-tab-list .pf-v6-c-tabs__list {
+            display: none !important;
+          }
+
+          /*
+           * PF merges Tabs style prop onto .pf-v6-c-tabs (the nav), not the panels.
+           * flex:1 on Tabs stretched the empty nav and caused a large gap above tab body (APIs, Support, etc.).
+           * Shell wraps Tabs; collapse the hidden nav and let the active tab panel fill height.
+           */
+          .help-panel-inner-tabs-shell > .pf-v6-c-tabs {
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+            height: 0 !important;
+            max-height: 0 !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+          }
+          .help-panel-inner-tabs-shell > .pf-v6-c-tab-content:not([hidden]) {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: auto !important;
+          }
+          
+          /* Chat sub-tab content fills available height */
+          .pf-v6-c-tabs__panel:has([data-help-panel="chat"]) {
             height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
           }
           
-          /* Target the comments tab content specifically */
-          [data-tab-id="comments"] {
+          [data-help-panel="chat"] {
             height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
@@ -5043,71 +4172,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             background-color: var(--pf-v6-global--BackgroundColor--200, #f5f5f5) !important;
           }
         `}</style>
-        <Tabs 
-          isBox
-          isOverflowHorizontal
-          activeKey={activeTabKey}
-          onSelect={handleTabClick}
-          onAdd={handleAddTab}
-          aria-label="Dashboard tabs"
-        >
-          {tabs.map((tab, index) => {
-            // Count non-comment icon tabs (text-based tabs)
-            const textBasedTabs = tabs.filter(t => t.id !== 'comments');
-            const canCloseGetStarted = textBasedTabs.length > 1;
-            
-            // Determine if this tab should be closable
-            const isClosable = tab.id === 'comments' 
-              ? false  // Comment icon tab is never closable
-              : (tab.id === 'get-started' 
-                  ? canCloseGetStarted  // Get started tab is closable only when there are multiple text-based tabs
-                  : true);  // Other text-based tabs are always closable
-            
-            // Only show 'X' on the currently active tab
-            const showCloseButton = isClosable && tab.id === activeTabKey;
-            
-            // Check if this tab needs a tooltip (title > 20 chars)
-            const needsTooltip = tab.id !== 'comments' && tab.title.length > 20;
-            
-            return (
-            <Tab 
-              key={tab.id}
-              eventKey={tab.id} 
-                title={
-                  tab.id === 'comments' ? (
-                    <div style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                      <img 
-                        src={CommentIcon} 
-                        alt="" 
-                        aria-label="Comments"
-                        style={{ width: '16px', height: '16px' }} 
-                      />
-                    </div>
-                  ) : (
-                    <div data-tab-tooltip-trigger={needsTooltip ? tab.id : undefined}>
-                      <TabTitleText>{tab.title}</TabTitleText>
-                    </div>
-                  )
-                }
-                aria-label={tab.id === 'comments' ? 'Comments tab' : `${tab.title} tab`}
-              actions={
-                  showCloseButton ? (
-                  <TabAction
-                    aria-label={`Close ${tab.title}`}
-                    onClick={(event) => handleCloseTab(event, index)}
-                  >
-                    <TimesIcon />
-                  </TabAction>
-                ) : null
-              }
-            >
-                <div data-tab-id={tab.id} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {renderTabContent(tab, index)}
-                </div>
-            </Tab>
-            );
-          })}
-        </Tabs>
+        {renderHelpPanelBody()}
       </DrawerContentBody>
     </DrawerPanelContent>
   );
@@ -6784,15 +5849,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         <Button
           variant="plain"
           onClick={() => {
-            // Open the help panel and switch to comments tab
+            setCustomHelpTitle(null);
+            setCustomHelpVariant(null);
+            setHelpPanelSubTab(5);
             setIsDrawerExpanded(true);
-            setActiveTabKey(0); // Switch to comments tab (index 0)
           }}
           style={{
             width: '56px',
             height: '56px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+            background: '#ee0000',
             border: 'none',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
@@ -6809,14 +5875,21 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             e.currentTarget.style.transform = 'scale(1)';
             e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
           }}
-          aria-label="Open comments and feedback"
+          aria-label="Open help chat"
         >
-          <CommentsIcon 
-            style={{ 
-              width: '24px', 
-              height: '24px',
-              color: 'white'
-            }} 
+          <img
+            src={HappyRobotIcon}
+            alt=""
+            aria-hidden
+            style={{
+              width: '28px',
+              height: 'auto',
+              aspectRatio: '1 / 1',
+              display: 'block',
+              objectFit: 'contain',
+              flexShrink: 0,
+              filter: 'brightness(0) invert(1)'
+            }}
           />
         </Button>
       </div>
@@ -6834,19 +5907,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         />
       ))}
       
-      {/* PatternFly Tooltips for truncated tab titles */}
-      {tabTooltips.map((tooltip) => (
-        <Tooltip
-          key={`tab-${tooltip.tabId}`}
-          content={tooltip.text}
-          triggerRef={() => document.querySelector(`[data-tab-tooltip-trigger="${tooltip.tabId}"]`) as HTMLElement}
-          entryDelay={100}
-          exitDelay={0}
-          animationDuration={100}
-          position="bottom"
-        />
-      ))}
-
     </>
   );
 };

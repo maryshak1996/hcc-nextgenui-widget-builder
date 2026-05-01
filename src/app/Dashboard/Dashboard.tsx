@@ -1009,7 +1009,7 @@ const Dashboard: React.FunctionComponent = () => {
                                 iconPosition="end"
                                 onClick={() => {
                                   if (helpPanelContext) {
-                                    helpPanelContext.openHelpPanelWithTab('Configuring console event notifications in Slack');
+                                    helpPanelContext.openHelpPanelWithTab('Configuring console event notifications in Slack', { variant: 'quickstart' });
                                   }
                                 }}
                               >

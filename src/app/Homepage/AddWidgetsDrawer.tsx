@@ -565,7 +565,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   }, []);
 
   const openDashboardWidgetsHelpTab = useCallback(() => {
-    helpPanelContext?.openHelpPanelWithTab('Dashboard widgets');
+    helpPanelContext?.openHelpPanelWithTab('Dashboard widgets', { variant: 'in-page' });
   }, [helpPanelContext]);
 
   const openRequestNewWidgetTab = useCallback(() => {
@@ -762,7 +762,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                         variant="link"
                                         size="sm"
                                         type="button"
-                                        onClick={() => helpPanelContext?.openHelpPanelWithTab('Dashboard widgets')}
+                                        onClick={() => helpPanelContext?.openHelpPanelWithTab('Dashboard widgets', { variant: 'in-page' })}
                                         icon={<OpenDrawerRightIcon aria-hidden />}
                                         iconPosition="end"
                                       >
