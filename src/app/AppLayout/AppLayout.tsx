@@ -148,6 +148,8 @@ interface HelpPanelContextType {
   openHelpPanelWithTab: (title: string, options?: { variant?: 'quickstart' | 'in-page' }) => void;
   /** Find help → Feedback → Share general feedback (breadcrumb screen). */
   openHelpPanelToShareGeneralFeedback: () => void;
+  /** Opens the help drawer on the Chat tab with the given assistant intro message (e.g. new support case). */
+  openHelpPanelWithChatPrompt: (assistantMessage: string) => void;
 }
 
 export const HelpPanelContext = React.createContext<HelpPanelContextType | undefined>(undefined);
@@ -182,6 +184,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [customHelpTitle, setCustomHelpTitle] = React.useState<string | null>(null);
   /** When custom help is open: quickstart → Learn tab selected + breadcrumb; in-page → no tab selected. */
   const [customHelpVariant, setCustomHelpVariant] = React.useState<'quickstart' | 'in-page' | null>(null);
+  /** When set, Chat tab shows this assistant bubble instead of the default demo transcript (e.g. support case flow). */
+  const [helpChatAssistantBubbleText, setHelpChatAssistantBubbleText] = React.useState<string | null>(null);
   /** Remount top help tabs when selection crosses into/out of `null` so PatternFly clears the tab accent (no matching `eventKey`). */
   const [helpTopTabsMountKey, setHelpTopTabsMountKey] = React.useState(0);
   const prevHelpPanelSubTabRef = React.useRef<number | null>(helpPanelSubTab);
@@ -193,6 +197,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
     prevHelpPanelSubTabRef.current = cur;
   }, [helpPanelSubTab]);
+
+  React.useEffect(() => {
+    if (isDrawerExpanded) {
+      setSidebarOpen(false);
+    }
+  }, [isDrawerExpanded]);
   
   // Complete APIs tab data - all content (43 APIs from Red Hat API Catalog)
   const allApisContent = [
@@ -252,7 +262,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { id: 'kb-6', title: 'Obfuscating hostnames, IP addresses and MAC addresses in Red Hat Insights', breadcrumb1: 'Knowledgebase article', labels: ['RHEL', 'Settings'] },
     { id: 'kb-7', title: 'Disable Automatic Update of Collection Rules for Red Hat Insights', breadcrumb1: 'Knowledgebase article', labels: ['RHEL'] },
     { id: 'kb-8', title: 'Creating Custom Schedule for Red Hat Insights Uploads', breadcrumb1: 'Knowledgebase article', labels: ['RHEL'] },
-    { id: 'kb-9', title: 'Reference Guide for Engaging with Red Hat Support', breadcrumb1: 'Knowledgebase article', labels: ['Settings'] },
+    { id: 'kb-9', title: 'Reference Guide for Engaging with Red Hat Support', breadcrumb1: 'Knowledgebase article', labels: ['Settings', 'Support'] },
     { id: 'kb-10', title: 'Understanding Red Hat Insights - Advisor: Risk of Change', breadcrumb1: 'Knowledgebase article', labels: ['RHEL'] },
     // Placeholder articles (to be replaced with actual titles from pages 2-12)
     ...Array.from({ length: 107 }, (_, i) => ({
@@ -897,12 +907,23 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     if (['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'].includes(currentPath)) {
       return 'IAM';
     }
+
+    // Support bundle pages (PCM / customer support experience)
+    if (currentPath === '/support' || currentPath.startsWith('/support/')) {
+      return 'Support';
+    }
     
     // No bundle (homepage, all services, etc.)
     return null;
   };
   
   const currentBundle = getCurrentBundle();
+
+  React.useEffect(() => {
+    if (location.pathname !== '/support/cases/new') {
+      setHelpChatAssistantBubbleText(null);
+    }
+  }, [location.pathname]);
 
   React.useEffect(() => {
     setKbPage(1);
@@ -943,6 +964,18 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { id: '13', title: 'Authentication Policy', description: 'Configure authentication policies and security settings', category: 'IAM', route: '/authentication-policy' },
     { id: '14', title: 'Service Accounts', description: 'Manage service accounts and API credentials for automated systems', category: 'IAM', route: '/service-accounts' },
     { id: '15', title: 'IAM Learning Resources', description: 'Access Identity & Access Management learning materials and guides', category: 'IAM', route: '/learning-resources-iam' },
+    { id: '20', title: 'Support · Overview', description: 'Customer support tools and resources', category: 'Support', route: '/support' },
+    { id: '21', title: 'Support cases', description: 'View and manage support cases', category: 'Support', route: '/support/cases' },
+    {
+      id: '25',
+      title: 'New support case',
+      description: 'Create a new support case',
+      category: 'Support',
+      route: '/support/cases/new',
+    },
+    { id: '22', title: 'Partnerships', description: 'Partner programs and collaboration', category: 'Support', route: '/support/partnerships' },
+    { id: '23', title: 'RBAC', description: 'Role-based access control for Support', category: 'Support', route: '/support/rbac' },
+    { id: '24', title: 'Support · Learning resources', description: 'Training and documentation for Support', category: 'Support', route: '/support/learning-resources' },
     
     // Additional Services
     { id: '16', title: 'Vulnerability', description: 'View and manage system vulnerabilities', category: 'RHEL', route: null },
@@ -1158,6 +1191,23 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
   }, [isDrawerExpanded, isNotificationDrawerOpen]);
 
+  const openHelpPanelWithChatPrompt = React.useCallback(
+    (assistantMessage: string) => {
+      setHelpChatAssistantBubbleText(assistantMessage);
+      setCustomHelpTitle(null);
+      setCustomHelpVariant(null);
+      setHelpPanelSubTab(5);
+      setSearchQuery('');
+      if (!isDrawerExpanded) {
+        setIsDrawerExpanded(true);
+      }
+      if (isNotificationDrawerOpen) {
+        setIsNotificationDrawerOpen(false);
+      }
+    },
+    [isDrawerExpanded, isNotificationDrawerOpen]
+  );
+
   const createSearchHandlers = () => {
     const onSearchSubmit = (value: string) => {
       if (value.trim()) {
@@ -1328,6 +1378,37 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           minHeight: '0'
         }}
       >
+        {helpChatAssistantBubbleText ? (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <div
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
+            </div>
+            <div
+              style={{
+                backgroundColor: '#f0f0f0',
+                padding: '12px 16px',
+                borderRadius: '18px 18px 18px 4px',
+                maxWidth: '85%',
+                fontSize: '14px',
+                lineHeight: '1.4'
+              }}
+            >
+              {helpChatAssistantBubbleText}
+            </div>
+          </div>
+        ) : (
+          <>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <div
             style={{
@@ -1472,6 +1553,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             />
           </div>
         </div>
+          </>
+        )}
       </div>
       <div
         style={{
@@ -3602,6 +3685,17 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                         Service Accounts
                       </MenuItem>
                     </MenuGroup>
+                    <MenuGroup label="Support">
+                      <MenuItem
+                        icon={<QuestionCircleIcon />}
+                        onClick={() => {
+                          navigate('/support');
+                          setIsUtilitiesDropdownOpen(false);
+                        }}
+                      >
+                        Support
+                      </MenuItem>
+                    </MenuGroup>
                   </MenuList>
                 </Menu>
               </Dropdown>
@@ -3767,13 +3861,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const secondaryNavPages = ['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'];
 
   // Determine which navigation structure to show
-  const getNavigationType = () => {
+  const getNavigationType = (): 'primary' | 'secondary' | 'support' => {
     const currentPath = location.pathname;
     
     if (primaryNavPages.includes(currentPath)) {
       return 'primary';
     } else if (secondaryNavPages.includes(currentPath)) {
       return 'secondary';
+    } else if (currentPath === '/support' || currentPath.startsWith('/support/')) {
+      return 'support';
     }
     return 'primary'; // default fallback
   };
@@ -3808,6 +3904,24 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { label: 'IAM Learning', path: '/learning-resources-iam', isActive: location.pathname === '/learning-resources-iam' },
   ];
 
+  // Secondary navigation structure (Support bundle)
+  const supportNavItems = [
+    { label: 'Overview', path: '/support', isActive: location.pathname === '/support' },
+    {
+      label: 'Support cases',
+      path: '/support/cases',
+      isActive:
+        location.pathname === '/support/cases' || location.pathname.startsWith('/support/cases/'),
+    },
+    { label: 'Partnerships', path: '/support/partnerships', isActive: location.pathname === '/support/partnerships' },
+    { label: 'RBAC', path: '/support/rbac', isActive: location.pathname === '/support/rbac' },
+    {
+      label: 'Learning resources',
+      path: '/support/learning-resources',
+      isActive: location.pathname === '/support/learning-resources',
+    },
+  ];
+
   const Navigation = (
     <Nav id="nav-primary-simple">
       <NavList id="nav-list-simple">
@@ -3816,7 +3930,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           primaryNavRoutes.map((route, idx) => 
             route.label && renderNavItem(route, idx)
           )
-        ) : (
+        ) : navigationType === 'secondary' ? (
           // Show secondary navigation (IAM bundle)
           secondaryNavItems.map((item, idx) => (
             item.isExpandable ? (
@@ -3841,6 +3955,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 </NavLink>
               </NavItem>
             )
+          ))
+        ) : (
+          // Support bundle navigation
+          supportNavItems.map((item, idx) => (
+            <NavItem key={`support-${idx}`} id={`support-${idx}`} isActive={item.isActive}>
+              <NavLink to={item.path}>
+                {item.label}
+              </NavLink>
+            </NavItem>
           ))
         )}
       </NavList>
@@ -4287,7 +4410,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           <DrawerContent panelContent={notificationDrawerContent}>
             {/* Help Drawer (inner, left-side) */}
             <Drawer isExpanded={isDrawerExpanded} isInline>
-              <HelpPanelContext.Provider value={{ openHelpPanelWithTab, openHelpPanelToShareGeneralFeedback }}>
+              <HelpPanelContext.Provider
+                value={{ openHelpPanelWithTab, openHelpPanelToShareGeneralFeedback, openHelpPanelWithChatPrompt }}
+              >
                 {/* Provider wraps DrawerContent so help panel tab bodies (e.g. Dashboard widgets) receive context, not only route children */}
                 <DrawerContent panelContent={drawerContent}>{children}</DrawerContent>
               </HelpPanelContext.Provider>

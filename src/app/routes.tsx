@@ -15,7 +15,12 @@ import { LearningResourcesIAM } from '@app/LearningResourcesIAM/LearningResource
 import { MyUserAccess } from '@app/MyUserAccess/MyUserAccess'; 
 import { ServiceAccounts } from '@app/ServiceAccounts/ServiceAccounts';
 import { UserAccess } from '@app/UserAccess/UserAccess';
-import { Support } from '@app/Support/Support';
+import { SupportOverview } from '@app/Support/SupportOverview';
+import { SupportCases } from '@app/Support/SupportCases';
+import { SupportPartnerships } from '@app/Support/SupportPartnerships';
+import { SupportRbac } from '@app/Support/SupportRbac';
+import { SupportLearningResources } from '@app/Support/SupportLearningResources';
+import { SupportNewCase } from '@app/Support/SupportNewCase';
 import { Users } from '@app/Users/Users';
 import { Groups } from '@app/Groups/Groups';
 import { Roles } from '@app/Roles/Roles';
@@ -157,10 +162,40 @@ const routes: AppRouteConfig[] = [
     title: 'Profile Settings | Red Hat Hybrid Cloud Console',
   },
   {
-    element: <Support />,
+    element: <SupportOverview />,
     exact: true,
     path: '/support',
-    title: 'Support | Red Hat Hybrid Cloud Console',
+    title: 'Support · Overview | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <SupportCases />,
+    exact: true,
+    path: '/support/cases',
+    title: 'Support cases | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <SupportNewCase />,
+    exact: true,
+    path: '/support/cases/new',
+    title: 'New support case | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <SupportPartnerships />,
+    exact: true,
+    path: '/support/partnerships',
+    title: 'Partnerships | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <SupportRbac />,
+    exact: true,
+    path: '/support/rbac',
+    title: 'RBAC | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <SupportLearningResources />,
+    exact: true,
+    path: '/support/learning-resources',
+    title: 'Support · Learning resources | Red Hat Hybrid Cloud Console',
   },
   {
     element: <LearningResourcesIAM />,
