@@ -246,7 +246,7 @@ const AllServices: React.FunctionComponent = () => {
                 All Services
               </Title>
               <p>
-                Explore all available services in your Red Hat Hybrid Cloud Console. 
+                Explore all available services on the Red Hat console. 
                 Find the tools and services you need to manage your hybrid cloud environment.
               </p>
             </Content>

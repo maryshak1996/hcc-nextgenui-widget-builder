@@ -122,7 +122,7 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
       <ModalBody>
         <Content className="hcc-import-config-modal-intro">
           <p>
-            Copy/paste a config string from any other Hybrid Cloud Console dashboard (i.e. a string shared with you
+            Copy/paste a config string from any other Red Hat console dashboard (i.e. a string shared with you
             from another person in your organization) to have that dashboard recreated in your account.{' '}
             <Button
               variant="link"

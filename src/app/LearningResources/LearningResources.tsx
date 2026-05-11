@@ -66,7 +66,7 @@ const LearningResources: React.FunctionComponent = () => {
             <div>
               <Title headingLevel="h1" size="2xl">Learning Resources</Title>
               <Content>
-                <p style={{ margin: 0, color: '#6a6e73' }}>Get quick access to documentation, quick starts, learning paths, and more related to Settings. For all learning resources across the Hybrid Cloud Console, browse the All Learning catalog.</p>
+                <p style={{ margin: 0, color: '#6a6e73' }}>Get quick access to documentation, quick starts, learning paths, and more related to Settings. For all learning resources on the Red Hat console, browse the All Learning catalog.</p>
                 <div style={{ marginTop: '12px' }}>
                   <Button
                     variant="link"

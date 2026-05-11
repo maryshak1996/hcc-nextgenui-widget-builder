@@ -361,7 +361,7 @@ export async function runVisionFlow() {
                           data-demo-anchor="pcm-ide-troubleshoot-hcc"
                           onClick={onTroubleshootClick}
                         >
-                          Troubleshoot in Hybrid Cloud Console
+                          Troubleshoot in the Red Hat console
                         </button>
                       </div>
                     </div>

@@ -9,3 +9,5 @@ storybook-static
 .idea
 .env
 .history
+# Nested scratch app (local only; not part of widget builder build)
+CVE-copy-paste-agentic-flow/

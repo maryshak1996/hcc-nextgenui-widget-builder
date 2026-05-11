@@ -30,5 +30,5 @@
     "**/*.jsx",
     "**/*.js"
   ],
-  "exclude": ["node_modules", "__mocks__", "dist", "coverage"]
+  "exclude": ["node_modules", "__mocks__", "dist", "coverage", "CVE-copy-paste-agentic-flow"]
 }

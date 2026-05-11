@@ -31,6 +31,10 @@ const CveCopyFailArticlePage: React.FunctionComponent = () => {
     setShowClickOutline(false);
   }, []);
 
+  const activateIdeDock = React.useCallback(() => {
+    document.querySelector<HTMLButtonElement>(ANCHOR_AI_IDE_DOCK)?.click();
+  }, []);
+
   const handleToggleAnnotations = React.useCallback(() => {
     setAnnotationsOn((prev) => {
       const next = !prev;
@@ -95,6 +99,9 @@ const CveCopyFailArticlePage: React.FunctionComponent = () => {
       <DemoClickIndicator
         visible={annotationsOn && showClickOutline}
         anchorSelector={ANCHOR_AI_IDE_DOCK}
+        outlinePaddingPx={22}
+        onActivate={activateIdeDock}
+        activateAriaLabel="Open the mock AI IDE (demo)"
       />
       <DemoAnnotationsViewToggle
         annotationsOn={annotationsOn}

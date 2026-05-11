@@ -3,7 +3,7 @@
 Essential rules for using and contributing to PatternFly React Component Groups.
 
 ## Overview
-PatternFly Component Groups are opinionated React components that combine and extend PatternFly base components to provide standardized, reusable solutions for common product needs. They are maintained collaboratively by the PatternFly and Red Hat Hybrid Cloud Console teams, with a focus on accessibility, design consistency, and extensibility.
+PatternFly Component Groups are opinionated React components that combine and extend PatternFly base components to provide standardized, reusable solutions for common product needs. They are maintained collaboratively by the PatternFly and Red Hat teams, with a focus on accessibility, design consistency, and extensibility.
 
 - [Component Groups NPM](https://www.npmjs.com/package/@patternfly/react-component-groups)
 - [Component Groups GitHub](https://github.com/patternfly/react-component-groups)

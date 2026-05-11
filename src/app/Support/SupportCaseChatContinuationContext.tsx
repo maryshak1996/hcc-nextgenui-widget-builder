@@ -2,12 +2,12 @@ import * as React from 'react';
 import { useLocation } from 'react-router-dom';
 import type { ISupportCaseDraft } from '@app/Support/supportCaseDraftConstants';
 import {
-  buildSupportCaseGroupsAddedAssistantMessage,
-  buildSupportCaseSubmittedAssistantMessage,
   HCC_SUPPORT_CASE_NEW_PATH,
   MOCK_SUBMITTED_SUPPORT_CASE_NUMBER,
   SUPPORT_CASE_ASSISTANT_GROUP_OPTIONS_PROMPT,
   SUPPORT_CASE_DEMO_NOTIFY_GROUPS,
+  buildSupportCaseGroupsAddedAssistantMessage,
+  buildSupportCaseSubmittedAssistantMessage,
 } from '@app/Support/supportCaseChatPrompt';
 
 export type TSupportCaseChatContinuationPhase =
@@ -141,7 +141,9 @@ const SupportCaseChatContinuationProvider: React.FunctionComponent<{ children: R
     thinkingGuardRef.current = true;
     setIsContinuationThinking(true);
 
-    const delayMs = 650 + Math.floor(Math.random() * 700);
+    const phaseForDelay = phaseRef.current;
+    const delayMs =
+      (phaseForDelay === 'awaiting_notify_intent' ? 1050 : 650) + Math.floor(Math.random() * 700);
 
     thinkingTimerRef.current = window.setTimeout(() => {
       thinkingTimerRef.current = undefined;

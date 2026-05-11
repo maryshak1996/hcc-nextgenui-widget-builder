@@ -10,6 +10,8 @@ export const HCC_SUPPORT_CASE_WIZARD_BOOTSTRAP_STATE_KEY = 'hccSupportCaseWizard
 export interface ISupportCaseWizardBootstrap {
   initialDraft: ISupportCaseDraft | null;
   wizardStartIndex: number;
+  /** CVE handoff demo: staged wizard body + help-chat intro timing */
+  fromCveDemoHandoff?: boolean;
 }
 
 /** Survives Strict Mode: first paint reads session and clears keys; second mount returns cached result */
@@ -36,9 +38,11 @@ function tryParseRouterBootstrap(locationState: unknown): ISupportCaseWizardBoot
   if (initialDraft !== null && (typeof initialDraft !== 'object' || Array.isArray(initialDraft))) {
     return null;
   }
+  const fromCveDemoHandoff = rec.fromCveDemoHandoff === true;
   return {
     wizardStartIndex,
     initialDraft: initialDraft as ISupportCaseDraft | null,
+    fromCveDemoHandoff,
   };
 }
 

@@ -713,7 +713,7 @@ const Dashboard: React.FunctionComponent = () => {
               <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsLg' }}>
                 {/* H2 Header */}
                 <FlexItem>
-                  <Title headingLevel="h2" size="xl">Get started with Hybrid Cloud Console Settings</Title>
+                  <Title headingLevel="h2" size="xl">Get started with Red Hat console settings</Title>
                 </FlexItem>
                 
                 {/* Two service cards side by side */}
@@ -733,7 +733,7 @@ const Dashboard: React.FunctionComponent = () => {
                         </CardHeader>
                         <CardBody>
                           <Content>
-                            <p>Configure how you want to be alerted of events firing in your workspace through email, Hybrid Cloud Console-native tools, and third-party tools as well. Users with certain admin roles can also configure workspace-wide alert defaults.</p>
+                            <p>Configure how you want to be alerted of events firing in your workspace through email, Red Hat console–native tools, and third-party tools as well. Users with certain admin roles can also configure workspace-wide alert defaults.</p>
                             <div style={{ marginTop: '16px' }}>
                               <Button variant="secondary" onClick={() => navigate('/alert-manager')}>
                                 Manage alerts

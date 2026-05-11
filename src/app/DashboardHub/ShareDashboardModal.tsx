@@ -196,7 +196,7 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
       <ModalBody>
         <Content className="hcc-share-dashboard-modal-intro">
           <p>
-            Dashboards can only be shared with existing users in your organization on the Hybrid Cloud Console. Users
+            Dashboards can only be shared with existing users in your organization on the Red Hat console. Users
             and groups that you share your dashboard with will receive an email inviting them to view your dashboard.
             Only the dashboard creator can edit the dashboard.
           </p>

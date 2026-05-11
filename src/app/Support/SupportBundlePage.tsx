@@ -12,6 +12,10 @@ export interface ISupportBundlePageProps {
   actions?: React.ReactNode;
   /** When false, breadcrumbs only — no `<h1>` row (use when the child provides its own title, e.g. a wizard). */
   showPageHeading?: boolean;
+  /**
+   * `wizard-fill`: breadcrumb stays put; main fills viewport under masthead so only the wizard form body scrolls.
+   */
+  layoutVariant?: 'default' | 'wizard-fill';
   children?: React.ReactNode;
 }
 
@@ -24,10 +28,14 @@ const SupportBundlePage: React.FunctionComponent<ISupportBundlePageProps> = ({
   breadcrumbCurrent,
   actions,
   showPageHeading = true,
+  layoutVariant = 'default',
   children,
-}) => (
-  <>
-    <PageSection hasBodyWrapper={false}>
+}) => {
+  const crumbs = (
+    <PageSection
+      hasBodyWrapper={false}
+      className={layoutVariant === 'wizard-fill' ? 'support-bundle-page__crumbs' : undefined}
+    >
       <Breadcrumb>
         <BreadcrumbItem to="/support">Support</BreadcrumbItem>
         {breadcrumbParent ? (
@@ -40,27 +48,48 @@ const SupportBundlePage: React.FunctionComponent<ISupportBundlePageProps> = ({
         )}
       </Breadcrumb>
     </PageSection>
-    {showPageHeading ? (
-      <PageSection hasBodyWrapper={false}>
-        <Flex
-          justifyContent={{ default: 'justifyContentSpaceBetween' }}
-          alignItems={{ default: 'alignItemsFlexStart' }}
-          flexWrap={{ default: 'wrap' }}
-          spaceItems={{ default: 'spaceItemsMd' }}
-        >
-          <FlexItem flex={{ default: 'flex_1' }}>
-            <Title headingLevel="h1">{pageTitle}</Title>
-          </FlexItem>
-          {actions ? <FlexItem>{actions}</FlexItem> : null}
-        </Flex>
-        {children ? <div style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>{children}</div> : null}
-      </PageSection>
-    ) : (
-      <PageSection hasBodyWrapper={false} padding={{ default: 'noPadding' }}>
-        {children}
-      </PageSection>
-    )}
-  </>
-);
+  );
+
+  const body = showPageHeading ? (
+    <PageSection hasBodyWrapper={false}>
+      <Flex
+        justifyContent={{ default: 'justifyContentSpaceBetween' }}
+        alignItems={{ default: 'alignItemsFlexStart' }}
+        flexWrap={{ default: 'wrap' }}
+        spaceItems={{ default: 'spaceItemsMd' }}
+      >
+        <FlexItem flex={{ default: 'flex_1' }}>
+          <Title headingLevel="h1">{pageTitle}</Title>
+        </FlexItem>
+        {actions ? <FlexItem>{actions}</FlexItem> : null}
+      </Flex>
+      {children ? <div style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>{children}</div> : null}
+    </PageSection>
+  ) : (
+    <PageSection
+      hasBodyWrapper={false}
+      padding={{ default: 'noPadding' }}
+      className={layoutVariant === 'wizard-fill' ? 'support-bundle-page__body' : undefined}
+    >
+      {children}
+    </PageSection>
+  );
+
+  if (layoutVariant === 'wizard-fill') {
+    return (
+      <div className="support-bundle-page support-bundle-page--wizard-fill">
+        {crumbs}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {crumbs}
+      {body}
+    </>
+  );
+};
 
 export { SupportBundlePage };

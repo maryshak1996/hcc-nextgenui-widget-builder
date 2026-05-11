@@ -1699,6 +1699,42 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   min-height: 0;
 }
 
+/* Support new case: breadcrumb + wizard chrome fill viewport; only form body scrolls (see inner rules). */
+.support-bundle-page--wizard-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.support-bundle-page--wizard-fill .support-bundle-page__crumbs {
+  flex-shrink: 0;
+}
+
+.support-bundle-page--wizard-fill .support-bundle-page__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.support-bundle-page--wizard-fill .support-bundle-page__body > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-v6-c-page__main:has(.support-bundle-page--wizard-fill),
+.pf-v6-c-page__main-container:has(.support-bundle-page--wizard-fill) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Support new case wizard: only step form body scrolls — header, step nav, footer stay fixed in the shell */
 .support-new-case-wizard {
   display: flex;
@@ -1708,6 +1744,12 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.support-bundle-page--wizard-fill .support-new-case-wizard--with-chrome {
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
 }
 
 .support-new-case-wizard--completion {

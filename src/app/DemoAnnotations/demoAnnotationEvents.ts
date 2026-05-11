@@ -15,3 +15,6 @@ export type HccDemoAnnotationsPrefDetail = {
 /** User message injected on first focus of the mock IDE composer (demo). */
 export const DEMO_IDE_COPY_FAIL_USER_PROMPT =
   'copy fail CVE is in the news. which of my systems are impacted?';
+
+/** Fired when the CVE-handoff support wizard main body is ready for demo annotations (after staged load). */
+export const HCC_SUPPORT_WIZARD_BODY_READY = 'hcc-support-wizard-body-ready';

@@ -5,7 +5,7 @@ import type { Widget } from '@app/Homepage/widgetTypes';
 export const CONSOLE_DEFAULT_DASHBOARD_ID = 'd-console-default';
 
 /** Shown in the homepage / built-in dashboard body (name in hub & switcher stays “Console default”). */
-export const CONSOLE_DEFAULT_BODY_TITLE = 'Welcome to the Hybrid Cloud Console';
+export const CONSOLE_DEFAULT_BODY_TITLE = 'Welcome to the Red Hat console';
 
 /**
  * Widget order for the built-in console homepage (grid auto-flow: dense).

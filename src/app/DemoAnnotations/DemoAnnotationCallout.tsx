@@ -61,7 +61,7 @@ const DemoAnnotationCallout: React.FunctionComponent<DemoAnnotationCalloutProps>
     return null;
   }
 
-  const nextDisabled = Boolean(onNext && (nextUsed || nextCompletedExternally));
+  const showNextFooter = Boolean(onNext) && !nextUsed && !nextCompletedExternally;
 
   return (
     <div
@@ -72,18 +72,13 @@ const DemoAnnotationCallout: React.FunctionComponent<DemoAnnotationCalloutProps>
     >
       <div className="hcc-demo-annotation-callout">
         <div className="hcc-demo-annotation-callout__body">{children}</div>
-        {onNext ? (
+        {showNextFooter ? (
           <div className="hcc-demo-annotation-callout__footer">
             <button
               type="button"
               className="hcc-demo-annotation-callout__next"
-              disabled={nextDisabled}
               onClick={handleNext}
-              aria-label={
-                nextDisabled
-                  ? `${nextLabel}, already advanced`
-                  : `${nextLabel}, go to next demo step`
-              }
+              aria-label={`${nextLabel}, go to next demo step`}
             >
               <span className="hcc-demo-annotation-callout__next-inner">
                 <span className="hcc-demo-annotation-callout__next-label">{nextLabel}</span>

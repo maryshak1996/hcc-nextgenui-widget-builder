@@ -27,6 +27,42 @@
   scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
 }
 
+/*
+ * Help panel Chat (CVE handoff): column fixed to the viewport, immediately left of the open help drawer.
+ * `--hcc-help-chat-annotations-right-offset` = drawer width + gap (set from AppLayout when the drawer is open).
+ */
+.hcc-demo-annotations-layer--help-chat-left {
+  position: fixed;
+  top: max(4.5rem, calc(env(safe-area-inset-top, 0px) + 3.25rem));
+  bottom: calc(var(--hcc-fake-dock-clearance, 0px) + 0.75rem + env(safe-area-inset-bottom, 0px));
+  right: var(--hcc-help-chat-annotations-right-offset, 592px);
+  z-index: 8600;
+  align-items: stretch;
+  width: min(20rem, calc(100vw - var(--hcc-help-chat-annotations-right-offset, 592px) - max(0.75rem, env(safe-area-inset-left, 0px))));
+  max-height: calc(100dvh - var(--hcc-fake-dock-clearance, 0px) - 5rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+.hcc-demo-annotations-layer--help-chat-left .hcc-demo-annotation-callout-host {
+  max-width: none;
+  width: 100%;
+  align-self: stretch;
+}
+
+@media (max-width: 992px) {
+  .hcc-demo-annotations-layer--help-chat-left {
+    left: max(0.5rem, env(safe-area-inset-left, 0px));
+    right: max(0.5rem, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+    bottom: auto;
+    top: max(4.5rem, env(safe-area-inset-top, 0px));
+    max-height: min(42vh, 14rem);
+  }
+}
+
 /* Mock IDE: fixed column just left of the composer panel (width matches app.css composer) */
 .hcc-demo-ide-annotations-layer--beside-composer {
   --hcc-ide-composer-w: min(380px, 34vw);
@@ -178,6 +214,14 @@
     0 0 0 1px rgba(255, 255, 255, 0.55),
     0 0 18px rgba(255, 20, 147, 0.45);
   animation: hcc-demo-click-outline-in 0.28s ease-out both, hcc-demo-click-outline-pulse 2.2s ease-in-out infinite;
+}
+
+/* Same outline frame; captures clicks for scripted demo actions (e.g. send “yes”). */
+.hcc-demo-click-outline--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(255, 20, 147, 0.1);
+  border-style: solid;
 }
 
 @keyframes hcc-demo-click-outline-in {

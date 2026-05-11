@@ -78,10 +78,14 @@ const SupportNewCase: React.FunctionComponent = () => {
       breadcrumbParent={{ label: 'Support cases', to: '/support/cases' }}
       breadcrumbCurrent="New case"
       showPageHeading={false}
+      layoutVariant="wizard-fill"
     >
       <SupportCaseDraftProvider initialDraft={wizardBootstrap.initialDraft}>
         <SupportCaseDraftPatchBridge />
-        <SupportNewCaseWizard startIndex={wizardBootstrap.wizardStartIndex} />
+        <SupportNewCaseWizard
+          startIndex={wizardBootstrap.wizardStartIndex}
+          fromCveDemoHandoff={wizardBootstrap.fromCveDemoHandoff === true}
+        />
       </SupportCaseDraftProvider>
     </SupportBundlePage>
   );

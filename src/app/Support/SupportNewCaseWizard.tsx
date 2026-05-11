@@ -13,6 +13,7 @@ import {
 } from '@patternfly/react-core';
 import { css } from '@patternfly/react-styles';
 import wizardStyles from '@patternfly/react-styles/css/components/Wizard/wizard.mjs';
+import { HCC_SUPPORT_WIZARD_BODY_READY } from '@app/DemoAnnotations/demoAnnotationEvents';
 import { SupportNewCaseReviewStep } from './SupportNewCaseReviewStep';
 import {
   SupportNewCaseAdditionalDetailsStep,
@@ -24,14 +25,36 @@ import { useSupportCaseChatContinuation } from './SupportCaseChatContinuationCon
 
 const REVIEW_STEP_INDEX = 5;
 
+/** Staged “page load” before the Open a case body appears (CVE handoff demo only). */
+const CVE_WIZARD_BODY_STAGED_MS = 1550;
+
 export interface ISupportNewCaseWizardProps {
   /** CVE continuation opens on Review with prefilled draft (`startIndex` 5). Default 1. */
   startIndex?: number;
+  /** When true, briefly show a loading state so the main wizard can “arrive” after navigation. */
+  fromCveDemoHandoff?: boolean;
 }
 
-const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> = ({ startIndex = 1 }) => {
+const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> = ({
+  startIndex = 1,
+  fromCveDemoHandoff = false,
+}) => {
   const navigateToCases = useNavigate();
   const { submittedCaseNumber, isContinuationThinking } = useSupportCaseChatContinuation();
+  const [wizardBodyVisible, setWizardBodyVisible] = React.useState(() => !fromCveDemoHandoff);
+
+  React.useEffect(() => {
+    if (!fromCveDemoHandoff) {
+      setWizardBodyVisible(true);
+      return undefined;
+    }
+    setWizardBodyVisible(false);
+    const t = window.setTimeout(() => {
+      setWizardBodyVisible(true);
+      window.dispatchEvent(new Event(HCC_SUPPORT_WIZARD_BODY_READY));
+    }, CVE_WIZARD_BODY_STAGED_MS);
+    return () => window.clearTimeout(t);
+  }, [fromCveDemoHandoff]);
 
   const handleFinish = React.useCallback(() => {
     navigateToCases('/support/cases');
@@ -74,6 +97,26 @@ const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> 
     );
   }
 
+  if (fromCveDemoHandoff && !wizardBodyVisible) {
+    return (
+      <div
+        className="support-new-case-wizard support-new-case-wizard--bootstrapping"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'var(--pf-t--global--spacer--md)',
+          minHeight: 'min(60vh, 560px)',
+          padding: 'var(--pf-t--global--spacer--2xl)',
+        }}
+      >
+        <Spinner size="lg" />
+        <span style={{ color: 'var(--pf-t--global--text--color--subtle)' }}>Loading support case draft…</span>
+      </div>
+    );
+  }
+
   const wizardHeader = (
     <div className={css(wizardStyles.wizardHeader)}>
       <Flex
@@ -100,7 +143,7 @@ const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> 
   );
 
   return (
-    <div className="support-new-case-wizard">
+    <div className="support-new-case-wizard support-new-case-wizard--with-chrome">
       {isContinuationThinking ? (
         <div
           role="status"
@@ -128,7 +171,7 @@ const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> 
         navAriaLabel="Support case wizard steps"
         header={wizardHeader}
         footer={wizardFooter}
-        height="min(85vh, 920px)"
+        height="100%"
         startIndex={startIndex}
         onSave={handleFinish}
         onClose={() => {

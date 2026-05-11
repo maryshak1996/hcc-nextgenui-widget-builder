@@ -1,4 +1,5 @@
 import { COPYFAIL_CVE_DEMO_ID } from '@app/RhelVulnerability/copyFailDemoFleet';
+import { CVE_REMEDIATION_FAILED_HOST_TECHNICAL_ISSUE } from '@app/RhelVulnerability/cveTroubleshootDemoCopy';
 
 /** Case type cards — matches portal “Open a case” flow */
 export const SUPPORT_CASE_TYPE_OPTIONS: { id: string; title: string; description: string }[] = [
@@ -69,8 +70,10 @@ export function buildCvePrefilledSupportDraft(remainingHostName: string, cveId: 
     problemDescription: [
       `Support case draft for ${cveId}.`,
       '',
-      'Context from Hybrid Cloud Console: Copy fail–related vulnerability; fleet remediation completed for most systems.',
+      'Context from Red Hat: Copy fail–related vulnerability; fleet remediation completed for most systems.',
       `One host remains exposed or not fully validated: ${remainingHostName}.`,
+      '',
+      CVE_REMEDIATION_FAILED_HOST_TECHNICAL_ISSUE,
       '',
       'Include sosreport from that host, RHSA/advisory linkage, and any errors from remediation playbooks.',
     ].join('\n'),

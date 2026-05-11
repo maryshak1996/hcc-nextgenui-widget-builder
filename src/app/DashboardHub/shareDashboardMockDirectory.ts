@@ -12,7 +12,7 @@ export function shareDirectoryEntryKey(entry: Pick<ShareDirectoryEntry, 'kind' |
 }
 
 /**
- * Mock Hybrid Cloud Console org directory for the share-dashboard typeahead (replace with API later).
+ * Mock Red Hat console org directory for the share-dashboard typeahead (replace with API later).
  */
 export const SHARE_DIRECTORY: ShareDirectoryEntry[] = [
   { id: 'akumar', kind: 'user', displayName: 'akumar' },

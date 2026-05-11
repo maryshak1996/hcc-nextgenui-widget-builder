@@ -629,7 +629,7 @@ export function renderHomepageWidgetContent(
                           </FlexItem>
                           <FlexItem>
                             <Content component="small">
-                              Take a quick guided tour to understand how the Red Hat Hybrid Cloud Console's capabilities will increase your efficiency
+                              Take a quick guided tour to understand how Red Hat’s capabilities will increase your efficiency
                             </Content>
                           </FlexItem>
                         </Flex>

@@ -201,7 +201,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [customHelpVariant, setCustomHelpVariant] = React.useState<'quickstart' | 'in-page' | null>(null);
   /** When set, Chat tab shows this assistant bubble instead of the default demo transcript (e.g. support case flow). */
   const [helpChatAssistantBubbleText, setHelpChatAssistantBubbleText] = React.useState<string | null>(null);
-  /** IDE → HCC handoff: show the user’s composer prompt plus the same assistant reply (no Troubleshoot CTA). */
+  /** IDE → Red Hat console handoff: show the user’s composer prompt plus the same assistant reply (no Troubleshoot CTA). */
   const [helpChatIdeHandoffUserPrompt, setHelpChatIdeHandoffUserPrompt] = React.useState<string | null>(null);
   /** After CVE chat confirms support draft: append `NEW_SUPPORT_CASE_CHAT_PROMPT` without clearing IDE transcript */
   const [helpChatSupportWizardIntro, setHelpChatSupportWizardIntro] = React.useState(false);
@@ -295,7 +295,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Recommended content for Search tab
   const recommendedContentSettings = [
     { id: 'rec-settings-1', title: 'Configuring notifications and integrations', url: 'https://docs.redhat.com/en/documentation/red_hat_hybrid_cloud_console/1-latest/html/configuring_notifications_on_the_red_hat_hybrid_cloud_console/index', breadcrumb1: 'Learning resources', breadcrumb2: 'Documentation', labels: ['Settings'] },
-    { id: 'rec-settings-2', title: 'Azure cloud integrations (sources) on Hybrid Cloud Console to unlock Red Hat Gold Images in Microsoft Azure', url: 'https://access.redhat.com/articles/6961606', breadcrumb1: 'Knowledgebase article', breadcrumb2: '', labels: ['Settings', 'OpenShift'] },
+    { id: 'rec-settings-2', title: 'Azure cloud integrations (sources) on the Red Hat console to unlock Red Hat Gold Images in Microsoft Azure', url: 'https://access.redhat.com/articles/6961606', breadcrumb1: 'Knowledgebase article', breadcrumb2: '', labels: ['Settings', 'OpenShift'] },
     { id: 'rec-settings-3', title: 'Integrations', url: 'https://developers.redhat.com/api-catalog/api/integrations', breadcrumb1: 'API documentation', breadcrumb2: '', labels: ['Settings'] },
     { id: 'rec-settings-4', title: 'Notifications', url: 'https://developers.redhat.com/api-catalog/api/notifications', breadcrumb1: 'API documentation', breadcrumb2: '', labels: ['Settings'] },
     { id: 'rec-settings-5', title: 'Configuring console event notifications in Slack', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Quick start', labels: ['Settings'] }
@@ -303,7 +303,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
   const recommendedContentAll = [
     { id: 'rec-all-1', title: 'Analyzing CentOS Linux systems for conversion in Insights', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Quick start', labels: ['RHEL'] },
-    { id: 'rec-all-2', title: 'Getting started with the Red Hat Hybrid Cloud Console', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Documentation', labels: ['Settings', 'RHEL', 'IAM', 'Ansible', 'OpenShift', 'Subscription Services'] },
+    { id: 'rec-all-2', title: 'Getting started with the Red Hat console', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Documentation', labels: ['Settings', 'RHEL', 'IAM', 'Ansible', 'OpenShift', 'Subscription Services'] },
     { id: 'rec-all-3', title: 'Getting Started with Red Hat Insights', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Documentation', labels: ['RHEL'] },
     { id: 'rec-all-4', title: 'Learn about OpenShift cluster services on the console', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Documentation', labels: ['OpenShift'] },
     { id: 'rec-all-5', title: 'Managing user access with workspaces', url: '#', breadcrumb1: 'Learning resources', breadcrumb2: 'Quick start', labels: ['RHEL', 'IAM'] }
@@ -379,6 +379,19 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [helpPanelWidth, setHelpPanelWidth] = React.useState(580); // Default size in pixels
   const helpPanelRef = React.useRef<HTMLDivElement>(null);
   const [isNotificationActionsOpen, setIsNotificationActionsOpen] = React.useState(false);
+
+  /** Places CVE Help-chat demo callouts immediately left of the open help drawer (`demoAnnotations.css`). */
+  React.useEffect(() => {
+    if (!isDrawerExpanded) {
+      document.documentElement.style.removeProperty('--hcc-help-chat-annotations-right-offset');
+      return undefined;
+    }
+    const px = Math.round(Math.max(280, helpPanelWidth)) + 12;
+    document.documentElement.style.setProperty('--hcc-help-chat-annotations-right-offset', `${px}px`);
+    return () => {
+      document.documentElement.style.removeProperty('--hcc-help-chat-annotations-right-offset');
+    };
+  }, [isDrawerExpanded, helpPanelWidth]);
 
   // Menu groups data for primary-detail view
   const menuGroupsData: Record<string, MenuItem[]> = {
@@ -1083,7 +1096,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(event.target as Node)) {
         // Also check if click is on the masthead toggle button
-        const mastheadToggle = document.querySelector('[aria-label="Red Hat Hybrid Cloud Console menu"]');
+        const mastheadToggle = document.querySelector('[aria-label="Red Hat menu"]');
         if (mastheadToggle && mastheadToggle.contains(event.target as Node)) {
           return; // Don't close if clicking on the toggle button
         }
@@ -1349,7 +1362,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         openHelpPanelWithIdeHandoff(userPrompt);
       } else {
         openHelpPanelWithChatPrompt(
-          `You're viewing ${COPYFAIL_CVE_DEMO_ID} in Vulnerability. Ask about remediation, prioritizing affected systems, or next steps in the Hybrid Cloud Console.`
+          `You're viewing ${COPYFAIL_CVE_DEMO_ID} in Vulnerability. Ask about remediation, prioritizing affected systems, or next steps in the Red Hat console.`
         );
       }
     } catch {
@@ -1488,7 +1501,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             </Title>
             <ul style={{ fontSize: '14px', lineHeight: '1.8', color: '#6a6e73', marginBottom: '24px' }}>
               <li>Active Slack workspace with admin permissions</li>
-              <li>Red Hat Hybrid Cloud Console account</li>
+              <li>Red Hat account</li>
               <li>Webhook URL from your Slack workspace</li>
             </ul>
             <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', marginTop: '24px' }}>
@@ -2283,7 +2296,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         `}</style>
         <div className="learn-menu">
           <div style={{ padding: '16px 16px 12px 16px', fontSize: '14px', lineHeight: '1.5', color: 'var(--pf-v6-global--Color--200)' }}>
-            Find product documentation, quick starts, learning paths, knowledgebase articles, and more related to services on the Hybrid Cloud Console. For learning resources, browse the <a href="https://console.redhat.com/learning-resources?tab=all" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>All Learning Catalog</a>. For broader knowledgebase and support content, see the <a href="https://access.redhat.com/kb/search?document_kinds=Article&start=0&products=Red+Hat+Hybrid+Cloud+Console" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Customer Portal</a>.
+            Find product documentation, quick starts, learning paths, knowledgebase articles, and more related to services on the Red Hat console. For learning resources, browse the <a href="https://console.redhat.com/learning-resources?tab=all" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>All Learning Catalog</a>. For broader knowledgebase and support content, see the <a href="https://access.redhat.com/kb/search?document_kinds=Article&start=0&products=Red+Hat+Hybrid+Cloud+Console" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Customer Portal</a>.
           </div>
           <div style={{ padding: '0 16px 16px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Dropdown
@@ -2728,7 +2741,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         `}</style>
         <div className="learn-menu">
           <div style={{ padding: '16px 16px 12px 16px', fontSize: '14px', lineHeight: '1.5', color: 'var(--pf-v6-global--Color--200)' }}>
-            Browse the APIs for Hybrid Cloud Console services. See full API documentation on the <a href="https://developers.redhat.com/api-catalog/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>API documentation catalog</a>.
+            Browse the APIs for Red Hat services. See full API documentation on the <a href="https://developers.redhat.com/api-catalog/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>API documentation catalog</a>.
           </div>
           <div style={{ padding: '16px 16px 8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -3144,7 +3157,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 }
               `}</style>
               <div style={{ fontSize: '14px', lineHeight: '1.5', color: 'var(--pf-v6-global--Color--200)', marginBottom: '24px' }}>
-                Help us improve the Red Hat Hybrid Cloud Console by sharing your experience. For urgent issues, <a href="https://access.redhat.com/support/cases/#/case/new/get-support?" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>open a support case</a>.
+                Help us improve the Red Hat by sharing your experience. For urgent issues, <a href="https://access.redhat.com/support/cases/#/case/new/get-support?" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>open a support case</a>.
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '800px' }}>
@@ -3329,12 +3342,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             <MenuToggle
               onClick={() => setIsLogoDropdownOpen(!isLogoDropdownOpen)}
               isExpanded={isLogoDropdownOpen}
-              aria-label="Red Hat Hybrid Cloud Console menu"
+              aria-label="Red Hat menu"
               style={{ 
                 fontSize: '14px'
               }}
             >
-              Red Hat Hybrid Cloud Console
+              Red Hat
             </MenuToggle>
           </Tooltip>
         </div>
