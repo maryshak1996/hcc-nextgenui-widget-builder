@@ -52,7 +52,7 @@
     "jest-fixed-jsdom": "^0.0.9",
     "kill-port": "^2.0.1",
     "mini-css-extract-plugin": "^2.9.2",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "^0.55.1",
     "postcss": "^8.5.5",
     "prettier": "^3.5.3",
     "prop-types": "^15.8.1",
