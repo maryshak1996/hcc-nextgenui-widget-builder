@@ -1,5 +1,15 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { BrainIcon } from '@patternfly/react-icons';
+import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
+import {
+  DEMO_IDE_COPY_FAIL_USER_PROMPT,
+  HCC_DEMO_ANNOTATIONS_PREF_CHANGED,
+  type HccDemoAnnotationsPrefDetail,
+} from '@app/DemoAnnotations/demoAnnotationEvents';
+import '@app/DemoAnnotations/demoAnnotations.css';
+import { readAnnotationsVisiblePreference } from '@app/DemoAnnotations/DemoAnnotationsViewToggle';
+import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
 import { usePcmBrowser } from '@app/PcmDemo/PcmBrowserContext';
 import { CopyFailIdeAssistantReplyBody } from '@app/RhelVulnerability/copyFailIdeAssistantReply';
 
@@ -10,7 +20,19 @@ export interface IFakeAiIdeFullpageProps {
 
 const THINKING_DELAY_MS = 1100;
 
+const ANCHOR_COMPOSER_INPUT = '[data-demo-anchor="pcm-ide-composer-input"]';
+const ANCHOR_IDE_TROUBLESHOOT_HCC = '[data-demo-anchor="pcm-ide-troubleshoot-hcc"]';
+
+const CALLOUT_DELAY_MS = 1000;
+const OUTLINE_DELAY_MS = 2200;
+
 type TComposerPhase = 'idle' | 'thinking' | 'answered';
+
+/**
+ * Post–assistant-reply demo: monotonic step so prior callouts stay mounted and stack.
+ * 0 = not started, 1 = review callout, 2 = + jump callout, 3 = + troubleshoot click outline.
+ */
+type TIdePostAnswerStep = 0 | 1 | 2 | 3;
 
 /**
  * Non-functional full-screen mock inspired by Cursor-style AI IDEs (not PatternFly).
@@ -18,19 +40,77 @@ type TComposerPhase = 'idle' | 'thinking' | 'answered';
 const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ isOpen, onClose }) => {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const composerRef = React.useRef<HTMLTextAreaElement>(null);
+  const demoInjectedRef = React.useRef(false);
   const { openTroubleshootInHcc } = usePcmBrowser();
 
   const [draft, setDraft] = React.useState('');
   const [sentUserPrompt, setSentUserPrompt] = React.useState<string | null>(null);
   const [phase, setPhase] = React.useState<TComposerPhase>('idle');
 
+  const [ideAnnotationsOn, setIdeAnnotationsOn] = React.useState(readAnnotationsVisiblePreference);
+  const [demoCalloutVisible, setDemoCalloutVisible] = React.useState(false);
+  const [demoComposerOutline, setDemoComposerOutline] = React.useState(false);
+  const [idePostAnswerStep, setIdePostAnswerStep] = React.useState<TIdePostAnswerStep>(0);
+  /** Composer demo prompt sent (via Next or focusing the outlined composer). */
+  const [ideKickoffDone, setIdeKickoffDone] = React.useState(false);
+
+  React.useEffect(() => {
+    const onPref = (e: Event) => {
+      const d = (e as CustomEvent<HccDemoAnnotationsPrefDetail>).detail;
+      if (typeof d?.visible === 'boolean') {
+        setIdeAnnotationsOn(d.visible);
+      }
+    };
+    window.addEventListener(HCC_DEMO_ANNOTATIONS_PREF_CHANGED, onPref);
+    return () => window.removeEventListener(HCC_DEMO_ANNOTATIONS_PREF_CHANGED, onPref);
+  }, []);
+
   React.useEffect(() => {
     if (!isOpen) {
       setDraft('');
       setSentUserPrompt(null);
       setPhase('idle');
+      demoInjectedRef.current = false;
+      setDemoCalloutVisible(false);
+      setDemoComposerOutline(false);
+      setIdePostAnswerStep(0);
+      setIdeKickoffDone(false);
+      return;
     }
+    setIdeAnnotationsOn(readAnnotationsVisiblePreference());
   }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen || !ideAnnotationsOn) {
+      return undefined;
+    }
+    const tCallout = window.setTimeout(() => setDemoCalloutVisible(true), CALLOUT_DELAY_MS);
+    const tOutline = window.setTimeout(() => setDemoComposerOutline(true), OUTLINE_DELAY_MS);
+    return () => {
+      window.clearTimeout(tCallout);
+      window.clearTimeout(tOutline);
+    };
+  }, [isOpen, ideAnnotationsOn]);
+
+  React.useEffect(() => {
+    if (!ideAnnotationsOn) {
+      setDemoCalloutVisible(false);
+      setDemoComposerOutline(false);
+      setIdePostAnswerStep(0);
+    }
+  }, [ideAnnotationsOn]);
+
+  React.useEffect(() => {
+    if (phase === 'idle') {
+      setIdePostAnswerStep(0);
+    }
+  }, [phase]);
+
+  React.useEffect(() => {
+    if (phase === 'answered' && ideAnnotationsOn && isOpen) {
+      setIdePostAnswerStep((prev) => (prev === 0 ? 1 : prev));
+    }
+  }, [phase, ideAnnotationsOn, isOpen]);
 
   React.useEffect(() => {
     if (phase !== 'thinking') {
@@ -57,7 +137,6 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   React.useEffect(() => {
     if (isOpen) {
       document.body.classList.add('hcc-pcm-ai-ide-open');
-      window.setTimeout(() => composerRef.current?.focus(), 0);
     } else {
       document.body.classList.remove('hcc-pcm-ai-ide-open');
     }
@@ -82,13 +161,52 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
       e.preventDefault();
       submitPrompt();
     },
-    [submitPrompt]
+    [submitPrompt],
   );
+
+  const kickOffIdeDemoPrompt = React.useCallback(() => {
+    if (demoInjectedRef.current || phase !== 'idle') {
+      return;
+    }
+    demoInjectedRef.current = true;
+    setSentUserPrompt(DEMO_IDE_COPY_FAIL_USER_PROMPT);
+    setDraft('');
+    setPhase('thinking');
+    setDemoComposerOutline(false);
+    setIdeKickoffDone(true);
+  }, [phase]);
+
+  const onIdeAskChatNext = React.useCallback(() => {
+    kickOffIdeDemoPrompt();
+  }, [kickOffIdeDemoPrompt]);
+
+  const onComposerFocusDemo = React.useCallback(() => {
+    if (!demoComposerOutline || demoInjectedRef.current || phase !== 'idle') {
+      return;
+    }
+    kickOffIdeDemoPrompt();
+  }, [demoComposerOutline, phase, kickOffIdeDemoPrompt]);
 
   const onTroubleshootClick = React.useCallback(() => {
     openTroubleshootInHcc({ ideUserPrompt: sentUserPrompt ?? undefined });
     onClose();
   }, [openTroubleshootInHcc, onClose, sentUserPrompt]);
+
+  /** Same pattern as article callouts: `DemoAnnotationCallout` disables Next after one use; keep handlers idempotent. */
+  const onIdeReviewResponseNext = React.useCallback(() => {
+    setIdePostAnswerStep((s) => {
+      if (s >= 2) {
+        return s;
+      }
+      const el = document.querySelector<HTMLElement>(ANCHOR_IDE_TROUBLESHOOT_HCC);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      return 2;
+    });
+  }, []);
+
+  const onIdeJumpConsoleNext = React.useCallback(() => {
+    setIdePostAnswerStep((s) => (s < 3 ? 3 : s));
+  }, []);
 
   if (!isOpen) {
     return null;
@@ -97,15 +215,51 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   const showConversation = phase !== 'idle';
   const composerDisabled = phase !== 'idle';
 
+  const ideCalloutsPortal =
+    ideAnnotationsOn && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="hcc-demo-annotations-layer hcc-demo-ide-annotations-layer--beside-composer"
+            aria-label="Demo walkthrough hints"
+          >
+            <DemoAnnotationCallout
+              visible={demoCalloutVisible}
+              id="hcc-demo-ide-callout-chat"
+              onNext={onIdeAskChatNext}
+              nextCompletedExternally={ideKickoffDone}
+            >
+              {`Let's ask the chat "${DEMO_IDE_COPY_FAIL_USER_PROMPT}"`}
+            </DemoAnnotationCallout>
+            <DemoAnnotationCallout
+              visible={phase === 'answered' && idePostAnswerStep >= 1}
+              id="hcc-demo-ide-callout-response-review"
+              onNext={onIdeReviewResponseNext}
+            >
+              {"Okay, let's look through this response"}
+            </DemoAnnotationCallout>
+            <DemoAnnotationCallout
+              visible={phase === 'answered' && idePostAnswerStep >= 2}
+              id="hcc-demo-ide-callout-jump-console"
+              onNext={onIdeJumpConsoleNext}
+            >
+              {"Hmmm, okay let's go ahead and jump into the console"}
+            </DemoAnnotationCallout>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <div
-      ref={panelRef}
-      className="hcc-fake-ai-ide-fp"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="hcc-fake-ai-ide-fp-title"
-      tabIndex={-1}
-    >
+    <>
+      {ideCalloutsPortal}
+      <div
+        ref={panelRef}
+        className="hcc-fake-ai-ide-fp"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hcc-fake-ai-ide-fp-title"
+        tabIndex={-1}
+      >
       <header className="hcc-fake-ai-ide-fp__menubar">
         <span className="hcc-fake-ai-ide-fp__brand" id="hcc-fake-ai-ide-fp-title">
           Demo IDE
@@ -201,7 +355,12 @@ export async function runVisionFlow() {
                     <div className="hcc-fake-ai-ide-fp__msg hcc-fake-ai-ide-fp__msg--ai">
                       <CopyFailIdeAssistantReplyBody variant="ide" />
                       <div className="hcc-fake-ai-ide-fp__cta-row">
-                        <button type="button" className="hcc-fake-ai-ide-fp__cta-primary" onClick={onTroubleshootClick}>
+                        <button
+                          type="button"
+                          className="hcc-fake-ai-ide-fp__cta-primary"
+                          data-demo-anchor="pcm-ide-troubleshoot-hcc"
+                          onClick={onTroubleshootClick}
+                        >
                           Troubleshoot in Hybrid Cloud Console
                         </button>
                       </div>
@@ -217,6 +376,7 @@ export async function runVisionFlow() {
               <textarea
                 id="hcc-fake-ai-ide-composer-input"
                 ref={composerRef}
+                data-demo-anchor="pcm-ide-composer-input"
                 className="hcc-fake-ai-ide-fp__composer-input"
                 placeholder="Plan, search, build anything…"
                 rows={3}
@@ -224,6 +384,7 @@ export async function runVisionFlow() {
                 disabled={composerDisabled}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={onComposerKeyDown}
+                onFocus={onComposerFocusDemo}
                 aria-describedby="hcc-fake-ai-ide-composer-hint"
               />
               <p id="hcc-fake-ai-ide-composer-hint" className="hcc-fake-ai-ide-fp__composer-hint">
@@ -235,7 +396,16 @@ export async function runVisionFlow() {
           </div>
         </aside>
       </div>
+      <DemoClickIndicator
+        visible={ideAnnotationsOn && demoComposerOutline && phase === 'idle'}
+        anchorSelector={ANCHOR_COMPOSER_INPUT}
+      />
+      <DemoClickIndicator
+        visible={ideAnnotationsOn && phase === 'answered' && idePostAnswerStep >= 3}
+        anchorSelector={ANCHOR_IDE_TROUBLESHOOT_HCC}
+      />
     </div>
+    </>
   );
 };
 

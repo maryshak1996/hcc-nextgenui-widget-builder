@@ -466,6 +466,11 @@ body.hcc-pcm-ai-ide-open #root {
   gap: 12px;
 }
 
+/* Demo scroll target: keep CTA slightly inset when auto-scrolling the composer chat */
+[data-demo-anchor='pcm-ide-troubleshoot-hcc'] {
+  scroll-margin-block: 16px;
+}
+
 .hcc-fake-ai-ide-fp__msg {
   padding: 10px 12px;
   border-radius: 10px;

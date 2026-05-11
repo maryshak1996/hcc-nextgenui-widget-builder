@@ -1,10 +1,44 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
+import {
+  HCC_DEMO_PCM_ANNOTATIONS_CLEAR,
+  type HccDemoPcmAnnotationsClearDetail,
+} from '@app/DemoAnnotations/demoAnnotationEvents';
+import {
+  DemoAnnotationsViewToggle,
+  persistAnnotationsVisiblePreference,
+  readAnnotationsVisiblePreference,
+} from '@app/DemoAnnotations/DemoAnnotationsViewToggle';
+import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
+import '@app/DemoAnnotations/demoAnnotations.css';
 
 const DOC_TITLE =
   'Emergency: “Copy fail” CVE shakes Linux ecosystem — TechPulse Daily';
 
+const ANCHOR_AI_IDE_DOCK = '[data-demo-anchor="pcm-ai-ide-dock"]';
+
 /** PCM vision demo: TechPulse article body only — fake browser chrome comes from `PcmDemoDesktopShell`. */
 const CveCopyFailArticlePage: React.FunctionComponent = () => {
+  const [showCalloutImpacted, setShowCalloutImpacted] = React.useState(false);
+  const [showCalloutAgent, setShowCalloutAgent] = React.useState(false);
+  const [showClickOutline, setShowClickOutline] = React.useState(false);
+  const [annotationsOn, setAnnotationsOn] = React.useState(readAnnotationsVisiblePreference);
+
+  const clearAllAnnotations = React.useCallback(() => {
+    setShowCalloutImpacted(false);
+    setShowCalloutAgent(false);
+    setShowClickOutline(false);
+  }, []);
+
+  const handleToggleAnnotations = React.useCallback(() => {
+    setAnnotationsOn((prev) => {
+      const next = !prev;
+      persistAnnotationsVisiblePreference(next);
+      return next;
+    });
+  }, []);
+
   React.useEffect(() => {
     const previous = document.title;
     document.title = DOC_TITLE;
@@ -13,8 +47,59 @@ const CveCopyFailArticlePage: React.FunctionComponent = () => {
     };
   }, []);
 
+  React.useEffect(() => {
+    const t = window.setTimeout(() => setShowCalloutImpacted(true), 1000);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  React.useEffect(() => {
+    const onClear = (e: Event) => {
+      const ce = e as CustomEvent<HccDemoPcmAnnotationsClearDetail>;
+      if (ce.detail?.reason === 'ide-opened') {
+        clearAllAnnotations();
+      }
+    };
+    window.addEventListener(HCC_DEMO_PCM_ANNOTATIONS_CLEAR, onClear);
+    return () => window.removeEventListener(HCC_DEMO_PCM_ANNOTATIONS_CLEAR, onClear);
+  }, [clearAllAnnotations]);
+
+  const articleAnnotationsPortal =
+    annotationsOn && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="hcc-demo-annotations-layer hcc-demo-annotations-layer--article-viewport"
+            aria-label="Demo walkthrough hints"
+          >
+            <DemoAnnotationCallout
+              visible={showCalloutImpacted}
+              id="hcc-demo-callout-impacted"
+              onNext={() => setShowCalloutAgent(true)}
+            >
+              Oh no, the copy fail CVE AGAIN? I better go check which of my RHEL systems are impacted.
+            </DemoAnnotationCallout>
+            <DemoAnnotationCallout
+              visible={showCalloutAgent}
+              id="hcc-demo-callout-agent"
+              onNext={() => setShowClickOutline(true)}
+            >
+              {"Let's ask my Red Hat agent what's going on"}
+            </DemoAnnotationCallout>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <div className="hcc-cve-copy-fail-root" role="main" aria-label="TechPulse Daily article (demo)">
+      {articleAnnotationsPortal}
+      <DemoClickIndicator
+        visible={annotationsOn && showClickOutline}
+        anchorSelector={ANCHOR_AI_IDE_DOCK}
+      />
+      <DemoAnnotationsViewToggle
+        annotationsOn={annotationsOn}
+        onToggle={handleToggleAnnotations}
+      />
       <div className="hcc-cve-copy-fail-article">
         <header className="masthead">
           <div className="masthead-inner">

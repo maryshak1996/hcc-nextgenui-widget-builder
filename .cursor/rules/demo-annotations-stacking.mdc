@@ -1,0 +1,24 @@
+---
+description: Demo annotation callouts stack cumulatively and stay visible with click indicators on the same page.
+globs: "**/DemoAnnotations/**,**/FakeAiIdeFullpage.tsx,**/CveCopyFailArticlePage.tsx,**/demoAnnotations.css"
+alwaysApply: false
+---
+# Demo annotations: stacked callouts and persistence
+
+## Rule
+
+On a given demo page or surface (PCM article, fake IDE, etc.), **walkthrough callouts are cumulative**:
+
+1. **Stack in DOM order** — Render callouts in chronological order inside `hcc-demo-annotations-layer` (oldest first, newest last). The shared layer uses a column flex layout with gap so boxes stack vertically.
+2. **Do not unmount earlier callouts** when the user advances — Once a step is reached, keep that `DemoAnnotationCallout` **visible** (`visible={step >= N}` or equivalent booleans). Keep **`onNext` always defined** (same as `CveCopyFailArticlePage`): the shared component disables the Next control after one click; handlers should be idempotent if invoked again. If the same step can also advance via another gesture (e.g. IDE composer focus), pass **`nextCompletedExternally`** so Next disables without a click.
+3. **Click indicators add on top** — When a `DemoClickIndicator` appears for a later target, **prior callouts remain on screen** at the same time. Do not clear callout visibility to show an outline only.
+4. **Reset only on leave** — Clear the whole annotation stack when the user leaves the surface (e.g. closes the IDE), turns demo annotations off, or the demo phase resets for that flow.
+
+## Layout
+
+- Prefer the existing `hcc-demo-annotations-layer` modifiers (`--article-viewport`, `--beside-composer`) for positioning. Use default **top-aligned** stacking (`flex-start`, no `justify-content: flex-end` on the layer) so IDE callouts match the article viewport strip.
+
+## Reference implementations
+
+- `src/app/PcmDemo/CveCopyFailArticlePage.tsx` — two stacked callouts, then dock click outline without removing callouts.
+- `src/app/FakeAppsDock/FakeAiIdeFullpage.tsx` — post-answer IDE steps use a monotonic step index so both callouts stay mounted while the troubleshoot CTA outline shows.

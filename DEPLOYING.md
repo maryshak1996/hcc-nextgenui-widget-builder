@@ -45,6 +45,11 @@ For this repository, that is:
 
 **https://maryshak1996.github.io/hcc-nextgenui-widget-builder/**
 
+Handy links to share (same deployment, includes demo annotations and PCM article):
+
+- **App shell:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
+- **PCM article (CVE copy-fail demo):** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article
+
 CI sets **`PUBLIC_PATH` to `/<repository-name>/`** so asset URLs and the router match Project Pages (forks pick up the correct path automatically).
 
 ### When it deploys

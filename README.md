@@ -8,6 +8,12 @@ An internal UX prototype used to explore and demonstrate UI/UX design concepts f
 - **PCM integration (GitHub Pages):** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/  
   (Deploys from the **`pcm-integration`** branch; see [`DEPLOYING.md`](./DEPLOYING.md).)
 
+**Share with coworkers (PCM demo on Pages):**
+
+- **Home / shell:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
+- **Copy-fail article walkthrough:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article  
+  After this push, GitHub Actions will rebuild the site from **`pcm-integration`**; if the link 404s briefly, wait for **Actions → Deploy PCM demo to GitHub Pages** to finish.
+
 ### 🎨 Design Preview
 **Figma Working Design File:**  
 https://www.figma.com/design/c1GHDIdhEGkwVZ0jt65q9q/NextGenUI-Dashboard-Widgets?node-id=0-1&t=KZCfD9CcCWUCEmvo-1

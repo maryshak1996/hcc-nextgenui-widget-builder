@@ -13,6 +13,7 @@ import {
   CubeIcon,
   GlobeIcon,
 } from '@patternfly/react-icons';
+import { HCC_DEMO_PCM_ANNOTATIONS_CLEAR } from '@app/DemoAnnotations/demoAnnotationEvents';
 
 /**
  * Demo-only “desktop” dock and mock AI IDE — Chrome switches back to the fake browser; AI IDE toggles the composer.
@@ -21,6 +22,7 @@ const FakeAppsDock: React.FunctionComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isIdeOpen, setIsIdeOpen] = React.useState(false);
+  const wasIdeOpenRef = React.useRef(false);
 
   const isFakeBrowserSurface =
     location.pathname.startsWith('/pcm') || location.pathname.startsWith('/red-hat-enterprise-linux');
@@ -40,6 +42,15 @@ const FakeAppsDock: React.FunctionComponent = () => {
       document.body.classList.remove('hcc-fake-dock--active');
     };
   }, []);
+
+  React.useEffect(() => {
+    if (isIdeOpen && !wasIdeOpenRef.current) {
+      window.dispatchEvent(
+        new CustomEvent(HCC_DEMO_PCM_ANNOTATIONS_CLEAR, { detail: { reason: 'ide-opened' } }),
+      );
+    }
+    wasIdeOpenRef.current = isIdeOpen;
+  }, [isIdeOpen]);
 
   const staticDockItems: Array<{
     id: string;
@@ -107,6 +118,7 @@ const FakeAppsDock: React.FunctionComponent = () => {
               <button
                 type="button"
                 className="hcc-fake-apps-dock__launch"
+                data-demo-anchor="pcm-ai-ide-dock"
                 aria-label={isIdeOpen ? 'Close mock AI IDE' : 'Open mock AI IDE'}
                 aria-pressed={isIdeOpen}
                 onClick={() => setIsIdeOpen((open) => !open)}
