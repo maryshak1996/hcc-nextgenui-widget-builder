@@ -20,7 +20,20 @@ The **pcm-integration** branch is built and published to **GitHub Pages** so the
 
 1. In the GitHub repo: **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from a branch”).
-3. Merge or push the workflow file **`.github/workflows/deploy-pcm-github-pages.yml`** to **`pcm-integration`** (it is already in the repo on that branch after you merge this change).
+3. Push **`.github/workflows/deploy-pcm-github-pages.yml`** on **`pcm-integration`** (already in this repo on that branch).
+
+4. **Allow `pcm-integration` to deploy (required)**  
+   The **deploy** job uses the **`github-pages`** environment. By default, GitHub may only allow **`main`** to deploy there, which produces:
+
+   > Branch `pcm-integration` is not allowed to deploy to github-pages due to environment protection rules.
+
+   Fix it:
+
+   - Open **Settings → Environments** and select **`github-pages`**.
+   - Under **Deployment branches** (or **Deployment policies** / **Branch deployment rules**, depending on the UI), either:
+     - set **All branches**, or  
+     - set **Selected branches** and add **`pcm-integration`**.
+   - Save. If **Required reviewers** is enabled, approve the pending deployment when Actions pauses for approval.
 
 ### Live URL
 
