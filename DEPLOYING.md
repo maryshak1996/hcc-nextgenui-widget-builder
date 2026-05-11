@@ -58,7 +58,9 @@ CI sets **`PUBLIC_PATH` to `/<repository-name>/`** so asset URLs and the router 
 PUBLIC_PATH=/hcc-nextgenui-widget-builder/ npm run build
 ```
 
-Then either open **`dist/index.html`** only for a quick smoke check, or run **`PUBLIC_PATH=/hcc-nextgenui-widget-builder/ npm start`** and open the dev-server URL under your repo prefix (for example **`http://localhost:9000/hcc-nextgenui-widget-builder/`** when `PUBLIC_PATH` matches that folder).
+Then either open **`dist/index.html`** only for a quick smoke check, or run **`DEV_PUBLIC_PATH=/hcc-nextgenui-widget-builder/ npm start`** and open the dev-server URL under that prefix (for example **`http://localhost:9000/hcc-nextgenui-widget-builder/`**).
+
+**Local dev (`npm start`)** intentionally **ignores** `PUBLIC_PATH` / `ASSET_PATH` so a value you exported for CI or Pages testing cannot break **`http://localhost:9000/`**. Use **`DEV_PUBLIC_PATH`** only when you deliberately want the dev server under a subpath.
 
 Adjust the path to your repository name if it differs.
 

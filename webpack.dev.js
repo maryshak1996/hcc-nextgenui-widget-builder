@@ -4,7 +4,7 @@ import path from 'path';
 import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import common from './webpack.common.js';
-import { getRouterBasename } from './webpack.build-env.js';
+import { getRouterBasenameForMode } from './webpack.build-env.js';
 const HOST = process.env.HOST || 'localhost';
 /** Default dev port (`npm start` / `npm run dev`; `prestart` frees this port via kill-port). */
 const PORT = process.env.PORT || '9000';
@@ -14,7 +14,7 @@ export default merge(common('development'), {
   devtool: 'eval-source-map',
   plugins: [
     new webpack.DefinePlugin({
-      'process.env.ROUTER_BASENAME': JSON.stringify(getRouterBasename()),
+      'process.env.ROUTER_BASENAME': JSON.stringify(getRouterBasenameForMode('development')),
     }),
   ],
   devServer: {

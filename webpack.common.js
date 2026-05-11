@@ -6,13 +6,13 @@ import CopyPlugin from 'copy-webpack-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import Dotenv from 'dotenv-webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import { getPublicPath } from './webpack.build-env.js';
+import { getPublicPathForMode } from './webpack.build-env.js';
 
 const BG_IMAGES_DIRNAME = 'bgimages';
-const publicPath = getPublicPath();
 
 export default (env) => {
   const isProd = env === 'production';
+  const publicPath = getPublicPathForMode(env);
   return {
     module: {
       rules: [

@@ -6,7 +6,7 @@ import common from './webpack.common.js';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 import TerserJSPlugin from 'terser-webpack-plugin';
-import { getRouterBasename } from './webpack.build-env.js';
+import { getRouterBasenameForMode } from './webpack.build-env.js';
 
 export default merge(common('production'), {
   mode: 'production',
@@ -27,7 +27,7 @@ export default merge(common('production'), {
   },
   plugins: [
     new webpack.DefinePlugin({
-      'process.env.ROUTER_BASENAME': JSON.stringify(getRouterBasename()),
+      'process.env.ROUTER_BASENAME': JSON.stringify(getRouterBasenameForMode('production')),
     }),
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',
