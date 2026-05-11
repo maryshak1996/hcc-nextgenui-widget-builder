@@ -5,10 +5,14 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import Dotenv from 'dotenv-webpack';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { getPublicPath } from './webpack.build-env.js';
+
 const BG_IMAGES_DIRNAME = 'bgimages';
-const ASSET_PATH = process.env.ASSET_PATH || '/';
+const publicPath = getPublicPath();
 
 export default (env) => {
+  const isProd = env === 'production';
   return {
     module: {
       rules: [
@@ -95,20 +99,26 @@ export default (env) => {
             },
           ],
         },
+        /* In common so merge order can’t drop it; all `*.css` (incl. @patternfly/chatbot, highlight.js). */
+        {
+          test: /\.css$/,
+          use: [isProd ? MiniCssExtractPlugin.loader : 'style-loader', 'css-loader'],
+        },
       ],
     },
     output: {
       filename: '[name].[contenthash].js',
       chunkFilename: '[name].[contenthash].js',
       path: path.resolve('./dist'),
-      publicPath: '/',
+      publicPath,
       clean: true,
     },
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve('./src', 'index.html'),
         inject: 'body',
-        publicPath: '/',        // ensures paths like /main.bundle.js not /HCC-cursor-seed/...
+        publicPath,
+        baseHref: publicPath,
       }),
       new Dotenv({
         systemvars: true,
@@ -117,7 +127,8 @@ export default (env) => {
       new CopyPlugin({
         patterns: [
           { from: './src/favicon.png', to: 'images' },
-          { from: './public/404.html', to: '404.html' }
+          { from: './public/404.html', to: '404.html' },
+          { from: './public/cve-copy-fail-article.html', to: 'cve-copy-fail-article.html' },
         ],
       }),
     ],

@@ -8,6 +8,8 @@ import {
   CardTitle,
   Content,
   Divider,
+  Flex,
+  FlexItem,
   Form,
   FormGroup,
   FormSection,
@@ -22,12 +24,13 @@ import {
   TextInput,
   Title,
 } from '@patternfly/react-core';
+import { CloudUploadAltIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { SUPPORT_CASE_TYPE_OPTIONS } from '@app/Support/supportCaseDraftConstants';
 import { SupportCaseNotificationLabelsField } from '@app/Support/SupportCaseNotificationLabelsField';
 import { useSupportCaseDraft } from '@app/Support/SupportCaseDraftContext';
 
-/** Final Review step — same fields as earlier steps, bound to shared draft */
-const SupportNewCaseReviewStep: React.FunctionComponent = () => {
+/** Step 1 — Troubleshoot (portal aligns core fields here first) */
+const SupportNewCaseTroubleshootStep: React.FunctionComponent = () => {
   const { draft, updateDraft } = useSupportCaseDraft();
 
   return (
@@ -36,9 +39,9 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
         <Title headingLevel="h2" size="xl">
           Product &amp; version
         </Title>
-        <FormGroup label="Product" isRequired fieldId="review-product">
+        <FormGroup label="Product" isRequired fieldId="ts-product">
           <FormSelect
-            id="review-product"
+            id="ts-product"
             value={draft.productId}
             onChange={(_e, v) => updateDraft({ productId: String(v) })}
             aria-label="Product"
@@ -47,9 +50,9 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
             <FormSelectOption value="ocp" label="OpenShift" />
           </FormSelect>
         </FormGroup>
-        <FormGroup label="Version" isRequired fieldId="review-version">
+        <FormGroup label="Version" isRequired fieldId="ts-version">
           <FormSelect
-            id="review-version"
+            id="ts-version"
             value={draft.version}
             onChange={(_e, v) => updateDraft({ version: String(v) })}
             aria-label="Version"
@@ -67,34 +70,31 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
         <Title headingLevel="h2" size="xl">
           Case summary
         </Title>
-        <FormGroup label="Title" isRequired fieldId="review-case-title">
+        <FormGroup label="Title" isRequired fieldId="ts-case-title">
           <TextInput
-            type="text"
-            id="review-case-title"
-            name="review-case-title"
+            id="ts-case-title"
             value={draft.title}
             onChange={(_e, v) => updateDraft({ title: v })}
             maxLength={255}
-            aria-describedby="review-case-title-helper"
+            aria-describedby="ts-case-title-count"
           />
-          <HelperText component="div" id="review-case-title-helper">
+          <HelperText component="div" id="ts-case-title-count">
             <HelperTextItem>{draft.title.length}/255</HelperTextItem>
           </HelperText>
         </FormGroup>
-        <FormGroup label="Problem description" isRequired fieldId="review-problem">
+        <FormGroup label="Describe your problem" isRequired fieldId="ts-problem">
           <TextArea
-            id="review-problem"
-            name="review-problem"
+            id="ts-problem"
             value={draft.problemDescription}
             onChange={(_e, v) => updateDraft({ problemDescription: v })}
-            rows={6}
+            rows={8}
             maxLength={30000}
-            aria-describedby="review-problem-helper review-problem-count"
+            aria-describedby="ts-problem-helper ts-problem-count"
           />
-          <HelperText component="div" id="review-problem-helper">
+          <HelperText component="div" id="ts-problem-helper">
             <HelperTextItem>Describe your problem. Include specific actions and error messages.</HelperTextItem>
           </HelperText>
-          <HelperText component="div" id="review-problem-count">
+          <HelperText component="div" id="ts-problem-count">
             <HelperTextItem>{draft.problemDescription.length}/30000</HelperTextItem>
           </HelperText>
         </FormGroup>
@@ -106,9 +106,9 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
         <Title headingLevel="h2" size="xl">
           Account &amp; owner
         </Title>
-        <FormGroup label="Account" isRequired fieldId="review-account">
+        <FormGroup label="Account" isRequired fieldId="ts-account">
           <FormSelect
-            id="review-account"
+            id="ts-account"
             value={draft.accountId}
             onChange={(_e, v) => updateDraft({ accountId: String(v) })}
             aria-label="Account"
@@ -116,9 +116,9 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
             <FormSelectOption value="6082715" label="Insights QA (6082715)" />
           </FormSelect>
         </FormGroup>
-        <FormGroup label="Owner" isRequired fieldId="review-owner">
+        <FormGroup label="Owner" isRequired fieldId="ts-owner">
           <FormSelect
-            id="review-owner"
+            id="ts-owner"
             value={draft.ownerId}
             onChange={(_e, v) => updateDraft({ ownerId: String(v) })}
             aria-label="Owner"
@@ -131,7 +131,7 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
       <Divider />
 
       <FormSection style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
-        <FormGroup isRequired fieldId="review-case-type-grid" label="Select case type">
+        <FormGroup isRequired fieldId="ts-case-type-grid" label="Select case type">
           <div
             role="group"
             aria-label="Case type"
@@ -144,7 +144,7 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
             {SUPPORT_CASE_TYPE_OPTIONS.map((opt) => (
               <Card
                 key={opt.id}
-                id={`case-type-${opt.id}`}
+                id={`ts-case-type-${opt.id}`}
                 isCompact
                 isSelectable
                 isSelected={draft.caseTypeId === opt.id}
@@ -163,63 +163,137 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
           </div>
         </FormGroup>
       </FormSection>
+    </Form>
+  );
+};
 
-      <Divider />
+/** Step 2 — Upload files */
+const SupportNewCaseUploadStep: React.FunctionComponent = () => (
+  <Form>
+    <FormSection>
+      <Title headingLevel="h2" size="xl">
+        Upload files
+      </Title>
+      <Content component="p" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
+        Attach diagnostics Support may need. Accepted types mirror the customer portal experience (demo).
+      </Content>
+      <div
+        style={{
+          border: '2px dashed var(--pf-t--global--border--color--brand--default)',
+          borderRadius: 'var(--pf-t--global--border--radius--medium)',
+          padding: 'var(--pf-t--global--spacer--2xl)',
+          textAlign: 'center',
+          background: 'var(--pf-t--global--background--color--primary--default)',
+        }}
+      >
+        <Flex
+          justifyContent={{ default: 'justifyContentCenter' }}
+          alignItems={{ default: 'alignItemsCenter' }}
+          gap={{ default: 'gapMd' }}
+          flexWrap={{ default: 'wrap' }}
+        >
+          <FlexItem>
+            <CloudUploadAltIcon style={{ fontSize: '2.5rem', color: 'var(--pf-t--global--icon--color--brand--default)' }} aria-hidden />
+          </FlexItem>
+          <FlexItem>
+            <Content component="p" style={{ margin: 0, textAlign: 'left' }}>
+              Drag and drop files here or upload
+            </Content>
+          </FlexItem>
+          <FlexItem>
+            <Button variant="secondary">Upload</Button>
+          </FlexItem>
+        </Flex>
+      </div>
+      <HelperText component="div" style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
+        <HelperTextItem>Accepted file types: .tar.xz, .gz, .zip, .log</HelperTextItem>
+      </HelperText>
+      <Button variant="link" isInline icon={<ExternalLinkAltIcon />} iconPosition="right" component="a" href="#" onClick={(e) => e.preventDefault()}>
+        How to generate a sosreport file
+      </Button>
+    </FormSection>
+  </Form>
+);
 
-      <FormSection style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
+/** Step 3 — Additional details (impact & frequency only — portal step 3) */
+const SupportNewCaseAdditionalDetailsStep: React.FunctionComponent = () => {
+  const { draft, updateDraft } = useSupportCaseDraft();
+
+  return (
+    <Form>
+      <FormSection>
         <Title headingLevel="h2" size="xl">
-          Impact &amp; frequency
+          Additional details
         </Title>
-        <FormGroup label="Impact" isRequired fieldId="review-impact">
+        <FormGroup
+          label="Describe the impact to you or the business"
+          isRequired
+          fieldId="add-impact"
+        >
           <TextArea
-            id="review-impact"
-            name="review-impact"
+            id="add-impact"
             value={draft.impact}
             onChange={(_e, v) => updateDraft({ impact: v })}
-            placeholder="Describe the impact to you or the business"
-            rows={3}
+            rows={5}
+            maxLength={4000}
+            aria-describedby="add-impact-count"
           />
+          <HelperText component="div" id="add-impact-count">
+            <HelperTextItem>
+              {draft.impact.length} / 4000
+            </HelperTextItem>
+          </HelperText>
         </FormGroup>
-        <FormGroup label="Frequency" isRequired fieldId="review-frequency">
+        <FormGroup
+          label="How frequently does this behavior occur? Does it occur repeatedly or at certain times?"
+          isRequired
+          fieldId="add-frequency"
+        >
           <TextArea
-            id="review-frequency"
-            name="review-frequency"
+            id="add-frequency"
             value={draft.frequency}
             onChange={(_e, v) => updateDraft({ frequency: v })}
-            placeholder="How frequently does this behavior occur? Does it occur repeatedly or at certain times?"
-            rows={3}
+            rows={5}
+            maxLength={4000}
+            aria-describedby="add-frequency-count"
           />
+          <HelperText component="div" id="add-frequency-count">
+            <HelperTextItem>
+              {draft.frequency.length} / 4000
+            </HelperTextItem>
+          </HelperText>
         </FormGroup>
       </FormSection>
+    </Form>
+  );
+};
 
-      <Divider />
+/** Step 4 — Configuration (severity, contact — portal step 4) */
+const SupportNewCaseConfigurationStep: React.FunctionComponent = () => {
+  const { draft, updateDraft } = useSupportCaseDraft();
 
-      <FormSection style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
+  return (
+    <Form>
+      <FormSection>
         <Title headingLevel="h2" size="xl">
-          Severity
+          Configuration
         </Title>
-        <Content component="p" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
-          Based upon the conversation, I have selected the severity for you. Make changes, if required.
+        <Content component="p" style={{ marginBottom: 'var(--pf-t--global--spacer--sm)' }}>
+          Based upon the conversation, I have selected the severity for you. Make changes, if required: *
         </Content>
         <Alert
           variant="info"
           isInline
           title={draft.severityAlertTitle}
+          style={{ marginBottom: 'var(--pf-t--global--spacer--lg)' }}
           actionLinks={
             <Button variant="link" isInline>
               Change severity
             </Button>
           }
         />
-      </FormSection>
 
-      <Divider />
-
-      <FormSection style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
-        <Title headingLevel="h2" size="xl">
-          Contact &amp; preferences
-        </Title>
-        <FormGroup label="Case owner phone number" isRequired fieldId="review-phone">
+        <FormGroup label="Case owner phone number" isRequired fieldId="cfg-phone">
           <InputGroup>
             <InputGroupItem>
               <InputGroupText>US</InputGroupText>
@@ -227,18 +301,21 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
             <InputGroupItem isFill>
               <TextInput
                 type="tel"
-                id="review-phone"
-                name="review-phone"
+                id="cfg-phone"
                 value={draft.phone}
                 onChange={(_e, v) => updateDraft({ phone: v })}
                 aria-label="Case owner phone number"
               />
             </InputGroupItem>
           </InputGroup>
+          <HelperText component="div">
+            <HelperTextItem>A current phone number helps Support reach you during the case.</HelperTextItem>
+          </HelperText>
         </FormGroup>
-        <FormGroup label="Preferred language" isRequired fieldId="review-lang">
+
+        <FormGroup label="Preferred language" isRequired fieldId="cfg-lang">
           <FormSelect
-            id="review-lang"
+            id="cfg-lang"
             value={draft.preferredLanguage}
             onChange={(_e, v) => updateDraft({ preferredLanguage: String(v) })}
             aria-label="Preferred language"
@@ -247,36 +324,34 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
             <FormSelectOption value="en" label="English" />
           </FormSelect>
         </FormGroup>
-        <FormGroup label="Group" fieldId="review-group">
+
+        <FormGroup label="Group" fieldId="cfg-group">
           <FormSelect
-            id="review-group"
+            id="cfg-group"
             value={draft.groupId}
             onChange={(_e, v) => updateDraft({ groupId: String(v) })}
             aria-label="Group"
           >
+            <FormSelectOption value="" label="Search or select a group" />
             <FormSelectOption value="ungrouped" label="Ungrouped Case" />
           </FormSelect>
+          <HelperText component="div">
+            <HelperTextItem>Organization administrators manage these groups.</HelperTextItem>
+          </HelperText>
         </FormGroup>
-      </FormSection>
 
-      <Divider />
-
-      <FormSection style={{ marginTop: 'var(--pf-t--global--spacer--lg)' }}>
-        <Title headingLevel="h2" size="xl">
-          Notifications &amp; references
-        </Title>
         <SupportCaseNotificationLabelsField
-          fieldId="review-notify"
-          emptyPlaceholder="Add email addresses, usernames, or notification groups"
+          fieldId="cfg-notify"
+          emptyPlaceholder="Enter an email address or username for the person you want to notify"
         />
-        <FormGroup label="Personal reference number" fieldId="review-ref">
+
+        <FormGroup label="Personal reference number" fieldId="cfg-ref">
           <TextInput
             type="text"
-            id="review-ref"
-            name="review-ref"
+            id="cfg-ref"
             value={draft.personalReference}
             onChange={(_e, v) => updateDraft({ personalReference: v })}
-            placeholder="Internal tracking reference"
+            placeholder="Enter the reference number used personally or within your company"
           />
         </FormGroup>
       </FormSection>
@@ -284,4 +359,9 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
   );
 };
 
-export { SupportNewCaseReviewStep };
+export {
+  SupportNewCaseAdditionalDetailsStep,
+  SupportNewCaseConfigurationStep,
+  SupportNewCaseTroubleshootStep,
+  SupportNewCaseUploadStep,
+};

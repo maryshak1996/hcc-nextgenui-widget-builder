@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { matchPath, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { Homepage } from '@app/Homepage/Homepage';
 import { AllServices } from '@app/AllServices/AllServices';
 import { Dashboard } from '@app/Dashboard/Dashboard';
@@ -30,6 +30,14 @@ import { RedHatAccessRequests } from '@app/RedHatAccessRequests/RedHatAccessRequ
 import { GeneralSettings } from '@app/Settings/General/GeneralSettings';
 import { ProfileSettings } from '@app/Settings/Profile/ProfileSettings';
 import { NotFound } from '@app/NotFound/NotFound';
+import { RhelBundleLandingPage } from '@app/RhelVulnerability/RhelBundleLandingPage';
+import { RhelVulnerabilityCvePage } from '@app/RhelVulnerability/RhelVulnerabilityCvePage';
+
+/** Redirect old Insights-only CVE URLs to the RHEL bundle–scoped path. */
+const LegacyInsightsVulnCveRedirect: React.FunctionComponent = () => {
+  const { cveId } = useParams<{ cveId: string }>();
+  return <Navigate to={`/red-hat-enterprise-linux/insights/vulnerability/cves/${cveId}`} replace />;
+};
 
 export interface IAppRoute {
   label?: string; // Excluding the label will exclude the route from the nav sidebar in AppLayout
@@ -239,12 +247,56 @@ const routes: AppRouteConfig[] = [
     path: '/red-hat-access-requests',
     title: 'Red Hat Access Requests | Red Hat Hybrid Cloud Console',
   },
+  {
+    element: <RhelBundleLandingPage />,
+    exact: true,
+    path: '/red-hat-enterprise-linux',
+    title: 'Red Hat Enterprise Linux | Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <RhelVulnerabilityCvePage />,
+    exact: true,
+    path: '/red-hat-enterprise-linux/insights/vulnerability/cves/:cveId',
+    title: 'CVE · Vulnerability · Red Hat Hybrid Cloud Console',
+  },
+  {
+    element: <LegacyInsightsVulnCveRedirect />,
+    path: '/insights/vulnerability/cves/:cveId',
+    title: 'CVE · Vulnerability · Red Hat Hybrid Cloud Console',
+  },
 ];
 
 const flattenedRoutes: IAppRoute[] = routes.reduce(
   (flattened, route) => [...flattened, ...(route.routes ? route.routes : [route])],
-  [] as IAppRoute[],
+  [] as IAppRoute[]
 );
+
+/** Longest-prefix-style match for fake browser tab titles (PCM desktop shell). */
+function getAppRouteForPathname(pathname: string): IAppRoute | null {
+  const sorted = [...flattenedRoutes].sort((a, b) => b.path.length - a.path.length);
+  for (const route of sorted) {
+    if (matchPath({ path: route.path, end: true }, pathname)) {
+      return route;
+    }
+  }
+  return null;
+}
+
+/**
+ * Label for the Hybrid Cloud Console tab in the PCM fake browser chrome.
+ * Strips the marketing suffix and truncates long titles.
+ */
+export function getHccFakeBrowserTabTitle(pathname: string): string {
+  const route = getAppRouteForPathname(pathname);
+  if (!route) {
+    return 'Hybrid Cloud Console';
+  }
+  const short = route.title.replace(/\s*\|\s*Red Hat Hybrid Cloud Console\s*$/i, '').trim();
+  if (short.length <= 52) {
+    return short;
+  }
+  return `${short.slice(0, 49)}…`;
+}
 
 const AppRoutes = (): React.ReactElement => (
   <Routes>

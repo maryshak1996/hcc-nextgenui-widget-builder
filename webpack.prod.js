@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import common from './webpack.common.js';
-import { stylePaths } from './stylePaths.js';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 import TerserJSPlugin from 'terser-webpack-plugin';
+import { getRouterBasename } from './webpack.build-env.js';
 
 export default merge(common('production'), {
   mode: 'production',
@@ -25,18 +26,12 @@ export default merge(common('production'), {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.ROUTER_BASENAME': JSON.stringify(getRouterBasename()),
+    }),
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',
       chunkFilename: '[name].[contenthash].css',
     }),
   ],
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        include: [...stylePaths],
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
-      },
-    ],
-  },
 });

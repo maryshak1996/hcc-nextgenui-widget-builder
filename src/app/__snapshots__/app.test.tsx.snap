@@ -1807,7 +1807,8 @@ exports[`App tests should render default App component 1`] = `
     </div>
   </div>
   <div
-    style="position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; z-index: 1000; transition: right 0.2s ease-in-out;"
+    class="hcc-floating-help-chat-launcher"
+    style="position: fixed; bottom: calc(var(--hcc-fake-dock-clearance, 5rem) + var(--pf-t--global--spacer--md)); right: 32px; width: 56px; height: 56px; z-index: 8600; transition: right 0.2s ease-in-out;"
   >
     <button
       aria-label="Open comments and feedback"

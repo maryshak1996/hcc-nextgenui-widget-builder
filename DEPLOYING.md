@@ -1,85 +1,70 @@
-# 🚀 Deploying to Vercel (Internal Demo App)
+# Deploying
 
-This project auto-deploys to:
+## Main branch — Vercel (internal demo)
 
-👉 **https://hcc-ai-widget-builder.vercel.app/**  
-whenever changes are pushed to the `main` branch.
+The app auto-deploys to:
+
+**https://hcc-ai-widget-builder.vercel.app/**
+
+whenever changes are pushed to **`main`**.
+
+Workflow: edit `src/`, commit, push to `main`. Vercel runs `npm run build` and serves `dist/` with SPA rewrites from **`vercel.json`**.
 
 ---
 
-## 🛠 Standard Update Workflow
+## PCM integration demo — GitHub Pages
 
-### 1️⃣ Make UI changes locally
+The **pcm-integration** branch is built and published to **GitHub Pages** so the PCM demo has a stable URL without a second Vercel project.
 
-Edit your components in the `src/` folder.
+### One-time GitHub setup
 
-Optional local check:
+1. In the GitHub repo: **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from a branch”).
+3. Merge or push the workflow file **`.github/workflows/deploy-pcm-github-pages.yml`** to **`pcm-integration`** (it is already in the repo on that branch after you merge this change).
+
+### Live URL
+
+After a successful run of **“Deploy PCM demo to GitHub Pages”**:
+
+Example pattern: `https://github-username.github.io/repository-name/`
+
+For this repository, that is:
+
+**https://maryshak1996.github.io/hcc-nextgenui-widget-builder/**
+
+CI sets **`PUBLIC_PATH` to `/<repository-name>/`** so asset URLs and the router match Project Pages (forks pick up the correct path automatically).
+
+### When it deploys
+
+- Every **push** to **`pcm-integration`**
+- Manual run: **Actions → Deploy PCM demo to GitHub Pages → Run workflow**
+
+### Local check (same base path as GitHub Pages)
 
 ```bash
-npm run start:dev
+PUBLIC_PATH=/hcc-nextgenui-widget-builder/ npm run build
 ```
 
-OR (production-like check):
+Then either open **`dist/index.html`** only for a quick smoke check, or run **`PUBLIC_PATH=/hcc-nextgenui-widget-builder/ npm start`** and open the dev-server URL under your repo prefix (for example **`http://localhost:9000/hcc-nextgenui-widget-builder/`** when `PUBLIC_PATH` matches that folder).
 
-```bash
-npm run build
-```
+Adjust the path to your repository name if it differs.
 
----
+### SPA routing on GitHub Pages
 
-### 2️⃣ Commit and push to `main`
-
-```bash
-git add .
-git commit -m "Update UI: short description"
-git push
-```
-
-Vercel will automatically:
-
-- Install dependencies  
-- Run `npm run build`  
-- Deploy the `dist/` folder  
-- Update the live URL  
+There is no server rewrite like Vercel. **`public/404.html`** uses the usual GitHub Pages SPA redirect pattern (`pathSegmentsToKeep = 1` for project sites). **`src/index.html`** includes the small companion script that restores the path after that redirect.
 
 ---
 
-## 🔎 Confirm Deployment
+## Confirm deployment
 
-1. Go to **Vercel → Deployments**
-2. Make sure the latest deployment is:
-   - ✅ Production  
-   - ✅ Ready  
-   - ✅ Matches your commit message  
+**Vercel:** Project → Deployments → latest **Production** is **Ready**.
+
+**GitHub Pages:** Actions → latest **Deploy PCM demo to GitHub Pages** workflow → **deploy** job succeeded; open the environment URL or your `https://<user>.github.io/<repo>/` link.
 
 ---
 
-## 🧪 Before a Stakeholder Demo
+## Technical notes
 
-To avoid cached assets:
-
-- Open the site in an **Incognito window**
-- OR hard refresh once
-
-Because we use hashed filenames, stale caching should not occur — but this is a good habit.
-
----
-
-## 🆘 If Something Breaks
-
-You can instantly roll back:
-
-1. Go to **Vercel → Deployments**
-2. Click a previous successful deployment
-3. Redeploy or promote it
-
-No Git revert required.
-
----
-
-## ⚙️ Technical Notes (For Future Me)
-
-- Webpack uses **content-hashed filenames** to prevent stale caching.
-- SPA routing is handled via `vercel.json` rewrites.
-- React Router has **no basename** (Vercel deploys at `/`).
-- Production uses `hidden-source-map`.
+- Webpack uses **content-hashed** filenames.
+- **`PUBLIC_PATH`** (or legacy **`ASSET_PATH`**) sets **`output.publicPath`**, **`<base href>`**, and **`process.env.ROUTER_BASENAME`** for **React Router** when deploying under a subpath.
+- **`vercel.json`** only affects Vercel; GitHub Pages relies on **`404.html`** + the index script above.

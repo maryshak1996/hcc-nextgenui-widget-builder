@@ -2,8 +2,11 @@
 
 An internal UX prototype used to explore and demonstrate UI/UX design concepts for AI-powered dashboard and widget-building experiences.
 
-### 🔗 Live Prototype
-https://hcc-ai-widget-builder.vercel.app/
+### 🔗 Live prototypes
+
+- **Main branch (Vercel):** https://hcc-ai-widget-builder.vercel.app/
+- **PCM integration (GitHub Pages):** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/  
+  (Deploys from the **`pcm-integration`** branch; see [`DEPLOYING.md`](./DEPLOYING.md).)
 
 ### 🎨 Design Preview
 **Figma Working Design File:**  
@@ -33,19 +36,17 @@ This is not a production product — it is a design exploration environment.
 - **TypeScript**
 - **PatternFly 6**
 - **Webpack 5**
-- **Vercel (static deployment)**
+- **Vercel** (main branch static deployment)
+- **GitHub Pages** (PCM demo from `pcm-integration`)
 
 ---
 
 ## 🚀 Deployment
 
-This project auto-deploys to Vercel whenever changes are pushed to the `main` branch.
+- **`main`** → Vercel (`hcc-ai-widget-builder.vercel.app`).
+- **`pcm-integration`** → GitHub Pages (see URL above).
 
-See:
-
-👉 [`DEPLOYING.md`](./DEPLOYING.md)
-
-for full deployment workflow instructions.
+See [`DEPLOYING.md`](./DEPLOYING.md) for setup, local Pages-like builds, and troubleshooting.
 
 ---
 
@@ -80,8 +81,8 @@ npx sirv dist --single --cors --host --port 8080
 ## 🧠 Architecture Notes
 
 - Uses content-hashed asset filenames to prevent stale caching.
-- SPA routing handled via `vercel.json` rewrites.
-- React Router runs at root (`/`) — no GitHub Pages basename.
+- SPA routing: **`vercel.json`** rewrites on Vercel; **GitHub Pages** uses `public/404.html` plus a small script in `src/index.html`.
+- **`PUBLIC_PATH`** + **`process.env.ROUTER_BASENAME`** support a repo subpath on GitHub Pages; Vercel production stays at `/`.
 - Production builds use `hidden-source-map`.
 
 ---

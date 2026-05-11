@@ -5,6 +5,1057 @@ body,
 }
 
 /*
+ * PCM desktop shell + mock AI IDE sit above the fixed fake dock.
+ * Keep this in sync with `.hcc-fake-apps-dock` height (too large ⇒ empty strip above the dock).
+ */
+:root {
+  --hcc-fake-dock-clearance: 5rem;
+}
+
+/* ─── Demo fake OS dock + AI IDE modal (non-functional mock) ─── */
+body.hcc-fake-dock--active #root {
+  box-sizing: border-box;
+}
+
+.hcc-fake-apps-dock {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 8500;
+  display: flex;
+  justify-content: stretch;
+  width: 100%;
+  pointer-events: none;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.hcc-fake-apps-dock__inner {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 100%;
+  background: color-mix(
+    in srgb,
+    var(--pf-t--global--background--color--primary--default) 88%,
+    transparent
+  );
+  border-top: 1px solid var(--pf-t--global--border--color--default);
+  border-inline: none;
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+.hcc-fake-apps-dock__list {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--sm);
+  list-style: none;
+  margin: 0;
+  padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--sm)
+    var(--pf-t--global--spacer--sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hcc-fake-apps-dock__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 3rem;
+}
+
+.hcc-fake-apps-dock__label {
+  font-family: var(--pf-t--global--font--family--body);
+  font-size: var(--pf-t--global--font--size--body--xs);
+  color: var(--pf-t--global--text--color--subtle);
+  text-align: center;
+  line-height: 1.15;
+  max-width: 5rem;
+}
+
+.hcc-fake-apps-dock__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: var(--pf-t--global--border--radius--medium);
+  font-size: 1.125rem;
+  color: var(--pf-t--global--icon--color--regular);
+  background: var(--pf-t--global--background--color--secondary--default);
+  border: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.hcc-fake-apps-dock__icon--static {
+  opacity: 0.72;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hcc-fake-apps-dock__icon--ide {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.72;
+}
+
+.hcc-fake-apps-dock__launch .hcc-fake-apps-dock__icon--chrome {
+  pointer-events: none;
+  user-select: none;
+}
+
+.hcc-fake-apps-dock__launch .hcc-fake-apps-dock__icon--chrome:not(.hcc-fake-apps-dock__icon--active) {
+  opacity: 0.72;
+}
+
+.hcc-fake-apps-dock__icon--chrome.hcc-fake-apps-dock__icon--active,
+.hcc-fake-apps-dock__icon--ide.hcc-fake-apps-dock__icon--active {
+  opacity: 1;
+  color: var(--pf-t--global--icon--color--brand--default);
+  background: color-mix(in srgb, var(--pf-t--global--color--brand--default) 22%, transparent);
+  border-color: color-mix(in srgb, var(--pf-t--global--color--brand--default) 55%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--pf-t--global--color--brand--default) 35%, transparent),
+    0 4px 12px color-mix(in srgb, var(--pf-t--global--color--brand--default) 25%, transparent);
+  transform: translateY(-3px);
+}
+
+.hcc-fake-apps-dock__launch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--xs);
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.hcc-fake-apps-dock__launch:focus-visible .hcc-fake-apps-dock__icon--chrome,
+.hcc-fake-apps-dock__launch:focus-visible .hcc-fake-apps-dock__icon--ide {
+  outline: 2px solid var(--pf-t--global--border--color--brand--default);
+  outline-offset: 2px;
+}
+
+/* ─── Mock Cursor-style full-page AI IDE (fixed below dock z-index) ─── */
+body.hcc-pcm-ai-ide-open {
+  overflow: hidden;
+}
+
+body.hcc-pcm-ai-ide-open #root {
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.hcc-fake-ai-ide-fp {
+  position: fixed;
+  inset: 0;
+  bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
+  z-index: 8200;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: #cccccc;
+  background: #181818;
+  outline: none;
+}
+
+.hcc-fake-ai-ide-fp__menubar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  background: linear-gradient(180deg, #323232 0%, #2d2d2d 100%);
+  border-bottom: 1px solid #111;
+}
+
+.hcc-fake-ai-ide-fp__brand {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #e0e0e0;
+}
+
+.hcc-fake-ai-ide-fp__menus {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  font-size: 12px;
+  color: #b0b0b0;
+}
+
+.hcc-fake-ai-ide-fp__menus span {
+  cursor: default;
+}
+
+.hcc-fake-ai-ide-fp__close {
+  margin-left: auto;
+  width: 28px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #aaa;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hcc-fake-ai-ide-fp__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.hcc-fake-ai-ide-fp__workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.hcc-fake-ai-ide-fp__activity {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  background: #252526;
+  border-right: 1px solid #1e1e1e;
+}
+
+.hcc-fake-ai-ide-fp__activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #858585;
+  font-size: 14px;
+}
+
+.hcc-fake-ai-ide-fp__activity-item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hcc-fake-ai-ide-fp__activity-item--on {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.hcc-fake-ai-ide-fp__activity-glyph {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.hcc-fake-ai-ide-fp__sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: #252526;
+  border-right: 1px solid #1e1e1e;
+  overflow: auto;
+}
+
+.hcc-fake-ai-ide-fp__sidebar-head {
+  padding: 10px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #bbbbbb;
+}
+
+.hcc-fake-ai-ide-fp__tree {
+  padding: 4px 8px 12px;
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.hcc-fake-ai-ide-fp__tree-row {
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hcc-fake-ai-ide-fp__tree-row--nested {
+  padding-left: 14px;
+}
+
+.hcc-fake-ai-ide-fp__tree-row--nested2 {
+  padding-left: 26px;
+}
+
+.hcc-fake-ai-ide-fp__tree-row--active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hcc-fake-ai-ide-fp__editor-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #1e1e1e;
+}
+
+.hcc-fake-ai-ide-fp__tabs {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  min-height: 35px;
+  padding-left: 8px;
+  background: #252526;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.hcc-fake-ai-ide-fp__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #969696;
+  background: #2d2d2d;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.hcc-fake-ai-ide-fp__tab--active {
+  color: #ffffff;
+  background: #1e1e1e;
+  border-color: #1e1e1e;
+  margin-bottom: -1px;
+}
+
+.hcc-fake-ai-ide-fp__tab-x {
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.hcc-fake-ai-ide-fp__editor {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.hcc-fake-ai-ide-fp__pre {
+  margin: 0;
+  padding: 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #d4d4d4;
+}
+
+.hcc-fake-ai-ide-fp__composer {
+  width: min(380px, 34vw);
+  min-width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border-left: 1px solid #2a2a2a;
+}
+
+.hcc-fake-ai-ide-fp__composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #c0c0c0;
+}
+
+.hcc-fake-ai-ide-fp__composer-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #2d2d2d;
+  color: #888;
+  font-size: 10px;
+}
+
+.hcc-fake-ai-ide-fp__composer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hcc-fake-ai-ide-fp__composer-input-wrap {
+  flex-shrink: 0;
+  padding: 10px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.hcc-fake-ai-ide-fp__composer-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hcc-fake-ai-ide-fp__composer-input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #141414;
+  color: #e4e4e4;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.hcc-fake-ai-ide-fp__composer-input::placeholder {
+  color: #666;
+}
+
+.hcc-fake-ai-ide-fp__composer-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  resize: none;
+}
+
+.hcc-fake-ai-ide-fp__composer-input:focus-visible {
+  outline: 2px solid #6ea8ff;
+  outline-offset: 1px;
+}
+
+.hcc-fake-ai-ide-fp__composer-hint {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #777;
+}
+
+.hcc-fake-ai-ide-fp__chat {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hcc-fake-ai-ide-fp__msg {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: 95%;
+}
+
+.hcc-fake-ai-ide-fp__msg--user {
+  align-self: flex-end;
+  background: #2d2d2d;
+  border: 1px solid #3c3c3c;
+  color: #e4e4e4;
+}
+
+.hcc-fake-ai-ide-fp__msg--ai {
+  align-self: flex-start;
+  background: #141414;
+  border: 1px solid #333;
+  color: #c8c8c8;
+  max-width: 100%;
+}
+
+.hcc-fake-ai-ide-fp__thinking {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #141414;
+  font-size: 12px;
+  color: #909090;
+}
+
+.hcc-fake-ai-ide-fp__thinking-label {
+  font-style: italic;
+}
+
+.hcc-fake-ai-ide-fp__thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.hcc-fake-ai-ide-fp__thinking-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #888;
+  animation: hcc-fake-ai-ide-thinking-dot 1s ease-in-out infinite;
+}
+
+.hcc-fake-ai-ide-fp__thinking-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.hcc-fake-ai-ide-fp__thinking-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes hcc-fake-ai-ide-thinking-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.hcc-fake-ai-ide-fp__p {
+  margin: 0 0 10px;
+}
+
+.hcc-fake-ai-ide-fp__p:last-child {
+  margin-bottom: 0;
+}
+
+.hcc-fake-ai-ide-fp__host-table-wrap {
+  margin: 10px 0;
+  overflow: auto;
+  max-height: min(200px, 40vh);
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.hcc-fake-ai-ide-fp__host-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.hcc-fake-ai-ide-fp__host-table th,
+.hcc-fake-ai-ide-fp__host-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.hcc-fake-ai-ide-fp__host-table th {
+  background: #1a1a1a;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.hcc-fake-ai-ide-fp__host-table code {
+  font-size: 10px;
+  color: #9cdcfe;
+}
+
+.hcc-fake-ai-ide-fp__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hcc-fake-ai-ide-fp__cta-row {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.hcc-fake-ai-ide-fp__cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(180deg, #3d8bfd 0%, #0066cc 100%);
+  border: 1px solid #0057b3;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.hcc-fake-ai-ide-fp__cta-primary:hover {
+  filter: brightness(1.06);
+}
+
+.hcc-fake-ai-ide-fp__cta-primary:focus-visible {
+  outline: 2px solid #6ea8ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 992px) {
+  .hcc-fake-ai-ide-fp__composer {
+    width: 100%;
+    min-width: 0;
+    max-height: 38vh;
+    border-left: none;
+    border-top: 1px solid #2a2a2a;
+  }
+
+  .hcc-fake-ai-ide-fp__workspace {
+    flex-direction: column;
+  }
+
+  .hcc-fake-ai-ide-fp__activity,
+  .hcc-fake-ai-ide-fp__sidebar {
+    display: none;
+  }
+}
+
+/* PCM demo: fullscreen TechPulse article — no HCC page chrome; dock mounts beside this route in index.tsx */
+body.hcc-pcm-article-route {
+  overflow: hidden;
+}
+
+body.hcc-pcm-article-route #root {
+  /* Shell reserves space above the fixed dock; avoid double padding scroll */
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Locks PCM desktop shell to the viewport; article scrolls inside `.hcc-cve-copy-fail-root` */
+.hcc-pcm-article-shell {
+  position: fixed;
+  inset: 0;
+  bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--pf-t--global--background--color--primary--default);
+}
+
+.hcc-pcm-rhel-vuln-placeholder {
+  box-sizing: border-box;
+  padding: 2rem 1.5rem 4rem;
+  max-width: 960px;
+  margin: 0 auto;
+  font-family: var(--pf-t--global--font--family--heading, RedHatDisplay, system-ui, sans-serif);
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.hcc-pcm-rhel-vuln-placeholder__header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.hcc-pcm-rhel-vuln-placeholder__sub {
+  margin: 0;
+  color: var(--pf-t--global--text--color--subtle);
+  font-size: 0.875rem;
+}
+
+.hcc-pcm-rhel-vuln-placeholder__body {
+  margin-top: 1.5rem;
+  line-height: 1.55;
+}
+
+.hcc-pcm-rhel-vuln-placeholder__cve {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+/* RHEL bundle sidebar: non-interactive demo nav stubs */
+.hcc-rhel-nav-link--muted {
+  color: var(--pf-t--global--text--color--disabled) !important;
+  cursor: default;
+}
+
+.hcc-cve-copy-fail-root {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Must follow `.hcc-cve-copy-fail-root` — scroll lives here when fake browser page is flex + overflow hidden */
+.hcc-pcm-article-shell .hcc-cve-copy-fail-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Decorative browser chrome — tab content can be TechPulse article or full HCC `Page` */
+.hcc-fake-browser {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--pf-t--global--background--color--secondary--default);
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.hcc-fake-browser__chrome {
+  flex-shrink: 0;
+}
+
+.hcc-fake-browser__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--pf-t--global--background--color--secondary--default) 92%, #000 8%);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.hcc-fake-browser__traffic {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.hcc-fake-browser__traffic--close {
+  background: #ff5f56;
+}
+.hcc-fake-browser__traffic--min {
+  background: #ffbd2e;
+}
+.hcc-fake-browser__traffic--max {
+  background: #27c93f;
+}
+
+.hcc-fake-browser__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 8px 0;
+  background: color-mix(in srgb, var(--pf-t--global--background--color--secondary--default) 85%, #000 15%);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.hcc-fake-browser__tab-slot {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: min(420px, 56vw);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: var(--pf-t--global--text--color--subtle);
+  background: color-mix(in srgb, var(--pf-t--global--background--color--secondary--default) 70%, transparent);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--pf-t--global--border--radius--small) var(--pf-t--global--border--radius--small) 0 0;
+}
+
+.hcc-fake-browser__tab-slot--active {
+  color: var(--pf-t--global--text--color--regular);
+  background: var(--pf-t--global--background--color--primary--default);
+  border-color: var(--pf-t--global--border--color--default);
+  border-bottom-color: transparent;
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.hcc-fake-browser__tab-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 8px 12px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--pf-t--global--border--radius--small) 0 0 0;
+}
+
+.hcc-fake-browser__tab-close-btn {
+  flex-shrink: 0;
+  width: 28px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 0 var(--pf-t--global--border--radius--small) 0 0;
+}
+
+.hcc-fake-browser__tab-close-btn:hover {
+  opacity: 1;
+}
+
+.hcc-fake-browser__tab-close-spacer {
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.hcc-fake-browser__tab-favicon {
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--pf-t--global--icon--color--brand--default);
+}
+
+.hcc-fake-browser__tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hcc-fake-browser__tab-close {
+  flex-shrink: 0;
+  opacity: 0.45;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.hcc-fake-browser__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--sm);
+  padding: 8px 12px;
+  background: var(--pf-t--global--background--color--primary--default);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.hcc-fake-browser__nav-cluster {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.hcc-fake-browser__tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--pf-t--global--border--radius--small);
+  background: transparent;
+  color: var(--pf-t--global--icon--color--disabled);
+  cursor: default;
+}
+
+.hcc-fake-browser__tool-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.hcc-fake-browser__omnibox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 12px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  background: var(--pf-t--global--background--color--secondary--default);
+  border: 1px solid var(--pf-t--global--border--color--default);
+  border-radius: 999px;
+}
+
+.hcc-fake-browser__lock {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.hcc-fake-browser__url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.hcc-fake-browser__page {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--pf-t--global--background--color--primary--default);
+}
+
+/* Article scrolls inside its root; full HCC `Page` fills and manages its own regions */
+.hcc-fake-browser__page > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* No stray gap between fake browser toolbar and HCC masthead */
+.hcc-fake-browser__page .pf-v6-c-page {
+  margin-block-start: 0;
+}
+
+.hcc-cve-copy-fail-article {
+  --hcc-cve-article-bg: #fafafa;
+  --hcc-cve-article-text: #111;
+  --hcc-cve-article-muted: #444;
+  --hcc-cve-article-accent: #c00;
+  --hcc-cve-article-rule: #ddd;
+  box-sizing: border-box;
+  font-family: Georgia, 'Times New Roman', serif;
+  background: var(--hcc-cve-article-bg);
+  color: var(--hcc-cve-article-text);
+  line-height: 1.65;
+  min-height: 60vh;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hcc-cve-copy-fail-article {
+    --hcc-cve-article-bg: #121212;
+    --hcc-cve-article-text: #eee;
+    --hcc-cve-article-muted: #bbb;
+    --hcc-cve-article-rule: #333;
+  }
+}
+
+.hcc-cve-copy-fail-article .masthead {
+  font-family: system-ui, -apple-system, sans-serif;
+  border-bottom: 3px solid var(--hcc-cve-article-accent);
+  padding: 1rem 1.5rem;
+  background: var(--hcc-cve-article-bg);
+}
+
+.hcc-cve-copy-fail-article .masthead-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hcc-cve-copy-fail-article .masthead-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.hcc-cve-copy-fail-article .masthead-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--hcc-cve-article-muted);
+}
+
+.hcc-cve-copy-fail-article article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.hcc-cve-copy-fail-article .kicker {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--hcc-cve-article-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.hcc-cve-copy-fail-article h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.hcc-cve-copy-fail-article .byline {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.9rem;
+  color: var(--hcc-cve-article-muted);
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--hcc-cve-article-rule);
+}
+
+.hcc-cve-copy-fail-article .lead {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+.hcc-cve-copy-fail-article p {
+  margin: 0 0 1.25rem;
+}
+
+.hcc-cve-copy-fail-article .alert-box {
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 2px solid var(--hcc-cve-article-accent);
+  padding: 1rem 1.25rem;
+  margin: 2rem 0;
+  background: rgba(204, 0, 0, 0.06);
+}
+
+.hcc-cve-copy-fail-article .alert-box strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.hcc-cve-copy-fail-article .cve-id {
+  font-family: ui-monospace, monospace;
+  font-size: 0.95em;
+}
+
+.hcc-cve-copy-fail-article footer {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  color: var(--hcc-cve-article-muted);
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hcc-cve-article-rule);
+}
+
+/*
  * AppLayout nests two inline Drawers around route content. PatternFly’s drawer CSS sets
  * flex-shrink: 1 on .pf-v6-c-drawer__content at md+ breakpoints, which can collapse the
  * primary content column to zero width so the page chrome stays visible but the main
@@ -609,4 +1660,116 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   --pf-v6-c-content--small--Color: var(--pf-t--global--color--status--danger--default); /* changes all <small> color to the semantic token for danger */
   --pf-v6-c-content--blockquote--BorderLeftColor: var(--pf-t--global--color--nonstatus--purple--default); /* changes all <blockquote> left border color to the semantic token for non-status (purple) */
   --pf-v6-c-content--hr--BackgroundColor: var(--pf-t--global--color--nonstatus--yellow--default); /* changes a <hr> color to the semantic token for non-status (yellow) */
+}
+
+/* Help drawer: top tabs + breadcrumb stay fixed; only content below scrolls */
+.hcc-help-drawer-body.pf-v6-c-drawer__content-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-hcc-help-shell='top-tabs-v2'] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.help-panel-shell-header {
+  flex-shrink: 0;
+  background: var(--pf-t--global--background--color--100);
+}
+
+/* Help drawer Chat tab: PF Chatbot is embedded under existing top tabs — fill tab body, no nested drawer chrome */
+.hcc-help-panel-chatbot-root {
+  flex: 1;
+  min-height: 0;
+}
+
+.hcc-help-panel-chatbot-root .pf-chatbot.pf-chatbot--embedded {
+  flex: 1;
+  min-height: 0;
+}
+
+.hcc-help-panel-chatbot-root .pf-chatbot-container.pf-chatbot-container--embedded {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Support new case wizard: only step form body scrolls — header, step nav, footer stay fixed in the shell */
+.support-new-case-wizard {
+  display: flex;
+  flex-direction: column;
+  height: min(85vh, 920px);
+  max-height: min(85vh, 920px);
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.support-new-case-wizard--completion {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Wizard chrome (title row + mobile step toggle) never scrolls with page */
+.support-new-case-wizard .pf-v6-c-wizard__header {
+  flex-shrink: 0;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__toggle {
+  flex-shrink: 0;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__outer-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__inner-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__nav {
+  flex-shrink: 0;
+  align-self: stretch;
+  max-height: 100%;
+  overflow-x: hidden;
+  /* Step list scrolls only if it overflows the column; never scrolls with form body */
+  overflow-y: auto;
+}
+
+/* Scroll only the active step form — not the nav column */
+.support-new-case-wizard .pf-v6-c-wizard__main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__main-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.support-new-case-wizard .pf-v6-c-wizard__footer {
+  flex-shrink: 0;
 }

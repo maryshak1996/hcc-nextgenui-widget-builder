@@ -1,6 +1,19 @@
 import * as React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
+import {
+  COPYFAIL_CVE_DEMO_ID,
+  HCC_COPYFAIL_CVE_PATH,
+  PCM_SESSION_IDE_CHAT_HANDOFF,
+  PCM_SESSION_OPEN_HELP_CHAT,
+} from '@app/RhelVulnerability/copyFailDemoFleet';
+import { useCveTroubleshootDemo } from '@app/RhelVulnerability/CveTroubleshootDemoContext';
+import {
+  HCC_SESSION_HELP_CHAT_IDE_PROMPT,
+  HCC_SKIP_GENERIC_HELP_CHAT_ONCE,
+  HCC_SUPPORT_CASE_NEW_PATH,
+} from '@app/Support/supportCaseChatPrompt';
+import { HelpPanelChatbot } from '@app/AppLayout/HelpPanelChatbot';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
@@ -150,6 +163,8 @@ interface HelpPanelContextType {
   openHelpPanelToShareGeneralFeedback: () => void;
   /** Opens the help drawer on the Chat tab with the given assistant intro message (e.g. new support case). */
   openHelpPanelWithChatPrompt: (assistantMessage: string) => void;
+  /** Keeps IDE/CVE chat transcript and appends the new-support-case wizard prompt (CVE troubleshoot → `/support/cases/new`). */
+  openHelpPanelForSupportCaseContinuation: () => void;
 }
 
 export const HelpPanelContext = React.createContext<HelpPanelContextType | undefined>(undefined);
@@ -186,6 +201,10 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [customHelpVariant, setCustomHelpVariant] = React.useState<'quickstart' | 'in-page' | null>(null);
   /** When set, Chat tab shows this assistant bubble instead of the default demo transcript (e.g. support case flow). */
   const [helpChatAssistantBubbleText, setHelpChatAssistantBubbleText] = React.useState<string | null>(null);
+  /** IDE → HCC handoff: show the user’s composer prompt plus the same assistant reply (no Troubleshoot CTA). */
+  const [helpChatIdeHandoffUserPrompt, setHelpChatIdeHandoffUserPrompt] = React.useState<string | null>(null);
+  /** After CVE chat confirms support draft: append `NEW_SUPPORT_CASE_CHAT_PROMPT` without clearing IDE transcript */
+  const [helpChatSupportWizardIntro, setHelpChatSupportWizardIntro] = React.useState(false);
   /** Remount top help tabs when selection crosses into/out of `null` so PatternFly clears the tab accent (no matching `eventKey`). */
   const [helpTopTabsMountKey, setHelpTopTabsMountKey] = React.useState(0);
   const prevHelpPanelSubTabRef = React.useRef<number | null>(helpPanelSubTab);
@@ -886,6 +905,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Location and navigation
   const location = useLocation();
   const navigate = useNavigate();
+  const cveTroubleshootDemo = useCveTroubleshootDemo();
   
   // Function to get current bundle name based on route
   const getCurrentBundle = () => {
@@ -912,6 +932,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     if (currentPath === '/support' || currentPath.startsWith('/support/')) {
       return 'Support';
     }
+
+    // RHEL bundle (services menu → /red-hat-enterprise-linux; nested vulnerability demo)
+    if (currentPath.startsWith('/red-hat-enterprise-linux')) {
+      return 'RHEL';
+    }
     
     // No bundle (homepage, all services, etc.)
     return null;
@@ -920,10 +945,36 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const currentBundle = getCurrentBundle();
 
   React.useEffect(() => {
-    if (location.pathname !== '/support/cases/new') {
+    if (location.pathname !== HCC_SUPPORT_CASE_NEW_PATH) {
       setHelpChatAssistantBubbleText(null);
     }
+    /* Keep IDE → CVE → new-case as one continuous chat: do not drop handoff when opening the draft wizard */
+    const preserveIdeHandoffChat =
+      location.pathname === HCC_COPYFAIL_CVE_PATH || location.pathname === HCC_SUPPORT_CASE_NEW_PATH;
+    if (!preserveIdeHandoffChat) {
+      setHelpChatIdeHandoffUserPrompt(null);
+      try {
+        sessionStorage.removeItem(HCC_SESSION_HELP_CHAT_IDE_PROMPT);
+      } catch {
+        /* ignore */
+      }
+    }
   }, [location.pathname]);
+
+  /** Restore IDE handoff after refresh on New case when session still holds the prompt */
+  React.useEffect(() => {
+    if (location.pathname !== HCC_SUPPORT_CASE_NEW_PATH) {
+      return;
+    }
+    try {
+      const persisted = sessionStorage.getItem(HCC_SESSION_HELP_CHAT_IDE_PROMPT);
+      if (persisted?.trim() && !helpChatIdeHandoffUserPrompt) {
+        setHelpChatIdeHandoffUserPrompt(persisted.trim());
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [location.pathname, helpChatIdeHandoffUserPrompt]);
 
   React.useEffect(() => {
     setKbPage(1);
@@ -980,7 +1031,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     // Additional Services
     { id: '16', title: 'Vulnerability', description: 'View and manage system vulnerabilities', category: 'RHEL', route: null },
     { id: '17', title: 'Policies', description: 'Configure and manage security policies', category: 'RHEL', route: null },
-    { id: '18', title: 'Application Performance', description: 'Monitor application performance metrics', category: 'Monitoring', route: null }
+    { id: '18', title: 'Application Performance', description: 'Monitor application performance metrics', category: 'Monitoring', route: null },
+    {
+      id: '26',
+      title: 'CVE · Vulnerability',
+      description: 'View CVE details and affected systems (RHEL)',
+      category: 'RHEL',
+      route: HCC_COPYFAIL_CVE_PATH,
+    },
   ];
 
   // Top 5 results for empty state
@@ -1167,6 +1225,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setCustomHelpVariant(variant);
     setHelpPanelSubTab(variant === 'quickstart' ? 1 : null);
     setSearchQuery('');
+    setHelpChatSupportWizardIntro(false);
 
     if (!isDrawerExpanded) {
       setIsDrawerExpanded(true);
@@ -1181,6 +1240,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setCustomHelpVariant(null);
     setHelpPanelSubTab(4);
     setSearchQuery('');
+    setHelpChatSupportWizardIntro(false);
     setFeedbackView('general');
 
     if (!isDrawerExpanded) {
@@ -1193,7 +1253,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
   const openHelpPanelWithChatPrompt = React.useCallback(
     (assistantMessage: string) => {
+      setHelpChatIdeHandoffUserPrompt(null);
+      try {
+        sessionStorage.removeItem(HCC_SESSION_HELP_CHAT_IDE_PROMPT);
+      } catch {
+        /* ignore */
+      }
       setHelpChatAssistantBubbleText(assistantMessage);
+      setHelpChatSupportWizardIntro(false);
       setCustomHelpTitle(null);
       setCustomHelpVariant(null);
       setHelpPanelSubTab(5);
@@ -1207,6 +1274,88 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     },
     [isDrawerExpanded, isNotificationDrawerOpen]
   );
+
+  const openHelpPanelWithIdeHandoff = React.useCallback(
+    (userPrompt: string) => {
+      setHelpChatAssistantBubbleText(null);
+      setHelpChatSupportWizardIntro(false);
+      const trimmed = userPrompt.trim();
+      setHelpChatIdeHandoffUserPrompt(trimmed);
+      try {
+        sessionStorage.setItem(HCC_SESSION_HELP_CHAT_IDE_PROMPT, trimmed);
+      } catch {
+        /* ignore */
+      }
+      setCustomHelpTitle(null);
+      setCustomHelpVariant(null);
+      setHelpPanelSubTab(5);
+      setSearchQuery('');
+      if (!isDrawerExpanded) {
+        setIsDrawerExpanded(true);
+      }
+      if (isNotificationDrawerOpen) {
+        setIsNotificationDrawerOpen(false);
+      }
+      if (location.pathname.includes('/insights/vulnerability/cves/')) {
+        cveTroubleshootDemo?.beginIdeTroubleshootDemo();
+      }
+    },
+    [cveTroubleshootDemo, isDrawerExpanded, isNotificationDrawerOpen, location.pathname]
+  );
+
+  const openHelpPanelForSupportCaseContinuation = React.useCallback(() => {
+    try {
+      sessionStorage.setItem(HCC_SKIP_GENERIC_HELP_CHAT_ONCE, '1');
+    } catch {
+      /* ignore */
+    }
+    setHelpChatSupportWizardIntro(true);
+    setHelpChatAssistantBubbleText(null);
+    setCustomHelpTitle(null);
+    setCustomHelpVariant(null);
+    setHelpPanelSubTab(5);
+    setSearchQuery('');
+    if (!isDrawerExpanded) {
+      setIsDrawerExpanded(true);
+    }
+    if (isNotificationDrawerOpen) {
+      setIsNotificationDrawerOpen(false);
+    }
+  }, [isDrawerExpanded, isNotificationDrawerOpen]);
+
+  React.useEffect(() => {
+    if (location.pathname !== HCC_COPYFAIL_CVE_PATH) {
+      return;
+    }
+    try {
+      if (sessionStorage.getItem(PCM_SESSION_OPEN_HELP_CHAT) !== '1') {
+        return;
+      }
+      sessionStorage.removeItem(PCM_SESSION_OPEN_HELP_CHAT);
+      const raw = sessionStorage.getItem(PCM_SESSION_IDE_CHAT_HANDOFF);
+      sessionStorage.removeItem(PCM_SESSION_IDE_CHAT_HANDOFF);
+      let userPrompt: string | null = null;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as { userPrompt?: unknown };
+          if (typeof parsed.userPrompt === 'string' && parsed.userPrompt.trim()) {
+            userPrompt = parsed.userPrompt.trim();
+          }
+        } catch {
+          /* ignore malformed payload */
+        }
+      }
+      if (userPrompt) {
+        openHelpPanelWithIdeHandoff(userPrompt);
+      } else {
+        openHelpPanelWithChatPrompt(
+          `You're viewing ${COPYFAIL_CVE_DEMO_ID} in Vulnerability. Ask about remediation, prioritizing affected systems, or next steps in the Hybrid Cloud Console.`
+        );
+      }
+    } catch {
+      return;
+    }
+  }, [location.pathname, openHelpPanelWithChatPrompt, openHelpPanelWithIdeHandoff]);
 
   const createSearchHandlers = () => {
     const onSearchSubmit = (value: string) => {
@@ -1299,316 +1448,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   };
 
   const renderHelpChatPanel = () => (
-    <div
-      data-help-panel="chat"
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0' }}
-    >
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid #d2d2d2',
-          backgroundColor: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Button variant="plain" style={{ padding: '4px', color: '#666' }} aria-label="Chat options menu">
-            <BarsIcon style={{ width: '16px', height: '16px' }} />
-          </Button>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <CommentsIcon style={{ width: '16px', height: '16px', color: 'white' }} />
-          </div>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#151515' }}>Ask Red Hat</div>
-        </div>
-        <div style={{ width: '100%' }}>
-          <Dropdown
-            isOpen={false}
-            onSelect={() => {}}
-            toggle={(toggleRef: React.Ref<any>) => (
-              <MenuToggle
-                ref={toggleRef}
-                isExpanded={false}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  color: '#151515',
-                  textAlign: 'left',
-                  justifyContent: 'flex-start',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #d2d2d2',
-                  borderRadius: '4px'
-                }}
-              >
-                Agent: General Red Hat
-              </MenuToggle>
-            )}
-            shouldFocusToggleOnSelect
-          >
-            <DropdownList>
-              <DropdownItem>Agent: General Red Hat</DropdownItem>
-              <DropdownItem>Support Agent</DropdownItem>
-              <DropdownItem>Feedback Bot</DropdownItem>
-            </DropdownList>
-          </Dropdown>
-        </div>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          padding: '16px',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          minHeight: '0'
-        }}
-      >
-        {helpChatAssistantBubbleText ? (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <div
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-            </div>
-            <div
-              style={{
-                backgroundColor: '#f0f0f0',
-                padding: '12px 16px',
-                borderRadius: '18px 18px 18px 4px',
-                maxWidth: '85%',
-                fontSize: '14px',
-                lineHeight: '1.4'
-              }}
-            >
-              {helpChatAssistantBubbleText}
-            </div>
-          </div>
-        ) : (
-          <>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4'
-            }}
-          >
-            Hi! I'm here to help with your questions and feedback. How can I assist you today?
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'flex-end' }}>
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '18px 18px 4px 18px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4',
-              color: 'white',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)'
-            }}
-          >
-            I have a question about the new features
-          </div>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: '#d2d2d2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <UserIcon style={{ width: '12px', height: '12px', color: '#666' }} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4'
-            }}
-          >
-            I'd be happy to help! What specific features would you like to know more about? I can provide information about:
-            <br />• New dashboard capabilities
-            <br />• Updated user interface
-            <br />• Enhanced security features
-            <br />• Performance improvements
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out'
-              }}
-            />
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out 0.2s'
-              }}
-            />
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out 0.4s'
-              }}
-            />
-          </div>
-        </div>
-          </>
-        )}
-      </div>
-      <div
-        style={{
-          padding: '16px',
-          borderTop: '1px solid #d2d2d2',
-          backgroundColor: 'white',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Type your message..."
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: '1px solid #d2d2d2',
-              borderRadius: '24px',
-              fontSize: '14px',
-              outline: 'none',
-              backgroundColor: 'white'
-            }}
-            disabled
-          />
-          <Button
-            variant="primary"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              border: 'none'
-            }}
-            disabled
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
-          </Button>
-        </div>
-      </div>
-      <style>{`
-        @keyframes typing {
-          0%, 60%, 100% {
-            transform: translateY(0);
-            opacity: 0.4;
-          }
-          30% {
-            transform: translateY(-10px);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </div>
+    <HelpPanelChatbot
+      ideHandoffUserPrompt={helpChatIdeHandoffUserPrompt}
+      assistantBubbleText={helpChatAssistantBubbleText}
+      showSupportCaseWizardIntro={helpChatSupportWizardIntro}
+    />
   );
 
   const renderCustomHelpByTitle = (title: string) => {
@@ -3415,23 +3259,28 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   };
 
   const renderHelpPanelBody = () => (
-    <div data-hcc-help-shell="top-tabs-v2" style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {renderHelpPanelTopTabs()}
-      <Divider
-        component="hr"
-        inset={{ default: 'insetNone' }}
-        className="help-panel-header-divider"
-      />
-      {customHelpTitle && customHelpVariant === 'quickstart' && (
-        <div style={{ padding: '12px 16px 0', flexShrink: 0 }}>
-          <Breadcrumb>
-            <BreadcrumbItem component="button" onClick={() => selectHelpPanelSubTab(1)}>
-              Learn
-            </BreadcrumbItem>
-            <BreadcrumbItem isActive>{customHelpTitle}</BreadcrumbItem>
-          </Breadcrumb>
-        </div>
-      )}
+    <div
+      data-hcc-help-shell="top-tabs-v2"
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+    >
+      <div className="help-panel-shell-header" style={{ flexShrink: 0 }}>
+        {renderHelpPanelTopTabs()}
+        <Divider
+          component="hr"
+          inset={{ default: 'insetNone' }}
+          className="help-panel-header-divider"
+        />
+        {customHelpTitle && customHelpVariant === 'quickstart' && (
+          <div style={{ padding: '12px 16px 0' }}>
+            <Breadcrumb>
+              <BreadcrumbItem component="button" onClick={() => selectHelpPanelSubTab(1)}>
+                Learn
+              </BreadcrumbItem>
+              <BreadcrumbItem isActive>{customHelpTitle}</BreadcrumbItem>
+            </Breadcrumb>
+          </div>
+        )}
+      </div>
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {customHelpTitle ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>{renderCustomHelpByTitle(customHelpTitle)}</div>
@@ -3609,7 +3458,17 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </div>
       </MastheadMain>
       <MastheadContent>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 'var(--pf-t--global--spacer--md)',
+            width: '100%',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
             {/* Settings */}
             <Tooltip 
               content="Settings" 
@@ -3824,6 +3683,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
               </DropdownList>
               </Dropdown>
             </Tooltip>
+          </div>
         </div>
       </MastheadContent>
     </Masthead>
@@ -3861,13 +3721,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const secondaryNavPages = ['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'];
 
   // Determine which navigation structure to show
-  const getNavigationType = (): 'primary' | 'secondary' | 'support' => {
+  const getNavigationType = (): 'primary' | 'secondary' | 'support' | 'rhel' => {
     const currentPath = location.pathname;
     
     if (primaryNavPages.includes(currentPath)) {
       return 'primary';
     } else if (secondaryNavPages.includes(currentPath)) {
       return 'secondary';
+    } else if (currentPath.startsWith('/red-hat-enterprise-linux')) {
+      return 'rhel';
     } else if (currentPath === '/support' || currentPath.startsWith('/support/')) {
       return 'support';
     }
@@ -3956,6 +3818,47 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
               </NavItem>
             )
           ))
+        ) : navigationType === 'rhel' ? (
+          <>
+            <NavItem id="rhel-dash-demo">
+              <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Dashboard</span>
+            </NavItem>
+            <NavItem id="rhel-systems-demo">
+              <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Systems</span>
+            </NavItem>
+            <NavItem id="rhel-ws-demo">
+              <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Workspaces</span>
+            </NavItem>
+            <NavItem id="rhel-ib-demo">
+              <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Image Builder</span>
+            </NavItem>
+            <NavExpandable
+              id="rhel-security-expand"
+              title="Security"
+              isActive={location.pathname.startsWith('/red-hat-enterprise-linux')}
+            >
+              <NavExpandable
+                id="rhel-vuln-expand"
+                title="Vulnerability"
+                isActive={location.pathname.startsWith('/red-hat-enterprise-linux')}
+              >
+                <NavItem
+                  id="rhel-vuln-cves"
+                  isActive={location.pathname.includes('/insights/vulnerability/cves')}
+                >
+                  <NavLink to={HCC_COPYFAIL_CVE_PATH} end>
+                    CVEs
+                  </NavLink>
+                </NavItem>
+                <NavItem id="rhel-vuln-reports-demo">
+                  <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Reports</span>
+                </NavItem>
+                <NavItem id="rhel-vuln-systems-demo">
+                  <span className="pf-v6-c-nav__link hcc-rhel-nav-link--muted">Systems</span>
+                </NavItem>
+              </NavExpandable>
+            </NavExpandable>
+          </>
         ) : (
           // Support bundle navigation
           supportNavItems.map((item, idx) => (
@@ -3972,7 +3875,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
   const Sidebar = (
     <PageSidebar>
-      <PageSidebarBody>{Navigation}</PageSidebarBody>
+      <PageSidebarBody>
+        {navigationType === 'rhel' ? (
+          <div style={{ padding: '0 var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--sm)' }}>
+            <Title headingLevel="h2" size="md">
+              Red Hat Enterprise Linux
+            </Title>
+          </div>
+        ) : null}
+        {Navigation}
+      </PageSidebarBody>
     </PageSidebar>
   );
 
@@ -4021,7 +3933,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           <DrawerCloseButton onClick={onDrawerClose} />
         </DrawerActions>
       </DrawerHead>
-      <DrawerContentBody style={{ padding: 0 }}>
+      <DrawerContentBody className="hcc-help-drawer-body" style={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         <style>{`
           /* Force hidden drawer panels to not take up space */
           .pf-v6-c-drawer__panel[hidden] {
@@ -4411,7 +4323,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             {/* Help Drawer (inner, left-side) */}
             <Drawer isExpanded={isDrawerExpanded} isInline>
               <HelpPanelContext.Provider
-                value={{ openHelpPanelWithTab, openHelpPanelToShareGeneralFeedback, openHelpPanelWithChatPrompt }}
+                value={{
+                  openHelpPanelWithTab,
+                  openHelpPanelToShareGeneralFeedback,
+                  openHelpPanelWithChatPrompt,
+                  openHelpPanelForSupportCaseContinuation,
+                }}
               >
                 {/* Provider wraps DrawerContent so help panel tab bodies (e.g. Dashboard widgets) receive context, not only route children */}
                 <DrawerContent panelContent={drawerContent}>{children}</DrawerContent>
@@ -5959,15 +5876,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </div>
       )}
       
-      {/* Floating Comments Button */}
+      {/* Floating help launcher — above PCM fake dock (see app.css --hcc-fake-dock-clearance / .hcc-fake-apps-dock z-index) */}
       <div
+        className="hcc-floating-help-chat-launcher"
         style={{
           position: 'fixed',
-          bottom: '32px',
+          bottom: 'calc(var(--hcc-fake-dock-clearance, 5rem) + var(--pf-t--global--spacer--md))',
           right: isDrawerExpanded ? `${helpPanelWidth + 32}px` : '32px', // 32px from panel edge when open, 32px from viewport edge when closed
           width: '56px',
           height: '56px',
-          zIndex: 1000,
+          zIndex: 8600,
           transition: 'right 0.2s ease-in-out',
         }}
       >
