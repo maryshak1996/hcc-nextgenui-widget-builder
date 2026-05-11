@@ -1,7 +1,7 @@
 import * as React from 'react';
 import '@patternfly/react-core/dist/styles/base.css';
 import '@patternfly/chatbot/dist/css/main.css';
-import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from '@app/AppLayout/AppLayout';
 import { DashboardDataProvider } from '@app/DashboardHub/DashboardDataContext';
 import { CveCopyFailArticlePage } from '@app/PcmDemo/CveCopyFailArticlePage';
@@ -17,6 +17,22 @@ import '@app/app.css';
  * PCM demo: pathless layout wraps the fake OS browser once; tab content is either `/pcm/*` (article) or full `AppLayout`.
  */
 const routerBasename = process.env.ROUTER_BASENAME ?? '';
+
+/**
+ * GitHub Pages visitors often open the repo root. That path matched `*` → full HCC shell, not the PCM article
+ * (where demo annotations live). Send `/` to the article walkthrough.
+ */
+const PcmDemoShellNonArticleCatchAll: React.FunctionComponent = () => {
+  const { pathname } = useLocation();
+  if (pathname === '/' || pathname === '') {
+    return <Navigate to="/pcm/article" replace />;
+  }
+  return (
+    <AppLayout>
+      <AppRoutes />
+    </AppLayout>
+  );
+};
 
 const App: React.FunctionComponent = () => (
   <Router basename={routerBasename}>
@@ -34,14 +50,7 @@ const App: React.FunctionComponent = () => (
                 <Route path="article" element={<CveCopyFailArticlePage />} />
               </Route>
             </Route>
-            <Route
-              path="*"
-              element={
-                <AppLayout>
-                  <AppRoutes />
-                </AppLayout>
-              }
-            />
+            <Route path="*" element={<PcmDemoShellNonArticleCatchAll />} />
           </Route>
         </Routes>
       </DashboardDataProvider>

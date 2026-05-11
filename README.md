@@ -10,9 +10,9 @@ An internal UX prototype used to explore and demonstrate UI/UX design concepts f
 
 **Share with coworkers (PCM demo on Pages):**
 
-- **Home / shell:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
-- **Copy-fail article walkthrough:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article  
-  After this push, GitHub Actions will rebuild the site from **`pcm-integration`**; if the link 404s briefly, wait for **Actions → Deploy PCM demo to GitHub Pages** to finish.
+- **Site root (opens the article + demo annotations):** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
+- **Same article, explicit path:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article  
+  After you push **`pcm-integration`**, wait for **Actions → Deploy PCM demo to GitHub Pages** to finish before testing. If callouts are missing, use **View annotations** (bottom center); it respects `localStorage` and may be off if you toggled it earlier.
 
 ### 🎨 Design Preview
 **Figma Working Design File:**  

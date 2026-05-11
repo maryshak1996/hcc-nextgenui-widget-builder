@@ -18,7 +18,8 @@
   position: fixed;
   top: max(0.5rem, env(safe-area-inset-top, 0px));
   right: max(0.75rem, env(safe-area-inset-right, 0px));
-  z-index: 8250;
+  /* Above .hcc-pcm-article-shell (1) and fake dock (8500); below view toggle (8880) and click outline (9000) */
+  z-index: 8600;
   max-width: min(20rem, calc(100vw - 1.5rem));
   max-height: calc(100dvh - var(--hcc-fake-dock-clearance) - 3.5rem);
   overflow-x: hidden;
@@ -34,7 +35,7 @@
   top: max(2.5rem, calc(env(safe-area-inset-top, 0px) + 2.25rem));
   bottom: calc(var(--hcc-fake-dock-clearance) + 0.5rem + env(safe-area-inset-bottom, 0px));
   right: calc(var(--hcc-ide-composer-w) + 0.75rem);
-  z-index: 8350;
+  z-index: 8600;
   max-width: min(22rem, calc(100vw - var(--hcc-ide-composer-w) - 3rem));
   max-height: calc(100dvh - var(--hcc-fake-dock-clearance) - 3rem);
   overflow-x: hidden;

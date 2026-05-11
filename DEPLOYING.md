@@ -45,10 +45,12 @@ For this repository, that is:
 
 **https://maryshak1996.github.io/hcc-nextgenui-widget-builder/**
 
-Handy links to share (same deployment, includes demo annotations and PCM article):
+Handy links to share (same deployment; the **repo root** redirects to the PCM article so demo annotations mount):
 
-- **App shell:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
-- **PCM article (CVE copy-fail demo):** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article
+- **Site root → article:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/
+- **Explicit article path:** https://maryshak1996.github.io/hcc-nextgenui-widget-builder/pcm/article
+
+If coworkers do not see pink callouts, they may have turned **View annotations** off on an earlier visit (`localStorage` key `hcc-demo-annotations-visible`); toggle it back on.
 
 CI sets **`PUBLIC_PATH` to `/<repository-name>/`** so asset URLs and the router match Project Pages (forks pick up the correct path automatically).
 
