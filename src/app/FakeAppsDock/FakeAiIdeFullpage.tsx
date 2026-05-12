@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { BrainIcon } from '@patternfly/react-icons';
+import { BrainIcon, CubesIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
 import {
   DEMO_IDE_COPY_FAIL_USER_PROMPT,
@@ -11,6 +11,7 @@ import '@app/DemoAnnotations/demoAnnotations.css';
 import { readAnnotationsVisiblePreference } from '@app/DemoAnnotations/DemoAnnotationsViewToggle';
 import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
 import { usePcmBrowser } from '@app/PcmDemo/PcmBrowserContext';
+import { REDHAT_ACCESS_COPYFAIL_CVE_URL } from '@app/RhelVulnerability/copyFailDemoFleet';
 import { CopyFailIdeAssistantReplyBody } from '@app/RhelVulnerability/copyFailIdeAssistantReply';
 
 export interface IFakeAiIdeFullpageProps {
@@ -24,7 +25,8 @@ const ANCHOR_COMPOSER_INPUT = '[data-demo-anchor="pcm-ide-composer-input"]';
 const ANCHOR_IDE_TROUBLESHOOT_HCC = '[data-demo-anchor="pcm-ide-troubleshoot-hcc"]';
 
 const CALLOUT_DELAY_MS = 1000;
-const OUTLINE_DELAY_MS = 2200;
+/** Delay after the “ask the chat” callout appears before highlighting the composer (was ~1200ms after first callout in single-step flow). */
+const COMPOSER_OUTLINE_AFTER_CHAT_CALLOUT_MS = 1200;
 
 type TComposerPhase = 'idle' | 'thinking' | 'answered';
 
@@ -39,6 +41,7 @@ type TIdePostAnswerStep = 0 | 1 | 2 | 3;
  */
 const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ isOpen, onClose }) => {
   const panelRef = React.useRef<HTMLDivElement>(null);
+  const ideComposerChatRef = React.useRef<HTMLDivElement>(null);
   const composerRef = React.useRef<HTMLTextAreaElement>(null);
   const demoInjectedRef = React.useRef(false);
   const { openTroubleshootInHcc } = usePcmBrowser();
@@ -48,7 +51,10 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   const [phase, setPhase] = React.useState<TComposerPhase>('idle');
 
   const [ideAnnotationsOn, setIdeAnnotationsOn] = React.useState(readAnnotationsVisiblePreference);
-  const [demoCalloutVisible, setDemoCalloutVisible] = React.useState(false);
+  /** First IDE callout: MCP servers + Errata skill (before “ask the chat”). */
+  const [ideSetupCalloutVisible, setIdeSetupCalloutVisible] = React.useState(false);
+  /** User dismissed the setup callout; show the “Let’s ask the chat…” callout. */
+  const [ideSetupCalloutDone, setIdeSetupCalloutDone] = React.useState(false);
   const [demoComposerOutline, setDemoComposerOutline] = React.useState(false);
   const [idePostAnswerStep, setIdePostAnswerStep] = React.useState<TIdePostAnswerStep>(0);
   /** Composer demo prompt sent (via Next or focusing the outlined composer). */
@@ -71,7 +77,8 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
       setSentUserPrompt(null);
       setPhase('idle');
       demoInjectedRef.current = false;
-      setDemoCalloutVisible(false);
+      setIdeSetupCalloutVisible(false);
+      setIdeSetupCalloutDone(false);
       setDemoComposerOutline(false);
       setIdePostAnswerStep(0);
       setIdeKickoffDone(false);
@@ -84,17 +91,28 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
     if (!isOpen || !ideAnnotationsOn) {
       return undefined;
     }
-    const tCallout = window.setTimeout(() => setDemoCalloutVisible(true), CALLOUT_DELAY_MS);
-    const tOutline = window.setTimeout(() => setDemoComposerOutline(true), OUTLINE_DELAY_MS);
+    setIdeSetupCalloutVisible(false);
+    setIdeSetupCalloutDone(false);
+    const tSetup = window.setTimeout(() => setIdeSetupCalloutVisible(true), CALLOUT_DELAY_MS);
     return () => {
-      window.clearTimeout(tCallout);
-      window.clearTimeout(tOutline);
+      window.clearTimeout(tSetup);
     };
   }, [isOpen, ideAnnotationsOn]);
 
   React.useEffect(() => {
+    if (!isOpen || !ideAnnotationsOn || !ideSetupCalloutDone) {
+      return undefined;
+    }
+    const tOutline = window.setTimeout(() => setDemoComposerOutline(true), COMPOSER_OUTLINE_AFTER_CHAT_CALLOUT_MS);
+    return () => {
+      window.clearTimeout(tOutline);
+    };
+  }, [isOpen, ideAnnotationsOn, ideSetupCalloutDone]);
+
+  React.useEffect(() => {
     if (!ideAnnotationsOn) {
-      setDemoCalloutVisible(false);
+      setIdeSetupCalloutVisible(false);
+      setIdeSetupCalloutDone(false);
       setDemoComposerOutline(false);
       setIdePostAnswerStep(0);
     }
@@ -176,6 +194,11 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
     setIdeKickoffDone(true);
   }, [phase]);
 
+  const onIdeSetupPreambleNext = React.useCallback(() => {
+    setIdeSetupCalloutVisible(false);
+    setIdeSetupCalloutDone(true);
+  }, []);
+
   const onIdeAskChatNext = React.useCallback(() => {
     kickOffIdeDemoPrompt();
   }, [kickOffIdeDemoPrompt]);
@@ -194,19 +217,24 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
 
   /** Same pattern as article callouts: `DemoAnnotationCallout` disables Next after one use; keep handlers idempotent. */
   const onIdeReviewResponseNext = React.useCallback(() => {
-    setIdePostAnswerStep((s) => {
-      if (s >= 2) {
-        return s;
-      }
-      const el = document.querySelector<HTMLElement>(ANCHOR_IDE_TROUBLESHOOT_HCC);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      return 2;
-    });
+    setIdePostAnswerStep((s) => (s >= 2 ? s : 2));
   }, []);
 
   const onIdeJumpConsoleNext = React.useCallback(() => {
     setIdePostAnswerStep((s) => (s < 3 ? 3 : s));
   }, []);
+
+  /** When the “look through this response” callout is active (step ≥ 1), pin chat scroll to the bottom so CTAs stay in view. */
+  React.useLayoutEffect(() => {
+    if (!isOpen || phase !== 'answered' || idePostAnswerStep < 1) {
+      return;
+    }
+    const chat = ideComposerChatRef.current;
+    if (!chat) {
+      return;
+    }
+    chat.scrollTop = chat.scrollHeight;
+  }, [isOpen, phase, idePostAnswerStep]);
 
   if (!isOpen) {
     return null;
@@ -214,6 +242,9 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
 
   const showConversation = phase !== 'idle';
   const composerDisabled = phase !== 'idle';
+
+  const ideChatPromptCalloutVisible =
+    ideSetupCalloutDone && phase === 'idle' && !ideKickoffDone;
 
   const ideCalloutsPortal =
     ideAnnotationsOn && typeof document !== 'undefined'
@@ -223,7 +254,16 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
             aria-label="Demo walkthrough hints"
           >
             <DemoAnnotationCallout
-              visible={demoCalloutVisible}
+              visible={ideSetupCalloutVisible}
+              id="hcc-demo-ide-callout-mcp-skill-setup"
+              onNext={onIdeSetupPreambleNext}
+            >
+              {
+                "I added the Red Hat MCP servers and I've built a skill telling the IDE to treat the Red Hat security data base as the source of truth"
+              }
+            </DemoAnnotationCallout>
+            <DemoAnnotationCallout
+              visible={ideChatPromptCalloutVisible}
               id="hcc-demo-ide-callout-chat"
               onNext={onIdeAskChatNext}
               nextCompletedExternally={ideKickoffDone}
@@ -262,7 +302,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
       >
       <header className="hcc-fake-ai-ide-fp__menubar">
         <span className="hcc-fake-ai-ide-fp__brand" id="hcc-fake-ai-ide-fp-title">
-          Demo IDE
+          AI IDE — Workspace
         </span>
         <nav className="hcc-fake-ai-ide-fp__menus" aria-label="Mock menu bar">
           <span>File</span>
@@ -289,23 +329,44 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
           <span className="hcc-fake-ai-ide-fp__activity-item">◇</span>
         </aside>
 
-        <aside className="hcc-fake-ai-ide-fp__sidebar" aria-label="Explorer">
-          <div className="hcc-fake-ai-ide-fp__sidebar-head">EXPLORER</div>
-          <div className="hcc-fake-ai-ide-fp__tree">
-            <div className="hcc-fake-ai-ide-fp__tree-row">📁 workspace</div>
-            <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested">📁 src</div>
-            <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested2">utils.ts</div>
-            <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested2 hcc-fake-ai-ide-fp__tree-row--active">
-              pcm-flow.tsx
+        <aside className="hcc-fake-ai-ide-fp__sidebar" aria-label="Explorer, skills, and MCP servers">
+          <div className="hcc-fake-ai-ide-fp__sidebar-block">
+            <div className="hcc-fake-ai-ide-fp__sidebar-head">EXPLORER</div>
+            <div className="hcc-fake-ai-ide-fp__tree">
+              <div className="hcc-fake-ai-ide-fp__tree-row">📁 src</div>
+              <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested hcc-fake-ai-ide-fp__tree-row--active">
+                main.py
+              </div>
+              <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested">config.yaml</div>
+              <div className="hcc-fake-ai-ide-fp__tree-row">📁 deploy</div>
+              <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested">Containerfile</div>
             </div>
-            <div className="hcc-fake-ai-ide-fp__tree-row hcc-fake-ai-ide-fp__tree-row--nested2">types.d.ts</div>
+          </div>
+          <div className="hcc-fake-ai-ide-fp__sidebar-block hcc-fake-ai-ide-fp__sidebar-block--stacked">
+            <div className="hcc-fake-ai-ide-fp__sidebar-head">SKILLS</div>
+            <ul className="hcc-fake-ai-ide-fp__skills-list">
+              <li className="hcc-fake-ai-ide-fp__skills-item">Errata as truth</li>
+            </ul>
+          </div>
+          <div className="hcc-fake-ai-ide-fp__sidebar-block hcc-fake-ai-ide-fp__sidebar-block--stacked">
+            <div className="hcc-fake-ai-ide-fp__sidebar-head">MCP SERVERS</div>
+            <ul className="hcc-fake-ai-ide-fp__mcp-list">
+              <li className="hcc-fake-ai-ide-fp__mcp-item">
+                <span className="hcc-fake-ai-ide-fp__mcp-status" aria-label="Connected" title="Connected" />
+                <span>Red Hat CVE</span>
+              </li>
+              <li className="hcc-fake-ai-ide-fp__mcp-item">
+                <span className="hcc-fake-ai-ide-fp__mcp-status" aria-label="Connected" title="Connected" />
+                <span>Red Hat Lightspeed</span>
+              </li>
+            </ul>
           </div>
         </aside>
 
         <div className="hcc-fake-ai-ide-fp__editor-col">
           <div className="hcc-fake-ai-ide-fp__tabs">
             <div className="hcc-fake-ai-ide-fp__tab hcc-fake-ai-ide-fp__tab--active">
-              pcm-flow.tsx
+              main.py
               <span className="hcc-fake-ai-ide-fp__tab-x" aria-hidden="true">
                 ×
               </span>
@@ -313,14 +374,11 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
           </div>
           <div className="hcc-fake-ai-ide-fp__editor">
             <pre className="hcc-fake-ai-ide-fp__pre">
-              <code>{`// pcm-flow.tsx — mock buffer
-import { analyze } from './utils';
+              <code>{`from rhel_config import deploy
 
-export async function runVisionFlow() {
-  const risk = await analyze('CVE-COPYFAIL');
-  console.log(\`report: \${risk}\`);
-  return { ok: true };
-}
+def build_container():
+    # Build and push to registry
+    deploy.build("Containerfile")
 `}</code>
             </pre>
           </div>
@@ -328,11 +386,17 @@ export async function runVisionFlow() {
 
         <aside className="hcc-fake-ai-ide-fp__composer" aria-label="AI Composer">
           <div className="hcc-fake-ai-ide-fp__composer-head">
-            <span className="hcc-fake-ai-ide-fp__composer-title">Composer</span>
-            <span className="hcc-fake-ai-ide-fp__composer-badge">⌘K</span>
+            <span className="hcc-fake-ai-ide-fp__composer-title-row">
+              <CubesIcon className="hcc-fake-ai-ide-fp__composer-title-icon" aria-hidden />
+              <span className="hcc-fake-ai-ide-fp__composer-title">AI Assistant</span>
+            </span>
           </div>
           <div className="hcc-fake-ai-ide-fp__composer-body">
-            <div className="hcc-fake-ai-ide-fp__chat" aria-live={showConversation ? 'polite' : undefined}>
+            <div
+              ref={ideComposerChatRef}
+              className="hcc-fake-ai-ide-fp__chat"
+              aria-live={showConversation ? 'polite' : undefined}
+            >
               {showConversation && sentUserPrompt ? (
                 <>
                   <div className="hcc-fake-ai-ide-fp__msg hcc-fake-ai-ide-fp__msg--user">{sentUserPrompt}</div>
@@ -355,14 +419,30 @@ export async function runVisionFlow() {
                     <div className="hcc-fake-ai-ide-fp__msg hcc-fake-ai-ide-fp__msg--ai">
                       <CopyFailIdeAssistantReplyBody variant="ide" />
                       <div className="hcc-fake-ai-ide-fp__cta-row">
-                        <button
-                          type="button"
-                          className="hcc-fake-ai-ide-fp__cta-primary"
-                          data-demo-anchor="pcm-ide-troubleshoot-hcc"
-                          onClick={onTroubleshootClick}
-                        >
-                          Troubleshoot in the Red Hat console
-                        </button>
+                        <div className="hcc-fake-ai-ide-fp__cta-actions">
+                          <button
+                            type="button"
+                            className="hcc-fake-ai-ide-fp__cta-primary"
+                            data-demo-anchor="pcm-ide-troubleshoot-hcc"
+                            onClick={onTroubleshootClick}
+                          >
+                            Troubleshoot in the Red Hat console
+                          </button>
+                          <a
+                            className="hcc-fake-ai-ide-fp__cta-secondary"
+                            href={REDHAT_ACCESS_COPYFAIL_CVE_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <span className="hcc-fake-ai-ide-fp__cta-secondary-inner">
+                              View security details
+                              <ExternalLinkAltIcon
+                                className="hcc-fake-ai-ide-fp__cta-secondary-icon"
+                                aria-hidden
+                              />
+                            </span>
+                          </a>
+                        </div>
                       </div>
                     </div>
                   ) : null}
