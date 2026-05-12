@@ -13,6 +13,7 @@ import MessageBar from '@patternfly/chatbot/dist/esm/MessageBar';
 import MessageDivider from '@patternfly/chatbot/dist/esm/MessageDivider';
 import { CopyFailIdeAssistantReplyBody } from '@app/RhelVulnerability/copyFailIdeAssistantReply';
 import { HELP_PANEL_CHAT_DEMO_SCRIPT } from '@app/AppLayout/helpPanelChatDemoScript';
+import { HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT } from '@app/DemoAnnotations/demoAnnotationEvents';
 import { type TCveTroubleshootStep, useCveTroubleshootDemo } from '@app/RhelVulnerability/CveTroubleshootDemoContext';
 import {
   CVE_REMEDIATION_SCAFFOLD_AGENT_OFFER,
@@ -168,6 +169,28 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
       window.clearTimeout(t2);
     };
   }, [cveDemo?.step]);
+
+  /** Console “YAML details” callout Next — allow Help transcript to pin to bottom again. */
+  const [yamlArtifactCalloutAcknowledgedForScroll, setYamlArtifactCalloutAcknowledgedForScroll] =
+    React.useState(false);
+  const playbookYamlIntroScrollDoneRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (cveDemo?.step !== 'remediation_playbook_artifact_shown') {
+      playbookYamlIntroScrollDoneRef.current = false;
+    }
+    if (cveDemo?.step === 'remediation_playbook_artifact_shown') {
+      setYamlArtifactCalloutAcknowledgedForScroll(false);
+    }
+  }, [cveDemo?.step]);
+
+  React.useEffect(() => {
+    const onYamlDetailsNext = () => {
+      setYamlArtifactCalloutAcknowledgedForScroll(true);
+    };
+    window.addEventListener(HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT, onYamlDetailsNext);
+    return () => window.removeEventListener(HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT, onYamlDetailsNext);
+  }, []);
 
   /**
    * After third “yes”: 0–1 = assistant thinking before the running-playbook card (only while step is remediation_simulating).
@@ -353,8 +376,47 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
   /** PF Chatbot MessageBox attaches scroll helpers via ref (see useImperativeHandle in MessageBox) */
   const messageBoxRef = React.useRef<{ scrollToBottom?: (opts?: { behavior?: ScrollBehavior; resumeSmartScroll?: boolean }) => void } | null>(null);
 
-  /** Keep the transcript pinned to the latest user/assistant content */
+  /** Scroll transcript to bottom, except while the YAML playbook is shown and the console “YAML details” callout is still pending (then align once to the top of that message). */
   React.useLayoutEffect(() => {
+    const playbookYamlHoldScrollToBottom =
+      Boolean(ideHandoffUserPrompt) &&
+      cveDemo?.step === 'remediation_playbook_artifact_shown' &&
+      remediationArtifactPrelude >= 2 &&
+      !yamlArtifactCalloutAcknowledgedForScroll;
+
+    if (playbookYamlHoldScrollToBottom) {
+      if (!playbookYamlIntroScrollDoneRef.current) {
+        const id = window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            const anchor = document.querySelector<HTMLElement>('[data-demo-anchor="pcm-help-chat-playbook-yaml"]');
+            if (!anchor) {
+              return;
+            }
+            let el: HTMLElement | null = anchor;
+            let scrollParent: HTMLElement | null = null;
+            while (el) {
+              const { overflowY } = window.getComputedStyle(el);
+              if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+                scrollParent = el;
+                break;
+              }
+              el = el.parentElement;
+            }
+            if (scrollParent) {
+              const top =
+                anchor.getBoundingClientRect().top -
+                scrollParent.getBoundingClientRect().top +
+                scrollParent.scrollTop;
+              scrollParent.scrollTop = Math.max(0, top - 8);
+              playbookYamlIntroScrollDoneRef.current = true;
+            }
+          });
+        });
+        return () => window.cancelAnimationFrame(id);
+      }
+      return undefined;
+    }
+
     const id = window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         messageBoxRef.current?.scrollToBottom?.({ behavior: 'smooth', resumeSmartScroll: false });
@@ -377,6 +439,7 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
     showRemediationPlaybookOutcome,
     supportCaseChat.continuationMessages,
     supportCaseChat.isContinuationThinking,
+    yamlArtifactCalloutAcknowledgedForScroll,
   ]);
 
   const messageBarPlaceholder = (() => {

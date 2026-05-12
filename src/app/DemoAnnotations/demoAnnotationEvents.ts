@@ -16,5 +16,8 @@ export type HccDemoAnnotationsPrefDetail = {
 export const DEMO_IDE_COPY_FAIL_USER_PROMPT =
   'copy fail CVE is in the news. which of my systems are impacted?';
 
+/** Console walkthrough: user advanced past the “YAML details” callout — Help chat may scroll to latest. */
+export const HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT = 'hcc-demo-yaml-details-callout-next';
+
 /** Fired when the CVE-handoff support wizard main body is ready for demo annotations (after staged load). */
 export const HCC_SUPPORT_WIZARD_BODY_READY = 'hcc-support-wizard-body-ready';

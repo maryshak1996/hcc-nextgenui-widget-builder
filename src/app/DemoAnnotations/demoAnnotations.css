@@ -77,6 +77,10 @@
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
 }
 
 /* Stack composer full-width — pin callout strip to top of viewport */

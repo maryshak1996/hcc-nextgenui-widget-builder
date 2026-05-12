@@ -51,14 +51,22 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   const [phase, setPhase] = React.useState<TComposerPhase>('idle');
 
   const [ideAnnotationsOn, setIdeAnnotationsOn] = React.useState(readAnnotationsVisiblePreference);
-  /** First IDE callout: MCP servers + Errata skill (before “ask the chat”). */
-  const [ideSetupCalloutVisible, setIdeSetupCalloutVisible] = React.useState(false);
-  /** User dismissed the setup callout; show the “Let’s ask the chat…” callout. */
+  /** MCP / skill preamble callout: once revealed, stays mounted so it stacks with later hints. */
+  const [ideMcpSkillCalloutShown, setIdeMcpSkillCalloutShown] = React.useState(false);
+  /** User dismissed the MCP preamble; enables “Let’s ask the chat…” + composer outline timer. */
   const [ideSetupCalloutDone, setIdeSetupCalloutDone] = React.useState(false);
   const [demoComposerOutline, setDemoComposerOutline] = React.useState(false);
   const [idePostAnswerStep, setIdePostAnswerStep] = React.useState<TIdePostAnswerStep>(0);
   /** Composer demo prompt sent (via Next or focusing the outlined composer). */
   const [ideKickoffDone, setIdeKickoffDone] = React.useState(false);
+  /** After assistant reply mounts, scroll once so the top of the answer is visible (not the CTAs). */
+  const ideAssistantIntroScrollDoneRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (phase !== 'answered') {
+      ideAssistantIntroScrollDoneRef.current = false;
+    }
+  }, [phase]);
 
   React.useEffect(() => {
     const onPref = (e: Event) => {
@@ -77,7 +85,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
       setSentUserPrompt(null);
       setPhase('idle');
       demoInjectedRef.current = false;
-      setIdeSetupCalloutVisible(false);
+      setIdeMcpSkillCalloutShown(false);
       setIdeSetupCalloutDone(false);
       setDemoComposerOutline(false);
       setIdePostAnswerStep(0);
@@ -91,9 +99,9 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
     if (!isOpen || !ideAnnotationsOn) {
       return undefined;
     }
-    setIdeSetupCalloutVisible(false);
+    setIdeMcpSkillCalloutShown(false);
     setIdeSetupCalloutDone(false);
-    const tSetup = window.setTimeout(() => setIdeSetupCalloutVisible(true), CALLOUT_DELAY_MS);
+    const tSetup = window.setTimeout(() => setIdeMcpSkillCalloutShown(true), CALLOUT_DELAY_MS);
     return () => {
       window.clearTimeout(tSetup);
     };
@@ -111,7 +119,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
 
   React.useEffect(() => {
     if (!ideAnnotationsOn) {
-      setIdeSetupCalloutVisible(false);
+      setIdeMcpSkillCalloutShown(false);
       setIdeSetupCalloutDone(false);
       setDemoComposerOutline(false);
       setIdePostAnswerStep(0);
@@ -195,7 +203,6 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   }, [phase]);
 
   const onIdeSetupPreambleNext = React.useCallback(() => {
-    setIdeSetupCalloutVisible(false);
     setIdeSetupCalloutDone(true);
   }, []);
 
@@ -218,23 +225,36 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   /** Same pattern as article callouts: `DemoAnnotationCallout` disables Next after one use; keep handlers idempotent. */
   const onIdeReviewResponseNext = React.useCallback(() => {
     setIdePostAnswerStep((s) => (s >= 2 ? s : 2));
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const chat = ideComposerChatRef.current;
+        if (chat) {
+          chat.scrollTop = chat.scrollHeight;
+        }
+      });
+    });
   }, []);
 
   const onIdeJumpConsoleNext = React.useCallback(() => {
     setIdePostAnswerStep((s) => (s < 3 ? 3 : s));
   }, []);
 
-  /** When the “look through this response” callout is active (step ≥ 1), pin chat scroll to the bottom so CTAs stay in view. */
+  /** First layout after assistant message mounts: keep the start of the reply in view (do not jump to CTAs yet). */
   React.useLayoutEffect(() => {
-    if (!isOpen || phase !== 'answered' || idePostAnswerStep < 1) {
+    if (!isOpen || phase !== 'answered' || ideAssistantIntroScrollDoneRef.current) {
       return;
     }
     const chat = ideComposerChatRef.current;
-    if (!chat) {
+    const aiMsg = chat?.querySelector<HTMLElement>('.hcc-fake-ai-ide-fp__msg--ai');
+    if (!chat || !aiMsg) {
       return;
     }
-    chat.scrollTop = chat.scrollHeight;
-  }, [isOpen, phase, idePostAnswerStep]);
+    ideAssistantIntroScrollDoneRef.current = true;
+    const chatRect = chat.getBoundingClientRect();
+    const msgRect = aiMsg.getBoundingClientRect();
+    const nextTop = msgRect.top - chatRect.top + chat.scrollTop;
+    chat.scrollTop = Math.max(0, nextTop - 4);
+  }, [isOpen, phase]);
 
   if (!isOpen) {
     return null;
@@ -243,8 +263,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
   const showConversation = phase !== 'idle';
   const composerDisabled = phase !== 'idle';
 
-  const ideChatPromptCalloutVisible =
-    ideSetupCalloutDone && phase === 'idle' && !ideKickoffDone;
+  const ideAskChatCalloutVisible = ideSetupCalloutDone;
 
   const ideCalloutsPortal =
     ideAnnotationsOn && typeof document !== 'undefined'
@@ -254,16 +273,17 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
             aria-label="Demo walkthrough hints"
           >
             <DemoAnnotationCallout
-              visible={ideSetupCalloutVisible}
+              visible={ideMcpSkillCalloutShown}
               id="hcc-demo-ide-callout-mcp-skill-setup"
               onNext={onIdeSetupPreambleNext}
+              nextCompletedExternally={ideSetupCalloutDone}
             >
               {
                 "I added the Red Hat MCP servers and I've built a skill telling the IDE to treat the Red Hat security data base as the source of truth"
               }
             </DemoAnnotationCallout>
             <DemoAnnotationCallout
-              visible={ideChatPromptCalloutVisible}
+              visible={ideAskChatCalloutVisible}
               id="hcc-demo-ide-callout-chat"
               onNext={onIdeAskChatNext}
               nextCompletedExternally={ideKickoffDone}
@@ -274,6 +294,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               visible={phase === 'answered' && idePostAnswerStep >= 1}
               id="hcc-demo-ide-callout-response-review"
               onNext={onIdeReviewResponseNext}
+              nextCompletedExternally={idePostAnswerStep >= 2}
             >
               {"Okay, let's look through this response"}
             </DemoAnnotationCallout>
@@ -281,6 +302,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               visible={phase === 'answered' && idePostAnswerStep >= 2}
               id="hcc-demo-ide-callout-jump-console"
               onNext={onIdeJumpConsoleNext}
+              nextCompletedExternally={idePostAnswerStep >= 3}
             >
               {"Hmmm, okay let's go ahead and jump into the console"}
             </DemoAnnotationCallout>

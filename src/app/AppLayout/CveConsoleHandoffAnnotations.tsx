@@ -5,6 +5,7 @@ import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallou
 import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
 import {
   HCC_DEMO_ANNOTATIONS_PREF_CHANGED,
+  HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT,
   type HccDemoAnnotationsPrefDetail,
 } from '@app/DemoAnnotations/demoAnnotationEvents';
 import '@app/DemoAnnotations/demoAnnotations.css';
@@ -233,6 +234,7 @@ const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAn
   }, [remediationPlaybooksBarReady]);
 
   const onYmlDetailsNext = React.useCallback(() => {
+    window.dispatchEvent(new CustomEvent(HCC_DEMO_YAML_DETAILS_CALLOUT_NEXT));
     setPhase('safe_run_all');
   }, []);
 
@@ -317,7 +319,7 @@ const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAn
           id="hcc-demo-console-callout-yml-details"
           onNext={phase === 'yml_details' ? onYmlDetailsNext : undefined}
         >
-          {`Let's look at the details in this YAML file. Seems to make sense to me.`}
+          {`Let's look at the details in this YAML file.`}
         </DemoAnnotationCallout>
         <DemoAnnotationCallout
           visible={showSince(phase, 'safe_run_all')}
