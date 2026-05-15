@@ -30,6 +30,24 @@ const NextArrowIcon: React.FunctionComponent = () => (
   </svg>
 );
 
+/** Simple user silhouette (demo “customer thought” cue). */
+const UserIcon: React.FunctionComponent = () => (
+  <svg
+    className="hcc-demo-annotation-callout__user-icon"
+    viewBox="0 0 24 24"
+    width={20}
+    height={20}
+    aria-hidden
+    focusable="false"
+  >
+    <circle cx="12" cy="8" r="3.5" fill="currentColor" />
+    <path
+      fill="currentColor"
+      d="M4.5 20.5c0-3.1 3.35-5.5 7.5-5.5s7.5 2.4 7.5 5.5V22h-15v-1.5z"
+    />
+  </svg>
+);
+
 /**
  * Demo-only bright pink callout (not PatternFly). Parent should use an overlay host for layout.
  */
@@ -71,7 +89,10 @@ const DemoAnnotationCallout: React.FunctionComponent<DemoAnnotationCalloutProps>
       aria-live="polite"
     >
       <div className="hcc-demo-annotation-callout">
-        <div className="hcc-demo-annotation-callout__body">{children}</div>
+        <div className="hcc-demo-annotation-callout__body">
+          <UserIcon />
+          <span className="hcc-demo-annotation-callout__text">{children}</span>
+        </div>
         {showNextFooter ? (
           <div className="hcc-demo-annotation-callout__footer">
             <button

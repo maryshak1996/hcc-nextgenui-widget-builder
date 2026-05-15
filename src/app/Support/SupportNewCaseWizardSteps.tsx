@@ -27,6 +27,7 @@ import {
 import { CloudUploadAltIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { SUPPORT_CASE_TYPE_OPTIONS } from '@app/Support/supportCaseDraftConstants';
 import { SupportCaseNotificationLabelsField } from '@app/Support/SupportCaseNotificationLabelsField';
+import { SupportCaseThirdPartyNotificationsField } from '@app/Support/SupportCaseThirdPartyNotificationsField';
 import { useSupportCaseDraft } from '@app/Support/SupportCaseDraftContext';
 
 /** Step 1 — Troubleshoot (portal aligns core fields here first) */
@@ -344,6 +345,8 @@ const SupportNewCaseConfigurationStep: React.FunctionComponent = () => {
           fieldId="cfg-notify"
           emptyPlaceholder="Enter an email address or username for the person you want to notify"
         />
+
+        <SupportCaseThirdPartyNotificationsField fieldIdBase="cfg-third-party" />
 
         <FormGroup label="Personal reference number" fieldId="cfg-ref">
           <TextInput

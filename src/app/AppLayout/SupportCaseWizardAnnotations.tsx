@@ -2,6 +2,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
+import { DemoGoalConnectionAnnotation, DemoGoalConnectionStack } from '@app/DemoAnnotations/DemoGoalConnectionAnnotation';
 import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
 import {
   HCC_DEMO_ANNOTATIONS_PREF_CHANGED,
@@ -11,7 +12,7 @@ import {
 import '@app/DemoAnnotations/demoAnnotations.css';
 import { readAnnotationsVisiblePreference } from '@app/DemoAnnotations/DemoAnnotationsViewToggle';
 import { HCC_SUPPORT_CASE_WIZARD_BOOTSTRAP_STATE_KEY } from '@app/Support/supportCaseWizardBootstrap';
-import { HCC_SUPPORT_CASE_NEW_PATH } from '@app/Support/supportCaseChatPrompt';
+import { HCC_SUPPORT_CASE_NEW_PATH, SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT, SUPPORT_CASE_SLACK_DM_SYNC_DEMO_MESSAGE } from '@app/Support/supportCaseChatPrompt';
 import type { TCveTroubleshootStep } from '@app/RhelVulnerability/CveTroubleshootDemoContext';
 import type { TSupportCaseChatContinuationPhase } from '@app/Support/SupportCaseChatContinuationContext';
 import { primeHelpChatMessageBarWithText } from '@app/AppLayout/helpChatDemoDom';
@@ -23,8 +24,8 @@ const CUE_AFTER_GROUP_REPLY_MS = 500;
 const CUE_AFTER_SUBMIT_CALLOUT_MS = 550;
 const ANCHOR_HELP_MESSAGE_BAR = '[data-demo-anchor="pcm-help-chat-message-bar"]';
 
-const SRE_NOTIFY_DEMO_PROMPT = 'send email notifications of this ticket to the sre team';
-const SRE_ALL_GROUPS_DEMO_PROMPT = 'all of them';
+/** Demo pasted endpoint — matches `looksLikeSlackWebhookUrl` in `SupportCaseChatContinuationContext` */
+const SLACK_WEBHOOK_URL_DEMO_PROMPT = SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT;
 /** Trimmed to `yes, submit` in chat — matches submit intent in `SupportCaseChatContinuationContext`. */
 const SUBMIT_CASE_DEMO_PROMPT = ' yes, submit';
 
@@ -51,11 +52,8 @@ function wPhaseIndex(p: TWizardDemoPhase): number {
 }
 
 function wShowSince(current: TWizardDemoPhase, since: (typeof W_PHASE_FLOW)[number]): boolean {
-  if (current === 'idle') {
+  if (current === 'idle' || current === 'done') {
     return false;
-  }
-  if (current === 'done') {
-    return true;
   }
   return wPhaseIndex(current) >= wPhaseIndex(since);
 }
@@ -246,7 +244,7 @@ const SupportCaseWizardAnnotations: React.FunctionComponent<ISupportCaseWizardAn
     if (phase !== 'await_group_options') {
       return undefined;
     }
-    if (supportCaseChatPhase !== 'awaiting_group_choice' || isContinuationThinking) {
+    if (supportCaseChatPhase !== 'awaiting_slack_webhook' || isContinuationThinking) {
       return undefined;
     }
     if (cueTimerRef.current !== undefined) {
@@ -329,23 +327,23 @@ const SupportCaseWizardAnnotations: React.FunctionComponent<ISupportCaseWizardAn
     }
   }, [phase, supportCaseChatPhase]);
 
-  const onClickNotifySre = React.useCallback(() => {
+  const onClickSlackSync = React.useCallback(() => {
     if (phase !== 'cue_notify_sre') {
       return;
     }
-    primeHelpChatMessageBarWithText(SRE_NOTIFY_DEMO_PROMPT);
+    primeHelpChatMessageBarWithText(SUPPORT_CASE_SLACK_DM_SYNC_DEMO_MESSAGE);
     window.requestAnimationFrame(() => {
-      onSendSupportFollowUp(SRE_NOTIFY_DEMO_PROMPT);
+      onSendSupportFollowUp(SUPPORT_CASE_SLACK_DM_SYNC_DEMO_MESSAGE);
     });
   }, [phase, onSendSupportFollowUp]);
 
-  const onClickAllGroups = React.useCallback(() => {
+  const onClickPasteSlackWebhook = React.useCallback(() => {
     if (phase !== 'cue_all_groups') {
       return;
     }
-    primeHelpChatMessageBarWithText(SRE_ALL_GROUPS_DEMO_PROMPT);
+    primeHelpChatMessageBarWithText(SLACK_WEBHOOK_URL_DEMO_PROMPT);
     window.requestAnimationFrame(() => {
-      onSendSupportFollowUp(SRE_ALL_GROUPS_DEMO_PROMPT);
+      onSendSupportFollowUp(SLACK_WEBHOOK_URL_DEMO_PROMPT);
     });
   }, [phase, onSendSupportFollowUp]);
 
@@ -365,15 +363,26 @@ const SupportCaseWizardAnnotations: React.FunctionComponent<ISupportCaseWizardAn
 
   const notifyCue =
     phase === 'cue_notify_sre' && continuationMessageBarEnabled && supportCaseChatPhase === 'awaiting_notify_intent';
-  const allGroupsCue =
-    phase === 'cue_all_groups' && continuationMessageBarEnabled && supportCaseChatPhase === 'awaiting_group_choice';
+  const slackWebhookCue =
+    phase === 'cue_all_groups' && continuationMessageBarEnabled && supportCaseChatPhase === 'awaiting_slack_webhook';
   const submitCaseCue =
     phase === 'cue_yes_submit' &&
     continuationMessageBarEnabled &&
     supportCaseChatPhase === 'after_groups_added';
 
+  const showOneRedHatSeamGoal = wShowSince(phase, 'scrolling_review');
+
   return createPortal(
     <>
+      <DemoGoalConnectionStack aria-label="UIE goal connections (support case wizard)">
+        <DemoGoalConnectionAnnotation
+          visible={showOneRedHatSeamGoal}
+          id="hcc-demo-support-goal-one-red-hat-seams"
+          inStack
+        >
+          Customers interact with one Red Hat without hopping from place to place or seeing organizational seams.
+        </DemoGoalConnectionAnnotation>
+      </DemoGoalConnectionStack>
       <div
         className="hcc-demo-annotations-layer hcc-demo-annotations-layer--help-chat-left"
         aria-label="Support case demo hints"
@@ -383,33 +392,33 @@ const SupportCaseWizardAnnotations: React.FunctionComponent<ISupportCaseWizardAn
           id="hcc-demo-support-callout-browse-ticket"
           onNext={phase === 'browse_ticket' ? onBrowseTicketNext : undefined}
         >
-          {`Okay, let's look at the details in this support ticket.`}
+          Okay, let&apos;s look at the details in this support ticket.
         </DemoAnnotationCallout>
         <DemoAnnotationCallout
           visible={wShowSince(phase, 'notifications_empty')}
           id="hcc-demo-support-callout-notifications"
         >
-          I see the notifications section is empty — I should probably keep my SREs in the loop on this.
+          I want support-case updates in Slack, and I&apos;ll sync this case to my DMs with an incoming webhook.
         </DemoAnnotationCallout>
         <DemoAnnotationCallout visible={wShowSince(phase, 'add_all_teams')} id="hcc-demo-support-callout-add-all">
-          {`I honestly don't know which SRE team needs to be alerted, so I'll add them all.`}
+          I&apos;ll paste the Slack incoming webhook URL here so the assistant can wire it up.
         </DemoAnnotationCallout>
         <DemoAnnotationCallout
           visible={wShowSince(phase, 'submit_ball_rolling')}
           id="hcc-demo-support-callout-submit-ball"
         >
-          {`let's get the ball rolling on this solution -- let's submit the ticket.`}
+          Let&apos;s get the ball rolling on this solution. Let&apos;s submit the ticket.
         </DemoAnnotationCallout>
       </div>
       <DemoClickIndicator
         visible={notifyCue}
         anchorSelector={ANCHOR_HELP_MESSAGE_BAR}
-        onActivate={onClickNotifySre}
+        onActivate={onClickSlackSync}
       />
       <DemoClickIndicator
-        visible={allGroupsCue}
+        visible={slackWebhookCue}
         anchorSelector={ANCHOR_HELP_MESSAGE_BAR}
-        onActivate={onClickAllGroups}
+        onActivate={onClickPasteSlackWebhook}
       />
       <DemoClickIndicator
         visible={submitCaseCue}

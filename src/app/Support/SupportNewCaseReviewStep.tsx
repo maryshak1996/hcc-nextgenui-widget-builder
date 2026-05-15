@@ -24,6 +24,7 @@ import {
 } from '@patternfly/react-core';
 import { SUPPORT_CASE_TYPE_OPTIONS } from '@app/Support/supportCaseDraftConstants';
 import { SupportCaseNotificationLabelsField } from '@app/Support/SupportCaseNotificationLabelsField';
+import { SupportCaseThirdPartyNotificationsField } from '@app/Support/SupportCaseThirdPartyNotificationsField';
 import { useSupportCaseDraft } from '@app/Support/SupportCaseDraftContext';
 
 /** Final Review step — same fields as earlier steps, bound to shared draft */
@@ -269,6 +270,7 @@ const SupportNewCaseReviewStep: React.FunctionComponent = () => {
           fieldId="review-notify"
           emptyPlaceholder="Add email addresses, usernames, or notification groups"
         />
+        <SupportCaseThirdPartyNotificationsField fieldIdBase="review-third-party" />
         <FormGroup label="Personal reference number" fieldId="review-ref">
           <TextInput
             type="text"

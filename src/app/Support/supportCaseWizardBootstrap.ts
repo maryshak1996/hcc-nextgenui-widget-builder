@@ -7,6 +7,12 @@ import {
 /** Passed via `navigate(..., { state })` from CVE → new case so Review step survives Strict Mode double-mount */
 export const HCC_SUPPORT_CASE_WIZARD_BOOTSTRAP_STATE_KEY = 'hccSupportCaseWizardBootstrap';
 
+/**
+ * Default wizard step when opening **New support case** (PatternFly `Wizard` uses 1-based `startIndex`).
+ * `1` = Troubleshoot … `4` = Configuration (email + third-party notifications) … `5` = Review.
+ */
+export const SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX = 4;
+
 export interface ISupportCaseWizardBootstrap {
   initialDraft: ISupportCaseDraft | null;
   wizardStartIndex: number;
@@ -48,7 +54,7 @@ function tryParseRouterBootstrap(locationState: unknown): ISupportCaseWizardBoot
 
 function readSupportCaseWizardBootstrapFromSessionOnce(): ISupportCaseWizardBootstrap {
   if (typeof window === 'undefined') {
-    return { initialDraft: null, wizardStartIndex: 1 };
+    return { initialDraft: null, wizardStartIndex: SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX };
   }
   try {
     const raw = sessionStorage.getItem(HCC_SUPPORT_CASE_DRAFT_PAYLOAD);
@@ -57,7 +63,10 @@ function readSupportCaseWizardBootstrapFromSessionOnce(): ISupportCaseWizardBoot
       sessionStorage.removeItem(HCC_SUPPORT_CASE_DRAFT_PAYLOAD);
       sessionStorage.removeItem(HCC_WIZARD_START_AT_REVIEW_STEP);
       const parsed = JSON.parse(raw) as ISupportCaseDraft;
-      return { initialDraft: parsed, wizardStartIndex: openReview ? 5 : 1 };
+      return {
+        initialDraft: parsed,
+        wizardStartIndex: openReview ? 5 : SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX,
+      };
     }
     if (openReview) {
       sessionStorage.removeItem(HCC_WIZARD_START_AT_REVIEW_STEP);
@@ -65,7 +74,7 @@ function readSupportCaseWizardBootstrapFromSessionOnce(): ISupportCaseWizardBoot
   } catch {
     /* ignore */
   }
-  return { initialDraft: null, wizardStartIndex: 1 };
+  return { initialDraft: null, wizardStartIndex: SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX };
 }
 
 function readSupportCaseWizardBootstrapFromSessionCached(): ISupportCaseWizardBootstrap {

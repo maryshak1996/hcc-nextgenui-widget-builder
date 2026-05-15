@@ -2,6 +2,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { BrainIcon, CubesIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
+import { DemoGoalConnectionAnnotation, DemoGoalConnectionStack } from '@app/DemoAnnotations/DemoGoalConnectionAnnotation';
 import {
   DEMO_IDE_COPY_FAIL_USER_PROMPT,
   HCC_DEMO_ANNOTATIONS_PREF_CHANGED,
@@ -265,6 +266,29 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
 
   const ideAskChatCalloutVisible = ideSetupCalloutDone;
 
+  const ideGoalConnectionPortal =
+    ideAnnotationsOn && typeof document !== 'undefined'
+      ? createPortal(
+          <DemoGoalConnectionStack anchor="ide">
+            <DemoGoalConnectionAnnotation
+              visible={phase === 'answered'}
+              id="hcc-demo-ide-goal-connection-copyfail"
+              inStack
+            >
+              Intelligence where the customer is: Bring Red Hat intelligence directly to their IDE.
+            </DemoGoalConnectionAnnotation>
+            <DemoGoalConnectionAnnotation
+              visible={phase === 'answered' && idePostAnswerStep >= 2}
+              id="hcc-demo-ide-goal-connection-one-brand"
+              inStack
+            >
+              Customers interact with one brand: &ldquo;Red Hat.&rdquo;
+            </DemoGoalConnectionAnnotation>
+          </DemoGoalConnectionStack>,
+          document.body,
+        )
+      : null;
+
   const ideCalloutsPortal =
     ideAnnotationsOn && typeof document !== 'undefined'
       ? createPortal(
@@ -278,9 +302,8 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               onNext={onIdeSetupPreambleNext}
               nextCompletedExternally={ideSetupCalloutDone}
             >
-              {
-                "I added the Red Hat MCP servers and I've built a skill telling the IDE to treat the Red Hat security data base as the source of truth"
-              }
+              I added the Red Hat MCP servers, and I&apos;ve built a skill telling the IDE to treat the Red Hat security
+              database as the source of truth.
             </DemoAnnotationCallout>
             <DemoAnnotationCallout
               visible={ideAskChatCalloutVisible}
@@ -288,7 +311,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               onNext={onIdeAskChatNext}
               nextCompletedExternally={ideKickoffDone}
             >
-              {`Let's ask the chat "${DEMO_IDE_COPY_FAIL_USER_PROMPT}"`}
+              {`Let's ask the chat "${DEMO_IDE_COPY_FAIL_USER_PROMPT}".`}
             </DemoAnnotationCallout>
             <DemoAnnotationCallout
               visible={phase === 'answered' && idePostAnswerStep >= 1}
@@ -296,7 +319,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               onNext={onIdeReviewResponseNext}
               nextCompletedExternally={idePostAnswerStep >= 2}
             >
-              {"Okay, let's look through this response"}
+              Okay. Let&apos;s look through this response.
             </DemoAnnotationCallout>
             <DemoAnnotationCallout
               visible={phase === 'answered' && idePostAnswerStep >= 2}
@@ -304,7 +327,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
               onNext={onIdeJumpConsoleNext}
               nextCompletedExternally={idePostAnswerStep >= 3}
             >
-              {"Hmmm, okay let's go ahead and jump into the console"}
+              Hmm. Okay, let&apos;s go ahead and jump into the console.
             </DemoAnnotationCallout>
           </div>,
           document.body,
@@ -313,6 +336,7 @@ const FakeAiIdeFullpage: React.FunctionComponent<IFakeAiIdeFullpageProps> = ({ i
 
   return (
     <>
+      {ideGoalConnectionPortal}
       {ideCalloutsPortal}
       <div
         ref={panelRef}

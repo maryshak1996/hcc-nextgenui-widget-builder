@@ -1,5 +1,15 @@
 import { COPYFAIL_CVE_DEMO_ID } from '@app/RhelVulnerability/copyFailDemoFleet';
 import { CVE_REMEDIATION_FAILED_HOST_TECHNICAL_ISSUE } from '@app/RhelVulnerability/cveTroubleshootDemoCopy';
+import { MASTHEAD_USER_EMAIL } from '@app/mastheadUserDisplayName';
+
+/** Linked chat tool for third-party case notifications (Slack webhook wired; others reserved). */
+export type TSupportCaseThirdPartyChatTool = 'slack' | 'gchat' | 'teams';
+
+export const SUPPORT_CASE_THIRD_PARTY_TOOL_LABELS: Record<TSupportCaseThirdPartyChatTool, string> = {
+  slack: 'Slack',
+  gchat: 'GChat',
+  teams: 'Microsoft Teams',
+};
 
 /** Case type cards — matches portal “Open a case” flow */
 export const SUPPORT_CASE_TYPE_OPTIONS: { id: string; title: string; description: string }[] = [
@@ -30,6 +40,12 @@ export interface ISupportCaseDraft {
   notifications: string;
   /** User groups / mailing lists that receive email notifications (demo: dismissable labels) */
   notificationGroups: string[];
+  /** Selected third-party chat integration; empty when none. */
+  thirdPartyChatTool: '' | TSupportCaseThirdPartyChatTool;
+  /** Slack incoming webhook / endpoint URL when `thirdPartyChatTool === 'slack'`. */
+  slackNotificationEndpointUrl: string;
+  /** Demo: true after mock “connect” (chat or wizard) so UI can show success + test link. */
+  slackWebhookDemoVerified: boolean;
   personalReference: string;
 }
 
@@ -48,7 +64,10 @@ export const DEFAULT_SUPPORT_CASE_DRAFT: ISupportCaseDraft = {
   preferredLanguage: '',
   groupId: 'ungrouped',
   notifications: '',
-  notificationGroups: [],
+  notificationGroups: [MASTHEAD_USER_EMAIL],
+  thirdPartyChatTool: '',
+  slackNotificationEndpointUrl: '',
+  slackWebhookDemoVerified: false,
   personalReference: '',
 };
 
@@ -58,6 +77,9 @@ export function mergeDraft(partial: Partial<ISupportCaseDraft> | null | undefine
   }
   const merged = { ...DEFAULT_SUPPORT_CASE_DRAFT, ...partial };
   if (partial.notificationGroups === undefined) {
+    merged.notificationGroups = [...DEFAULT_SUPPORT_CASE_DRAFT.notificationGroups];
+  }
+  if (!merged.notificationGroups?.length) {
     merged.notificationGroups = [...DEFAULT_SUPPORT_CASE_DRAFT.notificationGroups];
   }
   return merged;

@@ -14,6 +14,8 @@ import {
 import { css } from '@patternfly/react-styles';
 import wizardStyles from '@patternfly/react-styles/css/components/Wizard/wizard.mjs';
 import { HCC_SUPPORT_WIZARD_BODY_READY } from '@app/DemoAnnotations/demoAnnotationEvents';
+import { HCC_FAKE_SLACK_DM_DEMO_ARM } from '@app/FakeAppsDock/fakeSlackDockDemoEvents';
+import { SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX } from '@app/Support/supportCaseWizardBootstrap';
 import { SupportNewCaseReviewStep } from './SupportNewCaseReviewStep';
 import {
   SupportNewCaseAdditionalDetailsStep,
@@ -29,14 +31,14 @@ const REVIEW_STEP_INDEX = 5;
 const CVE_WIZARD_BODY_STAGED_MS = 1550;
 
 export interface ISupportNewCaseWizardProps {
-  /** CVE continuation opens on Review with prefilled draft (`startIndex` 5). Default 1. */
+  /** CVE continuation opens on Review with prefilled draft (`startIndex` 5). Default: Configuration (4). */
   startIndex?: number;
   /** When true, briefly show a loading state so the main wizard can “arrive” after navigation. */
   fromCveDemoHandoff?: boolean;
 }
 
 const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> = ({
-  startIndex = 1,
+  startIndex = SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX,
   fromCveDemoHandoff = false,
 }) => {
   const navigateToCases = useNavigate();
@@ -55,6 +57,16 @@ const SupportNewCaseWizard: React.FunctionComponent<ISupportNewCaseWizardProps> 
     }, CVE_WIZARD_BODY_STAGED_MS);
     return () => window.clearTimeout(t);
   }, [fromCveDemoHandoff]);
+
+  React.useEffect(() => {
+    if (!submittedCaseNumber) {
+      return undefined;
+    }
+    window.dispatchEvent(
+      new CustomEvent(HCC_FAKE_SLACK_DM_DEMO_ARM, { detail: { caseNumber: submittedCaseNumber } }),
+    );
+    return undefined;
+  }, [submittedCaseNumber]);
 
   const handleFinish = React.useCallback(() => {
     navigateToCases('/support/cases');

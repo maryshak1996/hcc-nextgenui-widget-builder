@@ -2,6 +2,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { DemoAnnotationCallout } from '@app/DemoAnnotations/DemoAnnotationCallout';
+import { DemoGoalConnectionAnnotation, DemoGoalConnectionStack } from '@app/DemoAnnotations/DemoGoalConnectionAnnotation';
 import { DemoClickIndicator } from '@app/DemoAnnotations/DemoClickIndicator';
 import {
   HCC_DEMO_ANNOTATIONS_PREF_CHANGED,
@@ -53,6 +54,8 @@ type TPendingCue = null | 'offer' | 'playbook' | 'artifact' | 'open_support';
 export interface ICveConsoleHandoffAnnotationsProps {
   ideHandoffActive: boolean;
   troubleshootStep: TCveTroubleshootStep | undefined;
+  /** First remediation prompt fully visible (thinking beats finished on `remediation_offer`). */
+  remediationOfferIntroComplete: boolean;
   remediationOfferBarReady: boolean;
   remediationPlaybooksBarReady: boolean;
   remediationArtifactBarReady: boolean;
@@ -64,6 +67,8 @@ export interface ICveConsoleHandoffAnnotationsProps {
   completionOutcomeReady: boolean;
   /** Message bar enabled for “yes” to open the support case wizard. */
   awaitingYesReviewBarReady: boolean;
+  /** Agent has shown drafted support case + review CTA (after stats thinking beats). */
+  supportCaseDraftOfferVisible: boolean;
   onSendAffirmativeYes: () => void;
 }
 
@@ -73,6 +78,7 @@ export interface ICveConsoleHandoffAnnotationsProps {
 const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAnnotationsProps> = ({
   ideHandoffActive,
   troubleshootStep,
+  remediationOfferIntroComplete,
   remediationOfferBarReady,
   remediationPlaybooksBarReady,
   remediationArtifactBarReady,
@@ -80,6 +86,7 @@ const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAn
   remediationPlaybookYamlDisplayed,
   completionOutcomeReady,
   awaitingYesReviewBarReady,
+  supportCaseDraftOfferVisible,
   onSendAffirmativeYes,
 }) => {
   const location = useLocation();
@@ -273,7 +280,77 @@ const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAn
     });
   }, [phase, onSendAffirmativeYes]);
 
-  if (!inScope || phase === 'idle' || typeof document === 'undefined') {
+  const showGoalZeroContextLoss = inScope;
+
+  const showGoalProactiveTroubleshoot =
+    inScope &&
+    ((troubleshootStep === 'remediation_offer' && remediationOfferIntroComplete) ||
+      troubleshootStep === 'remediation_playbooks_shown' ||
+      troubleshootStep === 'remediation_playbook_artifact_shown' ||
+      troubleshootStep === 'remediation_simulating' ||
+      troubleshootStep === 'awaiting_yes' ||
+      troubleshootStep === 'support_case_flow');
+
+  const showGoalFindItFixIt =
+    inScope &&
+    ((troubleshootStep === 'remediation_playbooks_shown' && remediationPlaybooksOptionsDisplayed) ||
+      troubleshootStep === 'remediation_playbook_artifact_shown' ||
+      troubleshootStep === 'remediation_simulating' ||
+      troubleshootStep === 'awaiting_yes' ||
+      troubleshootStep === 'support_case_flow');
+
+  const showGoalWorldClassSupport =
+    inScope &&
+    (supportCaseDraftOfferVisible || troubleshootStep === 'support_case_flow');
+
+  const goalsPortal =
+    inScope && typeof document !== 'undefined'
+      ? createPortal(
+          <DemoGoalConnectionStack aria-label="UIE goal connections (CVE console)">
+            <DemoGoalConnectionAnnotation
+              visible={showGoalZeroContextLoss}
+              id="hcc-demo-cve-goal-zero-context-loss"
+              inStack
+            >
+              Zero context loss: The conversation follows the user across their workflow.
+            </DemoGoalConnectionAnnotation>
+            <DemoGoalConnectionAnnotation
+              visible={showGoalProactiveTroubleshoot}
+              id="hcc-demo-cve-goal-proactive-troubleshoot"
+              inStack
+            >
+              <>
+                <p className="hcc-demo-goal-connection__p">
+                  Proactive troubleshooting defers support case creation by immediately mitigating the common support
+                  case ask, &ldquo;Am I impacted by this?&rdquo;.
+                </p>
+                <p className="hcc-demo-goal-connection__p">
+                  Red Hat gives the customer confidence in a fearful situation.
+                </p>
+              </>
+            </DemoGoalConnectionAnnotation>
+            <DemoGoalConnectionAnnotation
+              visible={showGoalFindItFixIt}
+              id="hcc-demo-cve-goal-find-it-fix-it"
+              inStack
+            >
+              Find it, fix it. Red Hat&apos;s agents can identify the problem and fix it with less friction and context
+              switching. Customers have one place to learn about a problem and solve it.
+            </DemoGoalConnectionAnnotation>
+            <DemoGoalConnectionAnnotation
+              visible={showGoalWorldClassSupport}
+              id="hcc-demo-cve-goal-world-class-support"
+              inStack
+            >
+              When there&apos;s a problem that the AI can&apos;t solve, we provide world-class support with all the
+              context included.
+            </DemoGoalConnectionAnnotation>
+          </DemoGoalConnectionStack>,
+          document.body,
+        )
+      : null;
+
+  if ((!inScope || phase === 'idle') && !goalsPortal) {
     return null;
   }
 
@@ -287,70 +364,85 @@ const CveConsoleHandoffAnnotations: React.FunctionComponent<ICveConsoleHandoffAn
     showSince(phase, 'playbook_sure') && remediationPlaybooksOptionsDisplayed;
   const ymlDetailsCalloutVisible = showSince(phase, 'yml_details') && remediationPlaybookYamlDisplayed;
 
-  return createPortal(
+  const calloutsPortal =
+    inScope && phase !== 'idle' && typeof document !== 'undefined'
+      ? createPortal(
+          <>
+            <div
+              className="hcc-demo-annotations-layer hcc-demo-annotations-layer--help-chat-left"
+              aria-label="Red Hat console demo hints"
+            >
+              <DemoAnnotationCallout
+                visible={showSince(phase, 'follow')}
+                id="hcc-demo-console-callout-follow"
+                onNext={phase === 'follow' ? onFollowNext : undefined}
+              >
+                Great. It looks like my conversation is following me here.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={showSince(phase, 'remediate')}
+                id="hcc-demo-console-callout-remediate"
+                onNext={phase === 'remediate' ? onRemediateNext : undefined}
+              >
+                It says it can help me remediate the systems. Let&apos;s give it a shot.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={playbookSureCalloutVisible}
+                id="hcc-demo-console-callout-playbook-sure"
+                onNext={phase === 'playbook_sure' ? onPlaybookSureNext : undefined}
+              >
+                Sure. Let&apos;s take a look at the playbook.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={ymlDetailsCalloutVisible}
+                id="hcc-demo-console-callout-yml-details"
+                onNext={phase === 'yml_details' ? onYmlDetailsNext : undefined}
+              >
+                Let&apos;s look at the details in this YAML file.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={showSince(phase, 'safe_run_all')}
+                id="hcc-demo-console-callout-safe-run"
+                onNext={phase === 'safe_run_all' ? onSafeRunAllNext : undefined}
+              >
+                This seems safe to run on all my systems.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={showSince(phase, 'completion_nine_ten')}
+                id="hcc-demo-console-callout-completion-stats"
+                onNext={phase === 'completion_nine_ten' ? onCompletionNineTenNext : undefined}
+              >
+                Alright. It looks like nine out of ten systems were remediated, and the other one had a Pod
+                CrashLoopBackOff situation.
+              </DemoAnnotationCallout>
+              <DemoAnnotationCallout
+                visible={showSince(phase, 'completion_ticket_awesome')}
+                id="hcc-demo-console-callout-completion-ticket"
+                onNext={phase === 'completion_ticket_awesome' ? onCompletionTicketAwesomeNext : undefined}
+              >
+                It looks like all these details have already been put in a support ticket for me. Awesome. Let&apos;s
+                see it.
+              </DemoAnnotationCallout>
+            </div>
+            <DemoClickIndicator
+              visible={clickCueVisible}
+              anchorSelector={ANCHOR_HELP_MESSAGE_BAR}
+              onActivate={onClickAffirmativeBar}
+            />
+          </>,
+          document.body,
+        )
+      : null;
+
+  if (!goalsPortal && !calloutsPortal) {
+    return null;
+  }
+
+  return (
     <>
-      <div
-        className="hcc-demo-annotations-layer hcc-demo-annotations-layer--help-chat-left"
-        aria-label="Red Hat console demo hints"
-      >
-        <DemoAnnotationCallout
-          visible={showSince(phase, 'follow')}
-          id="hcc-demo-console-callout-follow"
-          onNext={phase === 'follow' ? onFollowNext : undefined}
-        >
-          Great, it looks like my conversation is following me here.
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={showSince(phase, 'remediate')}
-          id="hcc-demo-console-callout-remediate"
-          onNext={phase === 'remediate' ? onRemediateNext : undefined}
-        >
-          {`It says it can help me remediate the systems — let's give it a shot.`}
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={playbookSureCalloutVisible}
-          id="hcc-demo-console-callout-playbook-sure"
-          onNext={phase === 'playbook_sure' ? onPlaybookSureNext : undefined}
-        >
-          {`Sure, let's take a look at the playbook.`}
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={ymlDetailsCalloutVisible}
-          id="hcc-demo-console-callout-yml-details"
-          onNext={phase === 'yml_details' ? onYmlDetailsNext : undefined}
-        >
-          {`Let's look at the details in this YAML file.`}
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={showSince(phase, 'safe_run_all')}
-          id="hcc-demo-console-callout-safe-run"
-          onNext={phase === 'safe_run_all' ? onSafeRunAllNext : undefined}
-        >
-          Seems safe to run on all my systems.
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={showSince(phase, 'completion_nine_ten')}
-          id="hcc-demo-console-callout-completion-stats"
-          onNext={phase === 'completion_nine_ten' ? onCompletionNineTenNext : undefined}
-        >
-          Alright, looks like 9 out of 10 of the systems got remediated and the other one had a pod CrashLoopBackOff
-          situation.
-        </DemoAnnotationCallout>
-        <DemoAnnotationCallout
-          visible={showSince(phase, 'completion_ticket_awesome')}
-          id="hcc-demo-console-callout-completion-ticket"
-          onNext={phase === 'completion_ticket_awesome' ? onCompletionTicketAwesomeNext : undefined}
-        >
-          {`Looks like all these details have already been put in a support ticket for me? Awesome, let's see it!`}
-        </DemoAnnotationCallout>
-      </div>
-      <DemoClickIndicator
-        visible={clickCueVisible}
-        anchorSelector={ANCHOR_HELP_MESSAGE_BAR}
-        onActivate={onClickAffirmativeBar}
-      />
-    </>,
-    document.body,
+      {goalsPortal}
+      {calloutsPortal}
+    </>
   );
 };
 

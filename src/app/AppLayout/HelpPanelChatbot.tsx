@@ -360,6 +360,10 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
   const remediationPlaybookYamlDisplayed =
     cveDemo?.step !== 'remediation_playbook_artifact_shown' || remediationArtifactPrelude >= 2;
 
+  /** Draft support case message + “review” CTA visible in chat (matches `CveRemediationAgentDraftCtaChatBody`). */
+  const supportCaseDraftOfferVisible =
+    Boolean(showRemediationMeta) && remediationAgentDraftPrelude >= 3;
+
   const sendRemediationAffirmativeYes = React.useCallback(() => {
     if (remediationMessageBarEnabled || cveMessageBarEnabled) {
       onSendMessage('yes');
@@ -466,9 +470,9 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
     }
     switch (supportCaseChat.phase) {
       case 'awaiting_notify_intent':
-        return 'Ask to notify the app-sre team or add ticket notifications…';
-      case 'awaiting_group_choice':
-        return 'Say all of them, all of those, or all…';
+        return 'Ask to sync this case with Slack or your Slack DMs…';
+      case 'awaiting_slack_webhook':
+        return 'Paste your https://hooks.slack.com/… incoming webhook URL…';
       case 'after_groups_added':
         return 'Submit it, send it, done, or go ahead and send it…';
       default:
@@ -639,6 +643,7 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
       <CveConsoleHandoffAnnotations
         ideHandoffActive={Boolean(ideHandoffUserPrompt)}
         troubleshootStep={cveDemo?.step}
+        remediationOfferIntroComplete={remediationOfferIntroComplete}
         remediationOfferBarReady={remediationOfferBarReady}
         remediationPlaybooksBarReady={remediationPlaybooksBarReady}
         remediationArtifactBarReady={remediationArtifactBarReady}
@@ -646,6 +651,7 @@ const HelpPanelChatbot: React.FunctionComponent<IHelpPanelChatbotProps> = ({
         remediationPlaybookYamlDisplayed={remediationPlaybookYamlDisplayed}
         completionOutcomeReady={completionOutcomeReady}
         awaitingYesReviewBarReady={awaitingYesReviewBarReady}
+        supportCaseDraftOfferVisible={supportCaseDraftOfferVisible}
         onSendAffirmativeYes={sendRemediationAffirmativeYes}
       />
       <SupportCaseWizardAnnotations

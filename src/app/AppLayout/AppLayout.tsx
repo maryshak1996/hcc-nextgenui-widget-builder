@@ -1,5 +1,7 @@
 import * as React from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { MemoryRouter, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import {
   COPYFAIL_CVE_DEMO_ID,
@@ -10,12 +12,16 @@ import {
 import { useCveTroubleshootDemo } from '@app/RhelVulnerability/CveTroubleshootDemoContext';
 import {
   HCC_SESSION_HELP_CHAT_IDE_PROMPT,
-  HCC_SKIP_GENERIC_HELP_CHAT_ONCE,
   HCC_SUPPORT_CASE_NEW_PATH,
 } from '@app/Support/supportCaseChatPrompt';
 import { HelpPanelChatbot } from '@app/AppLayout/HelpPanelChatbot';
+import { HELP_PANEL_DRAWER_SCOPED_CSS } from '@app/AppLayout/helpPanelDrawerScopedCss';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
+import { DashboardDataProvider } from '@app/DashboardHub/DashboardDataContext';
+import { PcmBrowserProvider } from '@app/PcmDemo/PcmBrowserContext';
+import { SupportCaseChatContinuationProvider } from '@app/Support/SupportCaseChatContinuationContext';
+import { CveTroubleshootDemoProvider } from '@app/RhelVulnerability/CveTroubleshootDemoContext';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
@@ -123,7 +129,7 @@ import {
   InfoCircleIcon,
   LightbulbIcon,
   ListIcon,
-  OutlinedWindowRestoreIcon,
+  OutlinedWindowMaximizeIcon,
   PlayIcon,
   ProjectDiagramIcon,
   QuestionCircleIcon,
@@ -189,6 +195,236 @@ export const HelpPanelContext = React.createContext<HelpPanelContextType | undef
         return <CloudIcon style={iconStyle} />;
     }
   };
+
+/**
+ * True for the webpack **entry** stylesheet (`main.css` / `main.*.css`). That bundle pulls in `app.css`
+ * (PCM shell, fake dock, `#root` layout, etc.) and must never be mirrored into the Help popout.
+ */
+function isMainWebpackEntryStylesheet(absUrl: string): boolean {
+  try {
+    const base = new URL(absUrl).pathname.split('/').pop() || '';
+    return base === 'main.css' || /^main\..+\.css$/i.test(base);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Only mirror stylesheets that are **PatternFly / chatbot** bundles. Other extracted vendor CSS has
+ * correlated with **flicker then an all-white** popout in `about:blank`.
+ */
+function isHelpPopoutMirrorableStylesheet(absUrl: string): boolean {
+  try {
+    const lower = absUrl.toLowerCase();
+    if (lower.includes('help-popout.html')) {
+      return false;
+    }
+    if (isMainWebpackEntryStylesheet(absUrl)) {
+      return false;
+    }
+    return lower.includes('patternfly') || lower.includes('chatbot');
+  } catch {
+    return false;
+  }
+}
+
+const HELP_POPOUT_PF_LINK_ATTR = 'data-hcc-help-popout-pf-link';
+
+/** Absolute URLs of PatternFly / chatbot extracted stylesheets in the opener (same allowlist as before). */
+function collectHelpPopoutStylesheetImportHrefs(): string[] {
+  const baseHref = document.baseURI;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((link) => {
+    const raw = link.getAttribute('href');
+    if (!raw) {
+      return;
+    }
+    try {
+      const abs = new URL(raw, baseHref).href;
+      if (!isHelpPopoutMirrorableStylesheet(abs)) {
+        return;
+      }
+      if (seen.has(abs)) {
+        return;
+      }
+      seen.add(abs);
+      out.push(abs);
+    } catch {
+      /* ignore */
+    }
+  });
+  if (out.length > 0) {
+    return out;
+  }
+  /* Last resort: any stylesheet whose path looks like the PatternFly extract chunk. */
+  const linkNodes = document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]');
+  for (let i = 0; i < linkNodes.length; i += 1) {
+    const link = linkNodes[i];
+    const raw = link.getAttribute('href');
+    if (!raw) {
+      continue;
+    }
+    try {
+      const abs = new URL(raw, baseHref).href;
+      const file = new URL(abs).pathname.split('/').pop() || '';
+      if (/^patternfly(\.|$)/i.test(file) && !isMainWebpackEntryStylesheet(abs)) {
+        return [abs];
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  /*
+   * Dev: MiniCssExtract uses stable `patternfly.css`. Use whenever opener `<link>` discovery is empty.
+   */
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      return [new URL('patternfly.css', baseHref).href];
+    } catch {
+      return [];
+    }
+  }
+  return out;
+}
+
+/**
+ * Keep allowlisted `<link rel="stylesheet">` nodes in the popout in sync with the opener. Real `<link>`
+ * requests show up in the popout’s Network tab (unlike `@import` inside an inline `<style>`) and avoid
+ * some browsers’ deferred `@import` behavior on `about:blank`.
+ */
+function syncHelpPopoutMirrorStylesheetLinks(targetWin: Window) {
+  const doc = targetWin.document;
+  const head = doc.head;
+  const base = doc.baseURI || targetWin.location.href;
+  const wantedList = collectHelpPopoutStylesheetImportHrefs();
+  const wanted = new Set(wantedList);
+
+  head.querySelectorAll<HTMLLinkElement>(`link[${HELP_POPOUT_PF_LINK_ATTR}]`).forEach((link) => {
+    const raw = link.getAttribute('href');
+    if (!raw) {
+      link.remove();
+      return;
+    }
+    try {
+      const abs = new URL(raw, base).href;
+      if (!wanted.has(abs)) {
+        link.remove();
+      }
+    } catch {
+      link.remove();
+    }
+  });
+
+  const present = new Set<string>();
+  head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((link) => {
+    const raw = link.getAttribute('href');
+    if (!raw) {
+      return;
+    }
+    try {
+      present.add(new URL(raw, base).href);
+    } catch {
+      /* ignore */
+    }
+  });
+
+  for (const href of wantedList) {
+    if (present.has(href)) {
+      continue;
+    }
+    const link = doc.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.setAttribute(HELP_POPOUT_PF_LINK_ATTR, '1');
+    head.appendChild(link);
+    present.add(href);
+  }
+}
+
+/**
+ * PatternFly/chatbot `<link>` mirrors (allowlisted, never `main.*.css`) plus one `<style>` for token
+ * fallbacks and Help shell layout. Keep the `<style>` block in sync with `src/app/app.css` Help section.
+ */
+function appendHelpPopoutEssentialStyles(targetWin: Window) {
+  const doc = targetWin.document;
+  syncHelpPopoutMirrorStylesheetLinks(targetWin);
+
+  let style = doc.getElementById('hcc-help-popout-essential') as HTMLStyleElement | null;
+  if (!style) {
+    style = doc.createElement('style');
+    style.id = 'hcc-help-popout-essential';
+    style.setAttribute('data-hcc-help-popout-essential', '1');
+    doc.head.appendChild(style);
+  }
+
+  const rest = `
+/* Token fallbacks so PF components are readable before/without resolved theme vars */
+:root {
+  color-scheme: light;
+  --pf-t--global--text--color--regular: #151515;
+  --pf-t--global--text--color--subtle: #6a6e73;
+  --pf-t--global--background--color--primary--default: #f0f0f0;
+  --pf-t--global--background--color--100: #ffffff;
+  --pf-t--global--background--color--200: #f5f5f5;
+  --pf-t--global--border--color--default: #c7c7c7;
+  --pf-t--global--font--family--body: "Red Hat Text", RedHatText, Helvetica, Arial, sans-serif;
+  --pf-t--global--font--size--body--default: 0.875rem;
+  --pf-t--global--font--line-height--body: 1.5;
+  --pf-t--global--spacer--xs: 0.25rem;
+  --pf-t--global--spacer--sm: 0.5rem;
+  --pf-v6-global--Color--100: #151515;
+  --pf-v6-global--BackgroundColor--100: #ffffff;
+}
+body.hcc-help-popout-window {
+  margin: 0;
+  min-height: 100vh;
+  overflow: auto;
+  font-family: var(--pf-t--global--font--family--body);
+  font-size: var(--pf-t--global--font--size--body--default);
+  color: var(--pf-t--global--text--color--regular);
+  background: var(--pf-t--global--background--color--primary--default);
+}
+html {
+  height: auto;
+  min-height: 100%;
+}
+body.hcc-help-popout-window #hcc-help-popout-portal-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  box-sizing: border-box;
+}
+.hcc-help-drawer-body.pf-v6-c-drawer__content-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+[data-hcc-help-shell='top-tabs-v2'] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.help-panel-shell-header {
+  flex-shrink: 0;
+  background: var(--pf-t--global--background--color--100);
+}
+.hcc-help-panel-chatbot-root {
+  flex: 1;
+  min-height: 0;
+}
+.hcc-help-panel-chatbot-root .pf-chatbot.pf-chatbot--embedded {
+  flex: 1;
+  min-height: 0;
+}
+.hcc-help-panel-chatbot-root .pf-chatbot-container.pf-chatbot-container--embedded {
+  flex: 1;
+  min-height: 0;
+}
+`.trim();
+
+  style.textContent = rest;
+  doc.head.appendChild(style);
+}
 
 const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -377,7 +613,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Notification drawer state
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = React.useState(false);
   const [helpPanelWidth, setHelpPanelWidth] = React.useState(580); // Default size in pixels
-  const helpPanelRef = React.useRef<HTMLDivElement>(null);
+  /** Portal mount node living in the help popout `document` (must be created in that document for reliable rendering). */
+  const [helpPopoutPortalRoot, setHelpPopoutPortalRoot] = React.useState<HTMLElement | null>(null);
+  const helpPopoutWindowRef = React.useRef<Window | null>(null);
+  const helpPopoutReactRootRef = React.useRef<ReturnType<typeof createRoot> | null>(null);
+  const helpPopoutReactRootMountRef = React.useRef<HTMLElement | null>(null);
+  const helpPopoutMountIntoTargetRef = React.useRef<(portalMount: HTMLElement) => void>(() => {
+    /* assigned each render below */
+  });
   const [isNotificationActionsOpen, setIsNotificationActionsOpen] = React.useState(false);
 
   /** Places CVE Help-chat demo callouts immediately left of the open help drawer (`demoAnnotations.css`). */
@@ -1198,7 +1441,265 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
   }, []);
 
+  const expandHelpDrawerOrFocusPopout = React.useCallback(() => {
+    const w = helpPopoutWindowRef.current;
+    if (w && !w.closed) {
+      w.focus();
+      return;
+    }
+    setIsDrawerExpanded(true);
+  }, []);
+
+  const onOpenHelpInSeparateWindow = () => {
+    let target = helpPopoutWindowRef.current;
+    if (target && !target.closed) {
+      let looksHealthy = false;
+      try {
+        const href = target.location.href;
+        const portal = target.document.getElementById('hcc-help-popout-portal-root');
+        const tracked = helpPopoutWindowRef.current === target;
+        looksHealthy =
+          tracked &&
+          portal != null &&
+          (href === 'about:blank' || href.startsWith('about:blank'));
+      } catch {
+        looksHealthy = false;
+      }
+      if (looksHealthy) {
+        target.focus();
+        return;
+      }
+      try {
+        target.close();
+      } catch {
+        /* ignore */
+      }
+      helpPopoutWindowRef.current = null;
+    }
+    if (target && target.closed) {
+      helpPopoutWindowRef.current = null;
+    }
+    /** Unique each open so the browser never reattaches a stale named window (e.g. still on `help-popout.html`). */
+    const windowName = `hccHybridCloudHelp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    /**
+     * Synchronous `about:blank` + `document.write` in the same user gesture yields a popup document the
+     * opener can always read and mutate. Opening `help-popout.html` navigated the window before our
+     * `bootPopout` logic could run `finishSetup`; a thrown `target.document` access went to `catch`
+     * without scheduling a retry, so users only saw the static shell HTML.
+     */
+    const shellHtml =
+      '<!DOCTYPE html><html lang="en"><head><!-- Reloading clears this undocked Help shell; use Help → Open in a separate window again. --><meta charset="utf-8"><title>Help</title></head><body style="margin:0"></body></html>';
+    target = window.open(
+      'about:blank',
+      windowName,
+      'popup=yes,width=720,height=820,left=96,top=72,resizable=yes,scrollbars=yes'
+    );
+    if (!target) {
+      return;
+    }
+    try {
+      const doc = target.document;
+      doc.open();
+      doc.write(shellHtml);
+      doc.close();
+    } catch (e) {
+      try {
+        target.document.body.textContent =
+          e instanceof Error ? `Help popout could not initialize: ${e.message}` : 'Help popout could not initialize.';
+      } catch {
+        /* ignore */
+      }
+      try {
+        target.close();
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    let popoutShellSetupDone = false;
+
+    const finishSetup = () => {
+      if (target.closed) {
+        return;
+      }
+      if (popoutShellSetupDone) {
+        return;
+      }
+      const d = target.document;
+      if (!d.body) {
+        return;
+      }
+
+      d.getElementById('hcc-help-popout-static-hint')?.remove();
+
+      const portalEl = d.getElementById('hcc-help-popout-portal-root');
+      const staleMount = portalEl;
+      if (staleMount) {
+        try {
+          helpPopoutReactRootRef.current?.unmount();
+        } catch {
+          /* ignore */
+        }
+        helpPopoutReactRootRef.current = null;
+        helpPopoutReactRootMountRef.current = null;
+        flushSync(() => {
+          setHelpPopoutPortalRoot(null);
+        });
+        try {
+          staleMount.remove();
+        } catch {
+          /* ignore */
+        }
+      }
+
+      d.documentElement.lang = document.documentElement.lang || 'en';
+
+      if (!d.querySelector('base[data-hcc-help-popout-base]')) {
+        const baseEl = d.createElement('base');
+        baseEl.setAttribute('data-hcc-help-popout-base', '1');
+        baseEl.setAttribute('href', document.baseURI);
+        d.head.insertBefore(baseEl, d.head.firstChild);
+      }
+
+      if (!d.querySelector('meta[data-hcc-help-popout-charset]')) {
+        const charsetMeta = d.createElement('meta');
+        charsetMeta.setAttribute('data-hcc-help-popout-charset', '1');
+        charsetMeta.setAttribute('charset', 'utf-8');
+        d.head.appendChild(charsetMeta);
+      }
+      d.title = 'Help — Red Hat Hybrid Cloud Console';
+      d.body.classList.add('hcc-help-popout-window');
+      d.body.style.margin = '0';
+      d.body.style.minHeight = '100vh';
+
+      const portalMount = d.createElement('div');
+      portalMount.setAttribute('id', 'hcc-help-popout-portal-root');
+      portalMount.removeAttribute('data-hcc-help-popout-ready');
+      portalMount.style.cssText = 'display:flex;flex-direction:column;min-height:100vh;width:100%;';
+      const bootRow = d.createElement('div');
+      bootRow.setAttribute('data-hcc-help-popout-boot', '1');
+      bootRow.textContent = 'Loading Help…';
+      bootRow.style.cssText =
+        'padding:24px;font:14px/1.45 system-ui,sans-serif;color:#151515;background:#f0f0f0;flex:0 0 auto';
+      portalMount.appendChild(bootRow);
+      d.body.appendChild(portalMount);
+      try {
+        appendHelpPopoutEssentialStyles(target);
+      } catch {
+        /* best-effort layout before React + async PatternFly links */
+      }
+
+      const tagged = target as Window & {
+        __hccHelpPopoutShellSynced?: boolean;
+        __hccHelpPopoutPagehide?: () => void;
+        __hccHelpPopoutBlobUrl?: string;
+      };
+      if (tagged.__hccHelpPopoutPagehide) {
+        target.removeEventListener('pagehide', tagged.__hccHelpPopoutPagehide);
+      }
+      const onPageHide = () => {
+        const bUrl = tagged.__hccHelpPopoutBlobUrl;
+        if (bUrl) {
+          try {
+            URL.revokeObjectURL(bUrl);
+          } catch {
+            /* ignore */
+          }
+          delete tagged.__hccHelpPopoutBlobUrl;
+        }
+        try {
+          helpPopoutReactRootRef.current?.unmount();
+        } catch {
+          /* ignore */
+        }
+        helpPopoutReactRootRef.current = null;
+        helpPopoutReactRootMountRef.current = null;
+        if (helpPopoutWindowRef.current === target) {
+          helpPopoutWindowRef.current = null;
+        }
+        setHelpPopoutPortalRoot((el) => (el && el.ownerDocument === target.document ? null : el));
+        delete tagged.__hccHelpPopoutShellSynced;
+        target.removeEventListener('pagehide', onPageHide);
+        delete tagged.__hccHelpPopoutPagehide;
+      };
+      tagged.__hccHelpPopoutPagehide = onPageHide;
+      target.addEventListener('pagehide', onPageHide);
+      helpPopoutWindowRef.current = target;
+      flushSync(() => {
+        setHelpPopoutPortalRoot(portalMount);
+        setIsDrawerExpanded(false);
+      });
+      /*
+       * Mount only from the useEffect below (after paint). A second mount here via queueMicrotask raced
+       * that effect and could leave the popout blank.
+       */
+      window.setTimeout(() => {
+        if (target.closed) {
+          return;
+        }
+        try {
+          appendHelpPopoutEssentialStyles(target);
+        } catch {
+          /* Styles are best-effort */
+        }
+      }, 0);
+      tagged.__hccHelpPopoutShellSynced = true;
+      popoutShellSetupDone = true;
+      target.focus();
+    };
+
+    let bootTries = 0;
+    const MAX_BOOT_TRIES = 200;
+    const bootPopout = () => {
+      if (popoutShellSetupDone) {
+        return;
+      }
+      if (target.closed) {
+        return;
+      }
+      bootTries += 1;
+      let popDoc: Document;
+      try {
+        popDoc = target.document;
+      } catch {
+        if (bootTries < MAX_BOOT_TRIES) {
+          window.setTimeout(bootPopout, 16);
+        }
+        return;
+      }
+      if (!popDoc.body) {
+        if (bootTries < MAX_BOOT_TRIES) {
+          window.setTimeout(bootPopout, 16);
+        }
+        return;
+      }
+      try {
+        finishSetup();
+      } catch (setupErr) {
+        try {
+          const b = popDoc.body;
+          b.textContent =
+            setupErr instanceof Error
+              ? `Help popout setup failed: ${setupErr.message}`
+              : `Help popout setup failed: ${String(setupErr)}`;
+          b.style.cssText = 'margin:0;padding:16px;font:14px system-ui,sans-serif;color:#c9190b';
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    bootPopout();
+    window.setTimeout(bootPopout, 0);
+    target.addEventListener('load', () => window.setTimeout(bootPopout, 0), { once: true });
+  };
+
   const onDrawerToggle = () => {
+    const w = helpPopoutWindowRef.current;
+    if (w && !w.closed) {
+      w.focus();
+      return;
+    }
     const newDrawerState = !isDrawerExpanded;
     setIsDrawerExpanded(newDrawerState);
     
@@ -1240,9 +1741,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setSearchQuery('');
     setHelpChatSupportWizardIntro(false);
 
-    if (!isDrawerExpanded) {
-      setIsDrawerExpanded(true);
-    }
+    expandHelpDrawerOrFocusPopout();
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
@@ -1256,13 +1755,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setHelpChatSupportWizardIntro(false);
     setFeedbackView('general');
 
-    if (!isDrawerExpanded) {
-      setIsDrawerExpanded(true);
-    }
+    expandHelpDrawerOrFocusPopout();
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
-  }, [isDrawerExpanded, isNotificationDrawerOpen]);
+  }, [isNotificationDrawerOpen, expandHelpDrawerOrFocusPopout]);
 
   const openHelpPanelWithChatPrompt = React.useCallback(
     (assistantMessage: string) => {
@@ -1278,14 +1775,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       setCustomHelpVariant(null);
       setHelpPanelSubTab(5);
       setSearchQuery('');
-      if (!isDrawerExpanded) {
-        setIsDrawerExpanded(true);
-      }
+      expandHelpDrawerOrFocusPopout();
       if (isNotificationDrawerOpen) {
         setIsNotificationDrawerOpen(false);
       }
     },
-    [isDrawerExpanded, isNotificationDrawerOpen]
+    [isNotificationDrawerOpen, expandHelpDrawerOrFocusPopout]
   );
 
   const openHelpPanelWithIdeHandoff = React.useCallback(
@@ -1303,9 +1798,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       setCustomHelpVariant(null);
       setHelpPanelSubTab(5);
       setSearchQuery('');
-      if (!isDrawerExpanded) {
-        setIsDrawerExpanded(true);
-      }
+      expandHelpDrawerOrFocusPopout();
       if (isNotificationDrawerOpen) {
         setIsNotificationDrawerOpen(false);
       }
@@ -1313,28 +1806,21 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         cveTroubleshootDemo?.beginIdeTroubleshootDemo();
       }
     },
-    [cveTroubleshootDemo, isDrawerExpanded, isNotificationDrawerOpen, location.pathname]
+    [cveTroubleshootDemo, isNotificationDrawerOpen, location.pathname, expandHelpDrawerOrFocusPopout]
   );
 
   const openHelpPanelForSupportCaseContinuation = React.useCallback(() => {
-    try {
-      sessionStorage.setItem(HCC_SKIP_GENERIC_HELP_CHAT_ONCE, '1');
-    } catch {
-      /* ignore */
-    }
     setHelpChatSupportWizardIntro(true);
     setHelpChatAssistantBubbleText(null);
     setCustomHelpTitle(null);
     setCustomHelpVariant(null);
     setHelpPanelSubTab(5);
     setSearchQuery('');
-    if (!isDrawerExpanded) {
-      setIsDrawerExpanded(true);
-    }
+    expandHelpDrawerOrFocusPopout();
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
-  }, [isDrawerExpanded, isNotificationDrawerOpen]);
+  }, [isNotificationDrawerOpen, expandHelpDrawerOrFocusPopout]);
 
   React.useEffect(() => {
     if (location.pathname !== HCC_COPYFAIL_CVE_PATH) {
@@ -1926,22 +2412,28 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                     {visibleSearchResults.map((result, idx) => (
                       <React.Fragment key={result.id}>
                         {idx > 0 && <Divider component="li" />}
-                        <MenuItem itemId={result.id}>
+                        <MenuItem
+                          itemId={result.id}
+                          actions={
+                            result.breadcrumb1 === 'Learning resources' ? (
+                              <MenuItemAction
+                                actionId="bookmark"
+                                aria-label={bookmarkedItems.has(result.id) ? 'Remove bookmark' : 'Add bookmark'}
+                                icon={
+                                  <BookmarkIcon
+                                    className={`bookmark-icon ${bookmarkedItems.has(result.id) ? 'bookmarked' : ''}`}
+                                  />
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleBookmark(result.id);
+                                }}
+                              />
+                            ) : undefined
+                          }
+                        >
                           <div className="menu-item-content">
                             <div className="menu-item-title-row">
-                              {result.breadcrumb1 === 'Learning resources' && (
-                                <Button
-                                  variant="plain"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleBookmark(result.id);
-                                  }}
-                                  aria-label="Bookmark"
-                                  style={{ minWidth: 'auto' }}
-                                >
-                                  <BookmarkIcon className={`bookmark-icon ${bookmarkedItems.has(result.id) ? 'bookmarked' : ''}`} />
-                                </Button>
-                              )}
                               {result.title === 'Configuring console event notifications in Slack' ? (
                                 <div 
                                   className="menu-item-title"
@@ -2095,22 +2587,28 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 return sortedContent.map((item, idx) => (
                   <React.Fragment key={item.id}>
                     {idx > 0 && <Divider component="li" />}
-                    <MenuItem itemId={item.id}>
+                    <MenuItem
+                      itemId={item.id}
+                      actions={
+                        item.breadcrumb1 === 'Learning resources' ? (
+                          <MenuItemAction
+                            actionId="bookmark"
+                            aria-label={bookmarkedItems.has(item.id) ? 'Remove bookmark' : 'Add bookmark'}
+                            icon={
+                              <BookmarkIcon
+                                className={`bookmark-icon ${bookmarkedItems.has(item.id) ? 'bookmarked' : ''}`}
+                              />
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBookmark(item.id);
+                            }}
+                          />
+                        ) : undefined
+                      }
+                    >
                       <div className="menu-item-content">
                         <div className="menu-item-title-row">
-                          {item.breadcrumb1 === 'Learning resources' && (
-                            <Button
-                              variant="plain"
-                              aria-label={bookmarkedItems.has(item.id) ? 'Remove bookmark' : 'Add bookmark'}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleBookmark(item.id);
-                              }}
-                              style={{ padding: '4px', marginLeft: '-4px' }}
-                            >
-                              <BookmarkIcon className={`bookmark-icon ${bookmarkedItems.has(item.id) ? 'bookmarked' : ''}`} />
-                            </Button>
-                          )}
                           {item.title === 'Configuring console event notifications in Slack' ? (
                             <div 
                               className="menu-item-title"
@@ -2439,20 +2937,26 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 return paginatedContent.map((item, idx) => (
                   <React.Fragment key={item.id}>
                     {idx > 0 && <Divider component="li" />}
-                    <MenuItem itemId={item.id}>
+                    <MenuItem
+                      itemId={item.id}
+                      actions={
+                        <MenuItemAction
+                          actionId="bookmark"
+                          aria-label={bookmarkedItems.has(item.id) ? 'Remove bookmark' : 'Add bookmark'}
+                          icon={
+                            <BookmarkIcon
+                              className={`bookmark-icon ${bookmarkedItems.has(item.id) ? 'bookmarked' : ''}`}
+                            />
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(item.id);
+                          }}
+                        />
+                      }
+                    >
                       <div className="menu-item-content">
                         <div className="menu-item-title-row">
-                          <Button
-                            variant="plain"
-                            aria-label={bookmarkedItems.has(item.id) ? 'Remove bookmark' : 'Add bookmark'}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleBookmark(item.id);
-                            }}
-                            style={{ padding: '4px', marginLeft: '-4px' }}
-                          >
-                            <BookmarkIcon className={`bookmark-icon ${bookmarkedItems.has(item.id) ? 'bookmarked' : ''}`} />
-                          </Button>
                           {item.title === 'Configuring console event notifications in Slack' ? (
                             <div 
                               className="menu-item-title"
@@ -3166,7 +3670,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   className="feedback-card"
                   variant="secondary"
                   isClickable 
-                  isSelectable
                   onClick={() => setFeedbackView('general')}
                   style={{ cursor: 'pointer' }}
                 >
@@ -3192,7 +3695,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   className="feedback-card"
                   variant="secondary"
                   isClickable 
-                  isSelectable
                   onClick={() => setFeedbackView('bug')}
                   style={{ cursor: 'pointer' }}
                 >
@@ -3218,7 +3720,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   className="feedback-card"
                   variant="secondary"
                   isClickable 
-                  isSelectable
                   onClick={() => setFeedbackView('direction')}
                   style={{ cursor: 'pointer' }}
                 >
@@ -3309,6 +3810,186 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     </div>
   );
 
+  const helpPopoutAlive = Boolean(
+    helpPopoutPortalRoot &&
+      helpPopoutWindowRef.current &&
+      helpPopoutPortalRoot.ownerDocument === helpPopoutWindowRef.current.document &&
+      !helpPopoutWindowRef.current.closed
+  );
+
+  const renderHelpPanelStyledInner = () => (
+    <>
+      <style>{HELP_PANEL_DRAWER_SCOPED_CSS}</style>
+      {renderHelpPanelBody()}
+    </>
+  );
+
+  const routerBasename = process.env.ROUTER_BASENAME ?? '';
+  const helpPopoutMemoryPath = `${location.pathname}${location.search || ''}`;
+
+  const helpPopoutReactSubtree = (
+    <MemoryRouter
+      basename={routerBasename}
+      initialEntries={[helpPopoutMemoryPath]}
+      initialIndex={0}
+      key={helpPopoutMemoryPath}
+    >
+      <SupportCaseChatContinuationProvider>
+        <CveTroubleshootDemoProvider>
+          <PcmBrowserProvider>
+            <DashboardDataProvider>
+              <HelpPanelContext.Provider
+                value={{
+                  openHelpPanelWithTab,
+                  openHelpPanelToShareGeneralFeedback,
+                  openHelpPanelWithChatPrompt,
+                  openHelpPanelForSupportCaseContinuation,
+                }}
+              >
+                <div
+                  className="pf-v6-c-drawer__panel"
+                  style={{
+                    height: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    backgroundColor: '#ffffff',
+                    color: '#151515',
+                  }}
+                >
+                  <DrawerHead>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                      <Title headingLevel="h2" size="lg">
+                        Help
+                      </Title>
+                      <Button
+                        variant="link"
+                        isInline
+                        component="a"
+                        href="https://status.redhat.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '14px' }}
+                      >
+                        Red Hat status page
+                        <ExternalLinkAltIcon style={{ marginLeft: '4px' }} />
+                      </Button>
+                    </div>
+                    <DrawerActions>
+                      <DrawerCloseButton
+                        onClick={() => {
+                          const w = helpPopoutWindowRef.current;
+                          if (w && !w.closed) {
+                            w.close();
+                          }
+                        }}
+                      />
+                    </DrawerActions>
+                  </DrawerHead>
+                  <DrawerContentBody
+                    className="hcc-help-drawer-body"
+                    style={{
+                      padding: 0,
+                      flex: 1,
+                      minHeight: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {renderHelpPanelStyledInner()}
+                  </DrawerContentBody>
+                </div>
+              </HelpPanelContext.Provider>
+            </DashboardDataProvider>
+          </PcmBrowserProvider>
+        </CveTroubleshootDemoProvider>
+      </SupportCaseChatContinuationProvider>
+    </MemoryRouter>
+  );
+
+  helpPopoutMountIntoTargetRef.current = (portalMount: HTMLElement) => {
+    const popWin = helpPopoutWindowRef.current;
+    if (!popWin || popWin.closed) {
+      portalMount.textContent = 'Help popout: window reference was lost.';
+      portalMount.style.cssText =
+        'padding:16px;font:14px system-ui,sans-serif;color:#c9190b;min-height:100vh;box-sizing:border-box';
+      return;
+    }
+    if (portalMount.ownerDocument !== popWin.document) {
+      portalMount.textContent = 'Help popout: mount document does not match the popup window.';
+      portalMount.style.cssText =
+        'padding:16px;font:14px system-ui,sans-serif;color:#c9190b;min-height:100vh;box-sizing:border-box';
+      return;
+    }
+
+    let root = helpPopoutReactRootRef.current;
+    const prevMount = helpPopoutReactRootMountRef.current;
+    if (root && prevMount && prevMount !== portalMount) {
+      try {
+        root.unmount();
+      } catch {
+        /* ignore */
+      }
+      root = null;
+      helpPopoutReactRootRef.current = null;
+      helpPopoutReactRootMountRef.current = null;
+    }
+
+    if (!root) {
+      try {
+        root = createRoot(portalMount);
+        helpPopoutReactRootRef.current = root;
+        helpPopoutReactRootMountRef.current = portalMount;
+      } catch (createErr) {
+        const msg = createErr instanceof Error ? createErr.message : String(createErr);
+        portalMount.textContent = `Help popout failed to start: ${msg}`;
+        portalMount.style.padding = '16px';
+        portalMount.style.fontFamily = 'system-ui, sans-serif';
+        portalMount.style.color = '#c9190b';
+        return;
+      }
+    }
+
+    try {
+      root.render(helpPopoutReactSubtree);
+      portalMount.setAttribute('data-hcc-help-popout-ready', '1');
+    } catch (renderErr) {
+      const msg = renderErr instanceof Error ? renderErr.message : String(renderErr);
+      portalMount.textContent = `Help popout failed to render: ${msg}`;
+      portalMount.style.padding = '16px';
+      portalMount.style.fontFamily = 'system-ui, sans-serif';
+      portalMount.style.color = '#c9190b';
+    }
+  };
+
+  React.useLayoutEffect(() => {
+    const mount = helpPopoutPortalRoot;
+    if (!mount) {
+      try {
+        helpPopoutReactRootRef.current?.unmount();
+      } catch {
+        /* ignore */
+      }
+      helpPopoutReactRootRef.current = null;
+      helpPopoutReactRootMountRef.current = null;
+    }
+  }, [helpPopoutPortalRoot]);
+
+  /*
+   * Mount the popout React tree in useEffect (not useLayoutEffect): flushSync from the opener can still be
+   * running when layout effects fire; this effect runs after paint as the sole createRoot().render path.
+   */
+  React.useEffect(() => {
+    const mount = helpPopoutPortalRoot;
+    if (!mount || !helpPopoutAlive) {
+      return;
+    }
+    helpPopoutMountIntoTargetRef.current(mount);
+    // renderHelpPanelStyledInner is intentionally unstable so this effect re-syncs help state into the popout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
+  }, [helpPopoutPortalRoot, helpPopoutAlive, renderHelpPanelStyledInner, helpPopoutMemoryPath, routerBasename]);
 
   const masthead = (
     <Masthead>
@@ -3917,8 +4598,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   );
 
   const drawerContent = (
-    <DrawerPanelContent 
-      ref={helpPanelRef}
+    <DrawerPanelContent
       defaultSize="580px"
       minSize="320px"
       maxSize="800px"
@@ -3943,284 +4623,19 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           </Button>
         </div>
         <DrawerActions>
+          <Tooltip content="Open 'Help' in a separate window" position="left">
+            <Button
+              variant="plain"
+              aria-label="Open Help in a separate window"
+              icon={<OutlinedWindowMaximizeIcon />}
+              onClick={onOpenHelpInSeparateWindow}
+            />
+          </Tooltip>
           <DrawerCloseButton onClick={onDrawerClose} />
         </DrawerActions>
       </DrawerHead>
       <DrawerContentBody className="hcc-help-drawer-body" style={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-        <style>{`
-          /* Force hidden drawer panels to not take up space */
-          .pf-v6-c-drawer__panel[hidden] {
-            display: none !important;
-          }
-          
-          /* Force drawer panel to clip any overflow, except when menu is open */
-          .pf-v6-c-drawer__panel {
-            overflow: hidden !important;
-          }
-          
-          /* Allow overflow when tabs overflow menu is open */
-          .pf-v6-c-drawer__panel:has(.pf-v6-c-tabs [role="menu"]) {
-            overflow: visible !important;
-          }
-          
-          .pf-v6-c-drawer__panel-content {
-            overflow: visible !important; /* Allow menus to escape */
-          }
-          
-          /* Allow drawer body to overflow when menu is open */
-          .pf-v6-c-drawer__body:has(.pf-v6-c-tabs [role="menu"]),
-          .pf-v6-c-drawer__body {
-            overflow: visible !important;
-          }
-          
-          /* Override PatternFly's dynamic width variable to constrain tabs */
-          .pf-v6-c-drawer__panel .pf-v6-c-tabs {
-            --pf-v6-c-tabs--Width: 100% !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            overflow: visible !important; /* Allow dropdown menu to show */
-          }
-          
-          /* Constrain the scrollable tab list area */
-          .pf-v6-c-drawer__panel .pf-v6-c-tabs__scroll-container {
-            max-width: 100%;
-            overflow-x: auto;
-          }
-          
-          .pf-v6-c-drawer__panel .pf-v6-c-tabs__list {
-            max-width: 100%;
-          }
-          
-          /* Constrain tab content areas */
-          .pf-v6-c-drawer__panel .pf-v6-c-tabs__panel {
-            overflow-x: hidden;
-          }
-          
-          /* Target all dropdown menus within tabs overflow */
-          [data-popper-placement] .pf-v6-c-menu,
-          .pf-v6-c-dropdown__menu,
-          .pf-v6-c-menu {
-            min-width: 300px !important;
-            width: 300px !important;
-          }
-          
-          /* Allow dynamic positioning for tabs overflow menu */
-          .pf-v6-c-tabs [role="menu"] {
-            /* Positioning will be set dynamically via JavaScript */
-            max-width: 300px !important;
-          }
-          
-          /* Adjust popper positioning for tabs overflow menu */
-          .pf-v6-c-tabs [data-popper-placement] {
-            /* Positioning will be set dynamically via JavaScript */
-            max-width: 300px !important;
-          }
-          
-          /* Ensure menu stays within drawer panel bounds */
-          .pf-v6-c-drawer__panel .pf-v6-c-tabs [role="menu"] {
-            position: absolute !important;
-          }
-          
-          /* Target menu items specifically */
-          .pf-v6-c-menu__list-item,
-          .pf-v6-c-dropdown__menu-item {
-            min-width: 280px !important;
-            white-space: nowrap !important;
-          }
-          
-          /* Ensure tabs overflow menu items show ellipsis when truncated */
-          .pf-v6-c-tabs [role="menu"] button[role="menuitem"] {
-            display: flex !important;
-            align-items: center !important;
-            max-width: 300px !important;
-            overflow: hidden !important;
-          }
-          
-          .pf-v6-c-tabs [role="menu"] .menu-item-text-wrapper {
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-            display: block !important;
-          }
-          
-          /* Truncate visible tab titles */
-          .pf-v6-c-tabs__item .pf-v6-c-tabs__item-text {
-            max-width: 180px !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-            display: inline-block !important;
-          }
-          
-          /* Add extra padding for check icons */
-          .pf-v6-c-menu__item-text {
-            padding-right: 32px !important;
-          }
-          
-          /* Target the tabs overflow container specifically */
-          .pf-v6-c-tabs [role="menu"] {
-            min-width: 300px !important;
-            width: 300px !important;
-          }
-          
-          /* Top strip uses its own Tabs row; hide empty tab panels rendered by that duplicate Tabs */
-          .help-panel-top-tabs-strip .pf-v6-c-tab-content {
-            display: none !important;
-          }
-
-          /*
-           * Avoid horizontal scroll + PatternFly scroll Buttons (plain Button chevrons) on the top strip.
-           * Full-width flex row so margin-inline-start: auto on Chat absorbs remaining space and pins it right.
-           */
-          .help-panel-top-tabs-strip .pf-v6-c-tabs {
-            overflow: visible !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__list {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            row-gap: var(--pf-t--global--spacer--xs);
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            justify-content: flex-start !important;
-            overflow-x: visible !important;
-            overflow-y: visible !important;
-          }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab {
-            margin-inline-start: auto !important;
-            flex-shrink: 0 !important;
-          }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab .pf-v6-c-tabs__link {
-            min-width: 2.75rem !important;
-            justify-content: center !important;
-          }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs.pf-m-scrollable .pf-v6-c-tabs__scroll-button {
-            display: none !important;
-          }
-
-          /* Full-bleed grey rule under tab strip (separator from scroll content; insetNone = panel width) */
-          .help-panel-header-divider.pf-v6-c-divider {
-            width: 100% !important;
-            align-self: stretch !important;
-            flex-shrink: 0 !important;
-          }
-
-          /* Duplicate tab row is rendered above; hide PatternFly's tab buttons inside the scroll region */
-          .help-panel-hide-native-tab-list .pf-v6-c-tabs__scroll-buttons,
-          .help-panel-hide-native-tab-list .pf-v6-c-tabs__list {
-            display: none !important;
-          }
-
-          /*
-           * PF merges Tabs style prop onto .pf-v6-c-tabs (the nav), not the panels.
-           * flex:1 on Tabs stretched the empty nav and caused a large gap above tab body (APIs, Support, etc.).
-           * Shell wraps Tabs; collapse the hidden nav and let the active tab panel fill height.
-           */
-          .help-panel-inner-tabs-shell > .pf-v6-c-tabs {
-            flex-grow: 0 !important;
-            flex-shrink: 0 !important;
-            height: 0 !important;
-            max-height: 0 !important;
-            min-height: 0 !important;
-            overflow: hidden !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-          }
-          .help-panel-inner-tabs-shell > .pf-v6-c-tab-content:not([hidden]) {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            overflow: auto !important;
-          }
-          
-          /* Chat sub-tab content fills available height */
-          .pf-v6-c-tabs__panel:has([data-help-panel="chat"]) {
-            height: 100% !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          
-          [data-help-panel="chat"] {
-            height: 100% !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          
-          /* Style the overflow button to look like a persistent tab */
-          .pf-v6-c-tabs__scroll-button[data-overflowing] {
-            border: 1px solid var(--pf-v6-global--BorderColor--100) !important;
-            border-bottom: none !important;
-            background: var(--pf-v6-global--BackgroundColor--100) !important;
-            padding: 8px 16px !important;
-            min-width: auto !important;
-            font-size: var(--pf-v6-global--FontSize--sm) !important;
-            font-weight: 500 !important;
-            color: var(--pf-v6-global--Color--100) !important;
-            border-radius: var(--pf-v6-global--BorderRadius--sm) var(--pf-v6-global--BorderRadius--sm) 0 0 !important;
-            margin-left: 4px !important;
-            order: 999 !important;
-            position: relative !important;
-          }
-          
-          .pf-v6-c-tabs__scroll-button[data-overflowing]:hover {
-            background: var(--pf-v6-global--BackgroundColor--200) !important;
-            cursor: pointer !important;
-          }
-          
-          .pf-v6-c-tabs__scroll-button[data-overflowing] svg {
-            display: none !important;
-          }
-          
-          /* Allow overflow menu to escape tabs boundaries - only apply to tabs, not drawer */
-          .pf-v6-c-tabs,
-          .pf-v6-c-tabs__list {
-            overflow: visible !important;
-          }
-          
-          /* Make sure tabs container doesn't create scroll region */
-          .pf-v6-c-tabs__scroll-button {
-            overflow: visible !important;
-          }
-          
-          /* Ensure overflow menu has high z-index and can overlay content */
-          .pf-v6-c-tabs [role="menu"] {
-            z-index: 9999 !important;
-            position: fixed !important;
-            background-color: var(--pf-v6-global--BackgroundColor--100, #ffffff) !important;
-            box-shadow: 0 0.25rem 0.5rem 0rem rgba(3, 3, 3, 0.16), 0 0 0.375rem 0 rgba(3, 3, 3, 0.08) !important;
-            border-radius: var(--pf-v6-global--BorderRadius--sm, 4px) !important;
-          }
-          
-          /* Prevent any parent from creating a scroll container for the menu */
-          .pf-v6-c-tabs .pf-v6-c-menu {
-            overflow: visible !important;
-            background-color: var(--pf-v6-global--BackgroundColor--100, #ffffff) !important;
-          }
-          
-          /* Ensure menu items have proper background */
-          .pf-v6-c-tabs [role="menu"] [role="menuitem"] {
-            background-color: var(--pf-v6-global--BackgroundColor--100, #ffffff) !important;
-          }
-          
-          /* Menu item hover state */
-          .pf-v6-c-tabs [role="menu"] [role="menuitem"]:hover {
-            background-color: var(--pf-v6-global--BackgroundColor--200, #f5f5f5) !important;
-          }
-          
-          /* Close all button styling */
-          .pf-v6-c-tabs [role="menu"] .close-all-tabs-button {
-            color: var(--pf-v6-global--danger-color--100, #c9190b) !important;
-            font-weight: 500 !important;
-          }
-          
-          .pf-v6-c-tabs [role="menu"] .close-all-tabs-button:hover {
-            color: var(--pf-v6-global--danger-color--200, #a30000) !important;
-            background-color: var(--pf-v6-global--BackgroundColor--200, #f5f5f5) !important;
-          }
-        `}</style>
-        {renderHelpPanelBody()}
+        {!helpPopoutAlive && renderHelpPanelStyledInner()}
       </DrawerContentBody>
     </DrawerPanelContent>
   );
@@ -4350,7 +4765,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           </DrawerContent>
         </Drawer>
       </Page>
-      
+
       {/* Full-width Services Drawer under Masthead */}
       {isLogoDropdownOpen && (
         <div
@@ -5908,7 +6323,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             setCustomHelpTitle(null);
             setCustomHelpVariant(null);
             setHelpPanelSubTab(5);
-            setIsDrawerExpanded(true);
+            expandHelpDrawerOrFocusPopout();
           }}
           style={{
             width: '56px',

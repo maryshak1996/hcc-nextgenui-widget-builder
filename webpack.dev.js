@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'path';
 import webpack from 'webpack';
 import { merge } from 'webpack-merge';
@@ -35,6 +36,24 @@ export default merge(common('development'), {
     client: {
       /* Show build *errors* only; warnings should not block the full-screen overlay. */
       overlay: { errors: true, warnings: false, runtimeErrors: true },
+    },
+    /** Serve `public/help-popout.html` before SPA fallback (otherwise `historyApiFallback` can return `index.html`). */
+    setupMiddlewares: (middlewares) => {
+      middlewares.unshift((req, res, next) => {
+        const pathname = (req.url ?? '').split('?')[0];
+        const isHelpShell =
+          pathname === '/help-popout.html' || pathname.endsWith('/help-popout.html');
+        if (isHelpShell) {
+          const file = path.resolve(process.cwd(), 'public/help-popout.html');
+          if (existsSync(file)) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(readFileSync(file));
+            return;
+          }
+        }
+        next();
+      });
+      return middlewares;
     },
   },
 });

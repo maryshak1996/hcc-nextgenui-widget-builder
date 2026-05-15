@@ -7,7 +7,7 @@ export interface ISupportCaseNotificationLabelsFieldProps {
   emptyPlaceholder: string;
 }
 
-/** Send notifications — dismissable group labels inside a field-style container */
+/** Email notifications — dismissable group labels inside a field-style container */
 const SupportCaseNotificationLabelsField: React.FunctionComponent<ISupportCaseNotificationLabelsFieldProps> = ({
   fieldId,
   emptyPlaceholder,
@@ -16,11 +16,15 @@ const SupportCaseNotificationLabelsField: React.FunctionComponent<ISupportCaseNo
   const groups = draft.notificationGroups ?? [];
 
   const scrollAnchorRef = React.useRef<HTMLDivElement>(null);
-  const prevGroupCountRef = React.useRef(0);
+  const prevGroupCountRef = React.useRef<number | null>(null);
   const [showAppliedPulse, setShowAppliedPulse] = React.useState(false);
 
   React.useEffect(() => {
     const n = groups.length;
+    if (prevGroupCountRef.current === null) {
+      prevGroupCountRef.current = n;
+      return undefined;
+    }
     const prev = prevGroupCountRef.current;
     if (n > 0 && prev === 0) {
       setShowAppliedPulse(true);
@@ -43,7 +47,7 @@ const SupportCaseNotificationLabelsField: React.FunctionComponent<ISupportCaseNo
   );
 
   return (
-    <FormGroup label="Send notifications" fieldId={fieldId}>
+    <FormGroup label="Email notifications" fieldId={fieldId}>
       <div ref={scrollAnchorRef} style={{ position: 'relative' }}>
         <div
           style={{

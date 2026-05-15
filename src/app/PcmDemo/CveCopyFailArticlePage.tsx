@@ -79,14 +79,14 @@ const CveCopyFailArticlePage: React.FunctionComponent = () => {
               id="hcc-demo-callout-impacted"
               onNext={() => setShowCalloutAgent(true)}
             >
-              Oh no, the copy fail CVE AGAIN? I better go check which of my RHEL systems are impacted.
+              Oh no. The copy-fail CVE again? I&apos;d better go check which of my RHEL systems are impacted.
             </DemoAnnotationCallout>
             <DemoAnnotationCallout
               visible={showCalloutAgent}
               id="hcc-demo-callout-agent"
               onNext={() => setShowClickOutline(true)}
             >
-              {"Let's ask my Red Hat agent what's going on"}
+              Let&apos;s ask my Red Hat agent what&apos;s going on.
             </DemoAnnotationCallout>
           </div>,
           document.body,

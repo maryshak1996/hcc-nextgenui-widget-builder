@@ -11,6 +11,8 @@ export type DemoClickIndicatorProps = {
   outlinePaddingPx?: number;
   /** `onActivate` button accessible name (defaults to help-chat “yes” copy). */
   activateAriaLabel?: string;
+  /** Raise above high z-index demo layers (e.g. macOS fake notification at 9100). */
+  elevated?: boolean;
 };
 
 const DEFAULT_OUTLINE_PAD = 5;
@@ -38,6 +40,7 @@ const DemoClickIndicator: React.FunctionComponent<DemoClickIndicatorProps> = ({
   onActivate,
   outlinePaddingPx = DEFAULT_OUTLINE_PAD,
   activateAriaLabel = 'Demo: click to type yes and send in chat',
+  elevated = false,
 }) => {
   const buttonHostRef = React.useRef<HTMLButtonElement | null>(null);
   const divHostRef = React.useRef<HTMLDivElement | null>(null);
@@ -89,7 +92,11 @@ const DemoClickIndicator: React.FunctionComponent<DemoClickIndicatorProps> = ({
   }
 
   const interactive = Boolean(onActivate);
-  const outlineClass = ['hcc-demo-click-outline', interactive ? 'hcc-demo-click-outline--interactive' : '']
+  const outlineClass = [
+    'hcc-demo-click-outline',
+    interactive ? 'hcc-demo-click-outline--interactive' : '',
+    elevated ? 'hcc-demo-click-outline--elevated' : '',
+  ]
     .filter(Boolean)
     .join(' ');
 

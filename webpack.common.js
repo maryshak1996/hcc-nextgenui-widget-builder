@@ -102,7 +102,7 @@ export default (env) => {
         /* In common so merge order can’t drop it; all `*.css` (incl. @patternfly/chatbot, highlight.js). */
         {
           test: /\.css$/,
-          use: [isProd ? MiniCssExtractPlugin.loader : 'style-loader', 'css-loader'],
+          use: [MiniCssExtractPlugin.loader, 'css-loader'],
         },
       ],
     },
@@ -112,6 +112,25 @@ export default (env) => {
       path: path.resolve('./dist'),
       publicPath,
       clean: true,
+    },
+    optimization: {
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          /**
+           * PatternFly + `@patternfly/*` CSS in its own chunk so the Help popout can load `patternfly*.css`
+           * while skipping `main.*.css` (still carries `app.css` / shell rules that break `about:blank`).
+           */
+          patternflyStyles: {
+            name: 'patternfly',
+            type: 'css/mini-extract',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](@patternfly|patternfly)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+        },
+      },
     },
     plugins: [
       new HtmlWebpackPlugin({
@@ -124,11 +143,22 @@ export default (env) => {
         systemvars: true,
         silent: true,
       }),
+      /*
+       * Extract CSS in dev and prod so real `<link rel="stylesheet">` tags exist in `document.head`.
+       * The Help undock popout clones those links into the auxiliary window; `style-loader`–only dev
+       * builds had no links to copy (unstyled popout). Cloning all `<style>` nodes caused a white screen.
+       */
+      new MiniCssExtractPlugin({
+        ignoreOrder: true,
+        filename: isProd ? '[name].[contenthash].css' : '[name].css',
+        chunkFilename: isProd ? '[name].[contenthash].css' : '[name].css',
+      }),
       new CopyPlugin({
         patterns: [
           { from: './src/favicon.png', to: 'images' },
           { from: './public/404.html', to: '404.html' },
           { from: './public/cve-copy-fail-article.html', to: 'cve-copy-fail-article.html' },
+          { from: './public/help-popout.html', to: 'help-popout.html' },
         ],
       }),
     ],
