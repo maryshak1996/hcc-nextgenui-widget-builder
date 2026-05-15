@@ -159,6 +159,7 @@ const FakeSlackDockDemoLayer: React.FunctionComponent<IFakeSlackDockDemoLayerPro
                 onActivate={onNotificationClick}
                 outlinePaddingPx={8}
                 elevated
+                interactiveFill={false}
                 activateAriaLabel="Demo: open Slack notification"
               />
             ) : null}

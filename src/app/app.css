@@ -17,6 +17,8 @@ body,
  */
 body.hcc-fake-dock--active #root {
   box-sizing: border-box;
+  /* Let fake browser / IDE / article backgrounds show through the dock margin */
+  background-color: transparent;
 }
 
 .hcc-fake-apps-dock {
@@ -32,6 +34,7 @@ body.hcc-fake-dock--active #root {
   padding: 0 12px;
   padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
+  background: transparent;
 }
 
 .hcc-fake-apps-dock__inner {
@@ -1174,12 +1177,13 @@ body.hcc-pcm-ai-ide-open #root {
 .hcc-fake-ai-ide-fp {
   position: fixed;
   inset: 0;
-  bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
   z-index: 8200;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+  /* Extend behind floating dock; pad so workspace/composer stay usable */
+  padding-bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   color: #cccccc;
@@ -1775,17 +1779,17 @@ body.hcc-pcm-article-route #root {
   overflow: hidden;
 }
 
-/* Locks PCM desktop shell to the viewport; article scrolls inside `.hcc-cve-copy-fail-root` */
+/* Locks PCM desktop shell to the viewport; article scrolls inside `.hcc-cve-copy-fail-root`.
+ * Shell extends behind the floating dock so article/IDE colors read through the glass pill. */
 .hcc-pcm-article-shell {
   position: fixed;
   inset: 0;
-  bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
   z-index: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  background: var(--pf-t--global--background--color--primary--default);
+  background: transparent;
 }
 
 .hcc-pcm-rhel-vuln-placeholder {
@@ -1846,6 +1850,35 @@ body.hcc-pcm-article-route #root {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* Reserve space above the dock; background fills the padded strip under the floating pill */
+  padding-bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
+  background-color: #fafafa;
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hcc-pcm-article-shell .hcc-cve-copy-fail-root {
+    background-color: #121212;
+  }
+}
+
+/* Article route: match newsprint behind dock (shell is transparent) */
+body.hcc-pcm-article-route .hcc-fake-browser,
+body.hcc-pcm-article-route .hcc-fake-browser__page {
+  background-color: #fafafa;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.hcc-pcm-article-route .hcc-fake-browser,
+  body.hcc-pcm-article-route .hcc-fake-browser__page {
+    background-color: #121212;
+  }
+}
+
+/* Full HCC page inside fake browser: keep content above dock; page bg fills stripe */
+body.hcc-fake-dock--active .hcc-fake-browser__page {
+  box-sizing: border-box;
+  padding-bottom: max(var(--hcc-fake-dock-clearance), env(safe-area-inset-bottom, 0px));
 }
 
 /* Decorative browser chrome — tab content can be TechPulse article or full HCC `Page` */

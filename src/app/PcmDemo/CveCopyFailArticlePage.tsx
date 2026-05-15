@@ -102,6 +102,7 @@ const CveCopyFailArticlePage: React.FunctionComponent = () => {
         outlinePaddingPx={22}
         onActivate={activateIdeDock}
         activateAriaLabel="Open the mock AI IDE (demo)"
+        hintArrowSide="top"
       />
       <DemoAnnotationsViewToggle
         annotationsOn={annotationsOn}
