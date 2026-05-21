@@ -12,7 +12,7 @@ export const HCC_SUPPORT_CASE_NEW_PATH = '/support/cases/new' as const;
 export const SUPPORT_CASE_SLACK_ENDPOINT_EXAMPLE = 'https://company.enterprise.slack.com/team/000000000';
 
 /** Demo / annotations: URL the mocked user sends in chat after the assistant asks for an endpoint. */
-export const SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT = 'https://redhat.enterprise.slack.com/team/UB71VEV0V';
+export const SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT = 'https://parasol.enterprise.slack.com/team/UB71VEV0V';
 
 /** Help panel Chat tab when opening **New support case** directly (no CVE troubleshoot thread). */
 export const NEW_SUPPORT_CASE_CHAT_PROMPT =

@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {
-  DEFAULT_SUPPORT_CASE_DRAFT,
   type ISupportCaseDraft,
   mergeDraft,
+  migrateSupportCaseDemoBranding,
 } from '@app/Support/supportCaseDraftConstants';
 
 interface ISupportCaseDraftContextValue {
@@ -25,8 +25,13 @@ const SupportCaseDraftProvider: React.FunctionComponent<ISupportCaseDraftProvide
 }) => {
   const [draft, setDraft] = React.useState<ISupportCaseDraft>(() => mergeDraft(initialDraft ?? undefined));
 
+  /** Pick up Parasol branding when the tab kept pre-migration in-memory draft (e.g. after hot reload). */
+  React.useLayoutEffect(() => {
+    setDraft((prev) => migrateSupportCaseDemoBranding(prev));
+  }, []);
+
   const updateDraft = React.useCallback((patch: Partial<ISupportCaseDraft>) => {
-    setDraft((prev) => ({ ...prev, ...patch }));
+    setDraft((prev) => migrateSupportCaseDemoBranding({ ...prev, ...patch }));
   }, []);
 
   const value = React.useMemo(

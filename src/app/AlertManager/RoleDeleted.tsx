@@ -1110,7 +1110,7 @@ const RoleDeleted: React.FunctionComponent = () => {
                                       variant="inline-compact"
                                       className="pf-v6-u-font-size-sm"
                                     >
-                                      https://redhat.enterprise.slack.com/team/UB71VEV0V
+                                      https://parasol.enterprise.slack.com/team/UB71VEV0V
                                     </ClipboardCopy>
                                   </FlexItem>
                                 </Flex>

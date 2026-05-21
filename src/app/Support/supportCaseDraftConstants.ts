@@ -1,6 +1,36 @@
 import { COPYFAIL_CVE_DEMO_ID } from '@app/RhelVulnerability/copyFailDemoFleet';
 import { CVE_REMEDIATION_FAILED_HOST_TECHNICAL_ISSUE } from '@app/RhelVulnerability/cveTroubleshootDemoCopy';
 import { MASTHEAD_USER_EMAIL } from '@app/mastheadUserDisplayName';
+import { SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT } from '@app/Support/supportCaseChatPrompt';
+
+/** Legacy demo branding — migrated when loading persisted drafts or in-memory wizard state. */
+const LEGACY_MASTHEAD_USER_EMAIL = 'nedusername@fakecompany.com';
+const LEGACY_SUPPORT_CASE_SLACK_ENDPOINT = 'https://redhat.enterprise.slack.com/team/UB71VEV0V';
+
+/** Rewrites pre-Parasol demo email / Slack URL in an existing draft (session handoff, refresh, hot reload). */
+export function migrateSupportCaseDemoBranding(draft: ISupportCaseDraft): ISupportCaseDraft {
+  let changed = false;
+  const notificationGroups = draft.notificationGroups?.map((email) => {
+    if (email === LEGACY_MASTHEAD_USER_EMAIL) {
+      changed = true;
+      return MASTHEAD_USER_EMAIL;
+    }
+    return email;
+  });
+  let slackNotificationEndpointUrl = draft.slackNotificationEndpointUrl;
+  if (slackNotificationEndpointUrl === LEGACY_SUPPORT_CASE_SLACK_ENDPOINT) {
+    slackNotificationEndpointUrl = SUPPORT_CASE_MOCK_USER_SLACK_ENDPOINT;
+    changed = true;
+  }
+  if (!changed) {
+    return draft;
+  }
+  return {
+    ...draft,
+    ...(notificationGroups ? { notificationGroups } : {}),
+    slackNotificationEndpointUrl,
+  };
+}
 
 /** Linked chat tool for third-party case notifications (Slack webhook wired; others reserved). */
 export type TSupportCaseThirdPartyChatTool = 'slack' | 'gchat' | 'teams';
@@ -73,7 +103,7 @@ export const DEFAULT_SUPPORT_CASE_DRAFT: ISupportCaseDraft = {
 
 export function mergeDraft(partial: Partial<ISupportCaseDraft> | null | undefined): ISupportCaseDraft {
   if (!partial) {
-    return { ...DEFAULT_SUPPORT_CASE_DRAFT };
+    return migrateSupportCaseDemoBranding({ ...DEFAULT_SUPPORT_CASE_DRAFT });
   }
   const merged = { ...DEFAULT_SUPPORT_CASE_DRAFT, ...partial };
   if (partial.notificationGroups === undefined) {
@@ -82,7 +112,7 @@ export function mergeDraft(partial: Partial<ISupportCaseDraft> | null | undefine
   if (!merged.notificationGroups?.length) {
     merged.notificationGroups = [...DEFAULT_SUPPORT_CASE_DRAFT.notificationGroups];
   }
-  return merged;
+  return migrateSupportCaseDemoBranding(merged);
 }
 
 /** Prefill after CVE troubleshoot “yes” — remaining host still at risk */

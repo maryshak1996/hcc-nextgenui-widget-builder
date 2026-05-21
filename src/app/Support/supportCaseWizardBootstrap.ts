@@ -1,4 +1,4 @@
-import type { ISupportCaseDraft } from '@app/Support/supportCaseDraftConstants';
+import { migrateSupportCaseDemoBranding, type ISupportCaseDraft } from '@app/Support/supportCaseDraftConstants';
 import {
   HCC_SUPPORT_CASE_DRAFT_PAYLOAD,
   HCC_WIZARD_START_AT_REVIEW_STEP,
@@ -45,9 +45,11 @@ function tryParseRouterBootstrap(locationState: unknown): ISupportCaseWizardBoot
     return null;
   }
   const fromCveDemoHandoff = rec.fromCveDemoHandoff === true;
+  const migratedDraft =
+    initialDraft === null ? null : migrateSupportCaseDemoBranding(initialDraft as ISupportCaseDraft);
   return {
     wizardStartIndex,
-    initialDraft: initialDraft as ISupportCaseDraft | null,
+    initialDraft: migratedDraft,
     fromCveDemoHandoff,
   };
 }
@@ -62,7 +64,7 @@ function readSupportCaseWizardBootstrapFromSessionOnce(): ISupportCaseWizardBoot
     if (raw) {
       sessionStorage.removeItem(HCC_SUPPORT_CASE_DRAFT_PAYLOAD);
       sessionStorage.removeItem(HCC_WIZARD_START_AT_REVIEW_STEP);
-      const parsed = JSON.parse(raw) as ISupportCaseDraft;
+      const parsed = migrateSupportCaseDemoBranding(JSON.parse(raw) as ISupportCaseDraft);
       return {
         initialDraft: parsed,
         wizardStartIndex: openReview ? 5 : SUPPORT_CASE_WIZARD_DEFAULT_START_INDEX,
