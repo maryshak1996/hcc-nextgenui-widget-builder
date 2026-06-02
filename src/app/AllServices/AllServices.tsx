@@ -17,22 +17,8 @@ import {
   PageSection,
   Title
 } from '@patternfly/react-core';
-import { 
-  BellIcon,
-  BrainIcon, 
-  CreditCardIcon,
-  CubeIcon,
-  ExternalLinkAltIcon,
-  EyeIcon,
-  ListIcon,
-  PlayIcon,
-  RocketIcon,
-  ServerIcon,
-  ShieldAltIcon,
-  StarIcon,
-  UsersIcon,
-  WrenchIcon
-} from '@patternfly/react-icons';
+import { BrainIcon, CreditCardIcon, CubeIcon, EyeIcon, ListIcon, PlayIcon, RocketIcon, ServerIcon, ShieldAltIcon, StarIcon, WrenchIcon } from '@patternfly/react-icons';
+import { BellIcon, ExternalLinkAltIcon, UsersIcon } from '@app/icons/rhUiIcons';
 import { useNavigate } from 'react-router-dom';
 
 interface ServiceItem {

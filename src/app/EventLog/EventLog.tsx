@@ -18,7 +18,8 @@ import {
   ToolbarContent,
   ToolbarItem
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon, ListIcon } from '@patternfly/react-icons';
+import { ListIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 
 const EventLog: React.FunctionComponent = () => {
   const [searchValue, setSearchValue] = React.useState('');

@@ -23,12 +23,16 @@ import {
   parseDashboardConfigClipboardText,
   writeDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
+import {
+  IMPORT_JSON_CONFIG_MENU_LABEL,
+  IMPORT_JSON_CONFIG_PASTE_LABEL
+} from '@app/useCopyConfigFeedback';
 
 const IMPORT_CONFIG_FORM_ID = 'import-config-string-form';
 const IMPORT_NAME_DUPLICATE_ID = 'import-config-name-duplicate-error';
 const IMPORT_CONFIG_PARSE_ERROR_ID = 'import-config-parse-error';
 
-/** Replace when the product documentation URL for config strings is finalized. */
+/** Replace when the product documentation URL for JSON config import is finalized. */
 const CONFIG_STRING_HELP_PLACEHOLDER_URL = 'https://www.redhat.com/';
 
 export type ImportConfigStringModalProps = {
@@ -116,13 +120,13 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
     >
       <ModalHeader
         labelId="import-config-string-modal-title"
-        title="Import configuration string"
+        title={IMPORT_JSON_CONFIG_MENU_LABEL}
         titleIconVariant={CodeIcon}
       />
       <ModalBody>
         <Content className="hcc-import-config-modal-intro">
           <p>
-            Copy/paste a config string from any other Hybrid Cloud Console dashboard (i.e. a string shared with you
+            Copy/paste JSON config from any other Hybrid Cloud Console dashboard (i.e. JSON shared with you
             from another person in your organization) to have that dashboard recreated in your account.{' '}
             <Button
               variant="link"
@@ -132,12 +136,12 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
               target="_blank"
               rel="noopener noreferrer"
             >
-              Learn about using config strings.
+              Learn about using JSON config.
             </Button>
           </p>
         </Content>
         <Form id={IMPORT_CONFIG_FORM_ID} onSubmit={handleFormSubmit}>
-          <FormGroup isRequired fieldId="import-config-string" label="Paste configuration string">
+          <FormGroup isRequired fieldId="import-config-string" label={IMPORT_JSON_CONFIG_PASTE_LABEL}>
             <TextArea
               isRequired
               id="import-config-string"
@@ -146,7 +150,7 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
               onChange={(_event, value) => setConfigString(value)}
               rows={10}
               resizeOrientation="vertical"
-              aria-label="Paste configuration string"
+              aria-label={IMPORT_JSON_CONFIG_PASTE_LABEL}
               className="hcc-import-config-code-editor"
               placeholder={'{\n  "dashboardId": "…",\n  "name": "…",\n  "widgets": [ … ]\n}'}
               validated={parsedConfig.status === 'error' ? 'error' : 'default'}

@@ -49,13 +49,11 @@ const DeleteDashboardModal: React.FunctionComponent<DeleteDashboardModalProps> =
           className={css(
             modalBoxStyles.modalBoxTitle,
             modalBoxStyles.modifiers.icon,
-            modalBoxStyles.modifiers.warning
+            modalBoxStyles.modifiers.danger
           )}
         >
           <span className={css(modalBoxStyles.modalBoxTitleIcon)} aria-hidden>
-            <OutlinedTrashAltIcon
-              style={{ color: 'var(--pf-t--global--danger-color--200)' }}
-            />
+            <OutlinedTrashAltIcon />
           </span>
           <span className={css(modalBoxStyles.modalBoxTitleText)}>Delete dashboard?</span>
         </h1>

@@ -27,7 +27,7 @@ import {
   ToolbarItem
 } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { EllipsisVIcon, ExternalLinkAltIcon, FilterIcon, UserCheckIcon } from '@patternfly/react-icons';
+import { EllipsisVIcon, FilterIcon, UserCheckIcon } from '@app/icons/rhUiIcons';
 import { useNavigate } from 'react-router-dom';
 
 interface UserAssignment {

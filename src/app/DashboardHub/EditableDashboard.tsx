@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
   Breadcrumb,
@@ -34,20 +34,8 @@ import {
   Title,
   Tooltip
 } from '@patternfly/react-core';
-import {
-  CheckCircleIcon,
-  CheckIcon,
-  CodeIcon,
-  EllipsisVIcon,
-  HomeIcon,
-  OutlinedCloneIcon,
-  OutlinedTrashAltIcon,
-  PencilAltIcon,
-  PlusCircleIcon,
-  ShareAltIcon,
-  TimesCircleIcon,
-  TimesIcon
-} from '@patternfly/react-icons';
+import { CodeIcon, HomeIcon, OutlinedCloneIcon, OutlinedTrashAltIcon, PencilAltIcon, TimesCircleIcon } from '@patternfly/react-icons';
+import { CheckIcon, CheckCircleIcon, EllipsisVIcon, PlusCircleIcon, TimesIcon } from '@app/icons/rhUiIcons';
 import { AddWidgetsDrawer } from '@app/Homepage/AddWidgetsDrawer';
 import { setDashboardBankBridgeState } from '@app/Homepage/dashboardBankBridge';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
@@ -92,8 +80,7 @@ import {
 } from '@app/DashboardHub/dashboardCanvasStorage';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
-import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
-import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 
 type PersistIndicator = 'saved' | 'saving';
 
@@ -428,11 +415,8 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
 /**
  * Shell for editing a single dashboard. Wire layout, save, widgets, etc. per product spec.
  */
-type DashboardLocationState = { openShare?: boolean } | null;
-
 const EditableDashboard: React.FunctionComponent = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { dashboardId } = useParams<{ dashboardId: string }>();
   const {
     rows,
@@ -458,18 +442,6 @@ const EditableDashboard: React.FunctionComponent = () => {
   const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
-
-  React.useLayoutEffect(() => {
-    const s = (location.state ?? null) as DashboardLocationState;
-    if (!s?.openShare) {
-      return;
-    }
-    navigate(location.pathname, { replace: true, state: null });
-    if (dashboard) {
-      setIsShareModalOpen(true);
-    }
-  }, [dashboard, location.pathname, location.state, navigate]);
 
   const [localName, setLocalName] = React.useState('');
   const [localDescription, setLocalDescription] = React.useState('');
@@ -707,6 +679,24 @@ const EditableDashboard: React.FunctionComponent = () => {
     setCanvasWidgets((prev) => (prev.some((w) => w.id === widget.id) ? prev : [...prev, widget]));
   }, []);
 
+  const handleRemoveFromCanvas = React.useCallback(
+    (widgetId: string) => {
+      const w = canvasWidgets.find((x) => x.id === widgetId);
+      if (w) {
+        setCanvasWidgets((prev) => prev.filter((x) => x.id !== widgetId));
+        setRemovedWidgets((prev) => [...prev, w]);
+      }
+    },
+    [canvasWidgets]
+  );
+
+  const handleRemoveWidgetFromBank = React.useCallback(
+    (widget: Widget) => {
+      handleRemoveFromCanvas(widget.id);
+    },
+    [handleRemoveFromCanvas]
+  );
+
   React.useEffect(() => {
     if (!dashboardId) {
       setDashboardBankBridgeState(null);
@@ -715,9 +705,10 @@ const EditableDashboard: React.FunctionComponent = () => {
     setDashboardBankBridgeState({
       canvasWidgetIds: new Set(canvasWidgets.map((w) => w.id)),
       addWidgetToDashboard: handleAddWidgetFromBank,
+      removeWidgetFromDashboard: handleRemoveWidgetFromBank,
       canAddWidgets: !isConsoleDefault,
     });
-  }, [dashboardId, canvasWidgets, handleAddWidgetFromBank, isConsoleDefault]);
+  }, [dashboardId, canvasWidgets, handleAddWidgetFromBank, handleRemoveWidgetFromBank, isConsoleDefault]);
 
   React.useEffect(
     () => () => {
@@ -729,17 +720,6 @@ const EditableDashboard: React.FunctionComponent = () => {
   const handleCanvasSizeChange = React.useCallback((id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => {
     setCanvasWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, colSpan, rowSpan } : w)));
   }, []);
-
-  const handleRemoveFromCanvas = React.useCallback(
-    (widgetId: string) => {
-      const w = canvasWidgets.find((x) => x.id === widgetId);
-      if (w) {
-        setCanvasWidgets((prev) => prev.filter((x) => x.id !== widgetId));
-        setRemovedWidgets((prev) => [...prev, w]);
-      }
-    },
-    [canvasWidgets]
-  );
 
   const handleCanvasReorder = React.useCallback((next: Widget[]) => {
     setCanvasWidgets(next);
@@ -922,7 +902,13 @@ const EditableDashboard: React.FunctionComponent = () => {
                             <Button
                               variant="plain"
                               type="button"
+                              className="editable-dashboard-meta-inline-action editable-dashboard-meta-inline-action--apply"
                               aria-label="Apply dashboard name"
+                              icon={
+                                <span className="editable-dashboard-meta-inline-action__apply-icon" aria-hidden>
+                                  <CheckIcon />
+                                </span>
+                              }
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={applyNameChange}
                               isDisabled={
@@ -930,18 +916,15 @@ const EditableDashboard: React.FunctionComponent = () => {
                                 localName.trim() === dashboard.name ||
                                 toolbarNameIsDuplicate
                               }
-                            >
-                              <CheckIcon />
-                            </Button>
+                            />
                             <Button
                               variant="plain"
                               type="button"
                               aria-label="Cancel dashboard name edit"
+                              icon={<TimesIcon />}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={cancelNameChange}
-                            >
-                              <TimesIcon />
-                            </Button>
+                            />
                           </span>
                         )}
                       </div>
@@ -1018,24 +1001,27 @@ const EditableDashboard: React.FunctionComponent = () => {
                             <Button
                               variant="plain"
                               type="button"
+                              className="editable-dashboard-meta-inline-action editable-dashboard-meta-inline-action--apply"
                               aria-label="Apply dashboard description"
+                              icon={
+                                <span className="editable-dashboard-meta-inline-action__apply-icon" aria-hidden>
+                                  <CheckIcon />
+                                </span>
+                              }
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={applyDescriptionChange}
                               isDisabled={
                                 localDescription.trim() === (dashboard.description ?? '').trim()
                               }
-                            >
-                              <CheckIcon />
-                            </Button>
+                            />
                             <Button
                               variant="plain"
                               type="button"
                               aria-label="Cancel dashboard description edit"
+                              icon={<TimesIcon />}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={cancelDescriptionChange}
-                            >
-                              <TimesIcon />
-                            </Button>
+                            />
                           </span>
                         )}
                       </div>
@@ -1128,20 +1114,6 @@ const EditableDashboard: React.FunctionComponent = () => {
                     />
                   </FlexItem>
                   <FlexItem>
-                    <Button
-                      variant="plain"
-                      className="editable-dashboard-toolbar-plain-icon-action"
-                      onClick={() => setIsShareModalOpen(true)}
-                    >
-                      <span className="editable-dashboard-toolbar-icon-label__inner">
-                        <span className="editable-dashboard-toolbar-icon-label__icon" aria-hidden>
-                          <ShareAltIcon />
-                        </span>
-                        <span className="editable-dashboard-toolbar-icon-label__label">Share</span>
-                      </span>
-                    </Button>
-                  </FlexItem>
-                  <FlexItem>
                     {isWidgetDrawerOpen ? (
                       <Tabs
                         id={`editable-dashboard-widget-tabs-${dashboard.id}`}
@@ -1205,7 +1177,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       popperProps={{ position: 'right' }}
                       toggle={(toggleRef) => (
                         <Tooltip
-                          content="Copied!"
+                          content={COPY_CONFIG_STRING_TOOLTIP_CONTENT}
                           trigger="manual"
                           isVisible={copiedTooltipVisible}
                           entryDelay={0}
@@ -1246,7 +1218,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                           >
                             <CodeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
-                            Copy configuration string
+                            {COPY_JSON_CONFIG_MENU_LABEL}
                           </span>
                         </DropdownItem>
                         <DropdownItem onClick={handleKebabDuplicate}>
@@ -1336,7 +1308,7 @@ const EditableDashboard: React.FunctionComponent = () => {
             variant="info"
             isInline
             isPlain
-            title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it, copy its config string, and share it though."
+            title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it and copy its JSON config though."
           />
         </PageSection>
       ) : null}
@@ -1372,17 +1344,6 @@ const EditableDashboard: React.FunctionComponent = () => {
             onClose={() => setIsDeleteModalOpen(false)}
             dashboardName={dashboard.name}
             onConfirm={handleDeleteDashboardConfirm}
-          />
-          <ShareDashboardModal
-            isOpen={isShareModalOpen}
-            onClose={() => setIsShareModalOpen(false)}
-            dashboardId={dashboard.id}
-            dashboardName={dashboard.name}
-            configurationClipboardText={serializeDashboardConfigPayload({
-              dashboardId: dashboard.id,
-              name: dashboard.name,
-              widgets: resolveDashboardCanvasWidgets(dashboard) ?? []
-            })}
           />
         </>
       ) : null}

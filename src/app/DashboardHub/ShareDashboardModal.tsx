@@ -16,13 +16,13 @@ import {
   SelectOption,
   Tooltip
 } from '@patternfly/react-core';
-import { ShareAltIcon, UserIcon, UsersIcon } from '@patternfly/react-icons';
-import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
+import { UserIcon } from '@patternfly/react-icons';
+import { ShareAltIcon, UsersIcon } from '@app/icons/rhUiIcons';
 import { ShareRecipientTypeahead } from '@app/DashboardHub/ShareRecipientTypeahead';
 import type { ShareDirectoryEntry, ShareDirectoryEntryKind } from '@app/DashboardHub/shareDashboardMockDirectory';
 import { SHARE_DIRECTORY, shareDirectoryEntryKey } from '@app/DashboardHub/shareDashboardMockDirectory';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
-import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 
 const SHARE_DASHBOARD_FORM_ID = 'share-dashboard-form';
 
@@ -86,7 +86,7 @@ export type ShareDashboardModalProps = {
   dashboardId: string;
   /** Dashboard title shown in the modal header (curly quotes are added around this value). */
   dashboardName: string;
-  /** Serialized dashboard JSON for “copy configuration string” (same payload as hub/homepage copy actions). */
+  /** Serialized dashboard JSON for “Copy JSON config” (same payload as hub/homepage copy actions). */
   configurationClipboardText: string;
   /** Called after the user saves (stub — wire to API later). */
   onSave?: (recipients: ShareRecipientRow[]) => void;
@@ -100,7 +100,6 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
   configurationClipboardText,
   onSave
 }) => {
-  const { notifyShareSettingsSaved } = useDashboardData();
   const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
   const [recipients, setRecipients] = React.useState<ShareRecipientRow[]>([]);
   const [permissionSelectOpenKey, setPermissionSelectOpenKey] = React.useState<string | null>(null);
@@ -160,10 +159,9 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
   }, [onClose]);
 
   const handleSave = React.useCallback(() => {
-    notifyShareSettingsSaved(dashboardId, dashboardName);
     onSave?.(recipients);
     onClose();
-  }, [dashboardId, dashboardName, notifyShareSettingsSaved, onClose, onSave, recipients]);
+  }, [onClose, onSave, recipients]);
 
   const handleFormSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -204,7 +202,7 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
             <p>
               You may also{' '}
               <Tooltip
-                content="Copied!"
+                content={COPY_CONFIG_STRING_TOOLTIP_CONTENT}
                 trigger="manual"
                 isVisible={copiedTooltipVisible}
                 entryDelay={0}
@@ -216,9 +214,9 @@ const ShareDashboardModal: React.FunctionComponent<ShareDashboardModalProps> = (
                   isInline
                   type="button"
                   onClick={handleCopyConfigurationLinkClick}
-                  aria-label="Copy dashboard configuration string"
+                  aria-label={COPY_JSON_CONFIG_MENU_LABEL}
                 >
-                  copy the configuration string
+                  copy the JSON config
                 </Button>
               </Tooltip>{' '}
               for this dashboard and share as needed.

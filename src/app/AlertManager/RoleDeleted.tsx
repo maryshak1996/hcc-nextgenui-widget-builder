@@ -53,26 +53,8 @@ import {
   Truncate
 } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { 
-  AngleDownIcon,
-  AngleRightIcon,
-  BellIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  CodeIcon,
-  CommentIcon,
-  EllipsisVIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  MinusCircleIcon,
-  PencilAltIcon,
-  PlayIcon,
-  PlusCircleIcon,
-  SyncAltIcon,
-  TimesIcon,
-  UserIcon,
-  UsersIcon
-} from '@patternfly/react-icons';
+import { AngleDownIcon, AngleRightIcon, CheckIcon, CodeIcon, CommentIcon, EnvelopeIcon, MinusCircleIcon, PencilAltIcon, PlayIcon, SyncAltIcon, UserIcon } from '@patternfly/react-icons';
+import { BellIcon, CheckCircleIcon, EllipsisVIcon, ExclamationTriangleIcon, PlusCircleIcon, TimesIcon, UsersIcon } from '@app/icons/rhUiIcons';
 
 const RoleDeleted: React.FunctionComponent = () => {
   const navigate = useNavigate();

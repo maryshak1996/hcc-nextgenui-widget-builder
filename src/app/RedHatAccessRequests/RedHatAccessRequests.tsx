@@ -14,7 +14,8 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon, UserSecretIcon } from '@patternfly/react-icons';
+import { UserSecretIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 
 const RedHatAccessRequests: React.FunctionComponent = () => {
   const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);

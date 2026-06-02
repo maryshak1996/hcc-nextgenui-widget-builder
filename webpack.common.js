@@ -5,10 +5,12 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import Dotenv from 'dotenv-webpack';
+import { getPublicPathForMode } from './webpack.build-env.js';
 const BG_IMAGES_DIRNAME = 'bgimages';
-const ASSET_PATH = process.env.ASSET_PATH || '/';
 
 export default (env) => {
+  const mode = env === 'production' ? 'production' : 'development';
+  const publicPath = getPublicPathForMode(mode);
   return {
     module: {
       rules: [
@@ -101,14 +103,15 @@ export default (env) => {
       filename: '[name].[contenthash].js',
       chunkFilename: '[name].[contenthash].js',
       path: path.resolve('./dist'),
-      publicPath: '/',
+      publicPath,
       clean: true,
     },
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve('./src', 'index.html'),
         inject: 'body',
-        publicPath: '/',        // ensures paths like /main.bundle.js not /HCC-cursor-seed/...
+        publicPath,
+        baseHref: publicPath,
       }),
       new Dotenv({
         systemvars: true,

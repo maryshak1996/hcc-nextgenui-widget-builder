@@ -36,19 +36,8 @@ import {
   Thead,
   Tr
 } from '@patternfly/react-table';
-import {
-  CodeIcon,
-  EllipsisVIcon,
-  ExternalLinkAltIcon,
-  HomeIcon,
-  OutlinedCloneIcon,
-  OutlinedTrashAltIcon,
-  OutlinedWindowRestoreIcon,
-  PencilAltIcon,
-  PlusCircleIcon,
-  ShareAltIcon,
-  ThIcon
-} from '@patternfly/react-icons';
+import { CodeIcon, HomeIcon, OutlinedCloneIcon, OutlinedTrashAltIcon, OutlinedWindowRestoreIcon, PencilAltIcon, ThIcon } from '@patternfly/react-icons';
+import { EllipsisVIcon, ExternalLinkAltIcon, PlusCircleIcon } from '@app/icons/rhUiIcons';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
@@ -58,8 +47,7 @@ import { isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboar
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { ImportConfigStringModal } from '@app/DashboardHub/ImportConfigStringModal';
-import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
-import { useCopyConfigRowFeedback } from '@app/useCopyConfigFeedback';
+import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, IMPORT_JSON_CONFIG_MENU_LABEL, useCopyConfigRowFeedback } from '@app/useCopyConfigFeedback';
 
 const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
 const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
@@ -118,7 +106,6 @@ const DashboardHub: React.FunctionComponent = () => {
   const [isImportConfigModalOpen, setIsImportConfigModalOpen] = React.useState(false);
   const [importModalInitialHomepage, setImportModalInitialHomepage] = React.useState(false);
   const [deleteTargetRow, setDeleteTargetRow] = React.useState<HubRow | null>(null);
-  const [shareTargetRow, setShareTargetRow] = React.useState<HubRow | null>(null);
   const { copiedFeedbackRowId, triggerCopiedFeedbackForRow } = useCopyConfigRowFeedback();
 
   type HubNavFromHome = { fromHome?: { openCreate?: 'blank' | 'import' | 'duplicate' } };
@@ -199,10 +186,6 @@ const DashboardHub: React.FunctionComponent = () => {
 
   const closeDeleteDashboardModal = React.useCallback(() => {
     setDeleteTargetRow(null);
-  }, []);
-
-  const closeShareDashboardModal = React.useCallback(() => {
-    setShareTargetRow(null);
   }, []);
 
   const handleDeleteDashboardConfirm = React.useCallback(() => {
@@ -387,7 +370,7 @@ const DashboardHub: React.FunctionComponent = () => {
                     setIsCreateDashboardMenuOpen(false);
                   }}
                 >
-                  Import from config string
+                  {IMPORT_JSON_CONFIG_MENU_LABEL}
                 </DropdownItem>
                 <DropdownItem
                   key="duplicate"
@@ -477,7 +460,7 @@ const DashboardHub: React.FunctionComponent = () => {
                     popperProps={{ position: 'end' }}
                     toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
                       <Tooltip
-                        content="Copied!"
+                        content={COPY_CONFIG_STRING_TOOLTIP_CONTENT}
                         trigger="manual"
                         isVisible={copiedFeedbackRowId === row.id}
                         entryDelay={0}
@@ -561,21 +544,7 @@ const DashboardHub: React.FunctionComponent = () => {
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                         >
                           <CodeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
-                          Copy configuration string
-                        </span>
-                      </DropdownItem>
-                      <DropdownItem
-                        key="share"
-                        onClick={() => {
-                          setShareTargetRow(row);
-                          setOpenActionsRowId(null);
-                        }}
-                      >
-                        <span
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-                        >
-                          <ShareAltIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
-                          Share dashboard
+                          {COPY_JSON_CONFIG_MENU_LABEL}
                         </span>
                       </DropdownItem>
                       <Divider component="li" role="separator" />
@@ -686,22 +655,6 @@ const DashboardHub: React.FunctionComponent = () => {
         onClose={closeImportConfigModal}
         initialSetAsHomepage={importModalInitialHomepage}
         onSuccess={handleImportConfigModalSuccess}
-      />
-
-      <ShareDashboardModal
-        isOpen={shareTargetRow !== null}
-        onClose={closeShareDashboardModal}
-        dashboardId={shareTargetRow?.id ?? ''}
-        dashboardName={shareTargetRow?.name ?? ''}
-        configurationClipboardText={
-          shareTargetRow
-            ? serializeDashboardConfigPayload({
-                dashboardId: shareTargetRow.id,
-                name: shareTargetRow.name,
-                widgets: resolveDashboardCanvasWidgets(shareTargetRow) ?? []
-              })
-            : ''
-        }
       />
 
       <DeleteDashboardModal

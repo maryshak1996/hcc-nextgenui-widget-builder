@@ -14,7 +14,8 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { BookOpenIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { BookOpenIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 import { NavLink } from 'react-router-dom';
 
 const LearningResourcesIAM: React.FunctionComponent = () => {

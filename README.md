@@ -3,7 +3,9 @@
 An internal UX prototype used to explore and demonstrate UI/UX design concepts for AI-powered dashboard and widget-building experiences.
 
 ### 🔗 Live Prototype
-https://hcc-ai-widget-builder.vercel.app/
+https://maryshak1996.github.io/hcc-nextgenui-widget-builder/prototype/
+
+*(PCM integration demo, separate deploy: https://maryshak1996.github.io/hcc-nextgenui-widget-builder/)*
 
 ### 🎨 Design Preview
 **Figma Working Design File:**  
@@ -33,19 +35,15 @@ This is not a production product — it is a design exploration environment.
 - **TypeScript**
 - **PatternFly 6**
 - **Webpack 5**
-- **Vercel (static deployment)**
+- **GitHub Pages** (main prototype at `/prototype/`; PCM demo on `pcm-integration`)
 
 ---
 
 ## 🚀 Deployment
 
-This project auto-deploys to Vercel whenever changes are pushed to the `main` branch.
+The **`main`** branch auto-deploys to **GitHub Pages** at **`/prototype/`** when you push to **`main`**.
 
-See:
-
-👉 [`DEPLOYING.md`](./DEPLOYING.md)
-
-for full deployment workflow instructions.
+See **[`DEPLOYING.md`](./DEPLOYING.md)** for URLs, GitHub setup, and the PCM vs main split.
 
 ---
 
@@ -80,9 +78,9 @@ npx sirv dist --single --cors --host --port 8080
 ## 🧠 Architecture Notes
 
 - Uses content-hashed asset filenames to prevent stale caching.
-- SPA routing handled via `vercel.json` rewrites.
-- React Router runs at root (`/`) — no GitHub Pages basename.
-- Production builds use `hidden-source-map`.
+- **`main`** is published to GitHub Pages under **`/prototype/`** with **`PUBLIC_PATH`** + **`ROUTER_BASENAME`**.
+- **`pcm-integration`** continues to deploy the PCM demo at the repo root (separate workflow; unchanged).
+- Local dev defaults to **`http://localhost:9000/`** (no subpath).
 
 ---
 
@@ -95,9 +93,10 @@ src/
     Homepage/
     routes.tsx
   index.tsx
+webpack.build-env.js
 webpack.common.js
 webpack.prod.js
-vercel.json
+.github/workflows/deploy-main-github-pages.yml
 ```
 
 ---

@@ -5,6 +5,7 @@ export type DashboardBankBridgeState = {
   /** Widget IDs currently on the edited dashboard canvas */
   canvasWidgetIds: ReadonlySet<string>;
   addWidgetToDashboard: (widget: Widget) => void;
+  removeWidgetFromDashboard: (widget: Widget) => void;
   /** False when viewing the built-in Console default dashboard (widgets aren’t editable the same way) */
   canAddWidgets: boolean;
 };

@@ -22,26 +22,8 @@ import {
   MenuToggleElement,
   Title
 } from '@patternfly/react-core';
-import {
-  ArrowRightIcon,
-  BellIcon,
-  BookmarkIcon,
-  ChartLineIcon,
-  ClockIcon,
-  CloudIcon,
-  CogIcon,
-  CommentsIcon,
-  CreditCardIcon,
-  DesktopIcon,
-  EllipsisVIcon,
-  ExternalLinkAltIcon,
-  GripVerticalIcon,
-  HeadsetIcon,
-  PlugIcon,
-  SearchIcon,
-  ServerIcon,
-  ShieldAltIcon
-} from '@patternfly/react-icons';
+import { ArrowRightIcon, BookmarkIcon, ChartLineIcon, ClockIcon, CloudIcon, CommentsIcon, CreditCardIcon, DesktopIcon, GripVerticalIcon, HeadsetIcon, PlugIcon, ServerIcon, ShieldAltIcon } from '@patternfly/react-icons';
+import { BellIcon, CogIcon, EllipsisVIcon, ExternalLinkAltIcon, SearchIcon } from '@app/icons/rhUiIcons';
 import { WidgetTitleLeadIcon } from '@app/Homepage/homepageWidgetHeaderIcons';
 import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
 import { useSortable } from '@dnd-kit/sortable';

@@ -1,31 +1,6 @@
 import * as React from 'react';
-import {
-  AnsibleTowerIcon,
-  AutomationIcon,
-  BellIcon,
-  BookmarkIcon,
-  ChartLineIcon,
-  CloudIcon,
-  CommentsIcon,
-  CreditCardIcon,
-  CubesIcon,
-  DatabaseIcon,
-  DesktopIcon,
-  DollarSignIcon,
-  ExclamationTriangleIcon,
-  ExternalLinkAltIcon,
-  HistoryIcon,
-  KeyIcon,
-  PlugIcon,
-  ProjectDiagramIcon,
-  SearchIcon,
-  ServerIcon,
-  ShieldAltIcon,
-  StarIcon,
-  SyncIcon,
-  UserIcon,
-  VirtualMachineIcon
-} from '@patternfly/react-icons';
+import { AnsibleTowerIcon, AutomationIcon, BookmarkIcon, ChartLineIcon, CloudIcon, CommentsIcon, CreditCardIcon, CubesIcon, DatabaseIcon, DesktopIcon, DollarSignIcon, HistoryIcon, KeyIcon, PlugIcon, ProjectDiagramIcon, ServerIcon, ShieldAltIcon, StarIcon, SyncIcon, UserIcon, VirtualMachineIcon } from '@patternfly/react-icons';
+import { BellIcon, ExclamationTriangleIcon, ExternalLinkAltIcon, SearchIcon } from '@app/icons/rhUiIcons';
 
 export type WidgetHeaderIconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 

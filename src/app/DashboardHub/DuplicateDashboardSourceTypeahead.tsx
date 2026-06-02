@@ -11,7 +11,7 @@ import {
   TextInputGroupUtilities,
   type MenuToggleElement
 } from '@patternfly/react-core';
-import { TimesIcon } from '@patternfly/react-icons';
+import { TimesIcon } from '@app/icons/rhUiIcons';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 
 const DUPLICATE_SOURCE_TYPEAHEAD_NO_RESULTS = '__duplicate_source_no_results__';

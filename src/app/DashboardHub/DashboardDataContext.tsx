@@ -129,8 +129,6 @@ export interface DashboardDataContextValue {
     id: string,
     options?: { name?: string; setAsHomepage?: boolean }
   ) => string;
-  /** Show the “sharing settings updated” success toast (after Save settings in the share modal). */
-  notifyShareSettingsSaved: (dashboardId: string, dashboardName: string) => void;
 }
 
 const DashboardDataContext = React.createContext<DashboardDataContextValue | null>(null);
@@ -197,97 +195,12 @@ const HomepageSetToast: React.FC<{
   );
 };
 
-const ShareSettingsToast: React.FC<{
-  toast: { dashboardId: string; name: string } | null;
-  onClose: () => void;
-}> = ({ toast, onClose }) => {
-  const navigate = useNavigate();
-  const dismissRef = React.useRef(onClose);
-  dismissRef.current = onClose;
-
-  React.useEffect(() => {
-    if (!toast) {
-      return;
-    }
-    const t = window.setTimeout(() => dismissRef.current(), 8_000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  if (!toast) {
-    return null;
-  }
-
-  const dashboardPath = `/dashboard-hub/${toast.dashboardId}`;
-
-  return (
-    <div className="hcc-share-settings-toast" style={{ ...TOAST_FIXED_STYLE, zIndex: 10_001 }}>
-      <Alert
-        variant="success"
-        isLiveRegion
-        isInline
-        actionClose={
-          <AlertActionCloseButton
-            onClick={onClose}
-            aria-label="Close sharing settings notification"
-          />
-        }
-        title={
-          <span>
-            <strong>&#x2018;{toast.name}&#x2019;</strong> sharing settings have been updated.
-          </span>
-        }
-      >
-        <p style={{ margin: 'var(--pf-t--global--spacer--xs) 0 var(--pf-t--global--spacer--sm)' }}>
-          Users and groups who have gained additional access have been alerted.
-        </p>
-        <div>
-          <Button
-            variant="link"
-            isInline
-            onClick={() => {
-              onClose();
-              navigate(dashboardPath);
-            }}
-          >
-            View dashboard
-          </Button>
-          <span aria-hidden style={{ marginInline: 'var(--pf-t--global--spacer--sm)' }}>
-            ·
-          </span>
-          <Button
-            variant="link"
-            isInline
-            onClick={() => {
-              onClose();
-              navigate(dashboardPath, { state: { openShare: true } });
-            }}
-          >
-            Modify permissions
-          </Button>
-        </div>
-      </Alert>
-    </div>
-  );
-};
-
 const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode }> = ({ children }) => {
   const [rows, setRows] = React.useState<HubRow[]>(initialRows);
   const [homepageSetToast, setHomepageSetToast] = React.useState<{ name: string } | null>(null);
-  const [shareSettingsToast, setShareSettingsToast] = React.useState<{
-    dashboardId: string;
-    name: string;
-  } | null>(null);
 
   const dismissHomepageSetToast = React.useCallback(() => {
     setHomepageSetToast(null);
-  }, []);
-
-  const dismissShareSettingsToast = React.useCallback(() => {
-    setShareSettingsToast(null);
-  }, []);
-
-  const notifyShareSettingsSaved = React.useCallback((dashboardId: string, dashboardName: string) => {
-    setShareSettingsToast({ dashboardId, name: dashboardName });
   }, []);
 
   React.useEffect(() => {
@@ -518,8 +431,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
       isDashboardNameTaken,
       setDashboardAsHomepage,
       removeDashboard,
-      duplicateDashboard,
-      notifyShareSettingsSaved
+      duplicateDashboard
     }),
     [
       rows,
@@ -530,8 +442,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
       isDashboardNameTaken,
       setDashboardAsHomepage,
       removeDashboard,
-      duplicateDashboard,
-      notifyShareSettingsSaved
+      duplicateDashboard
     ]
   );
 
@@ -539,7 +450,6 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
     <DashboardDataContext.Provider value={value}>
       {children}
       <HomepageSetToast toast={homepageSetToast} onClose={dismissHomepageSetToast} />
-      <ShareSettingsToast toast={shareSettingsToast} onClose={dismissShareSettingsToast} />
     </DashboardDataContext.Provider>
   );
 };

@@ -104,6 +104,67 @@ body,
   --pf-v6-c-button--PaddingInlineEnd: var(--pf-t--global--spacer--xs);
 }
 
+.bank-widget-card__added-indicator,
+.bank-widget-card__added-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.bank-widget-card__added-indicator {
+  color: var(--pf-t--global--icon--color--status--success--default);
+}
+
+.bank-widget-card__added-action.pf-v6-c-button.pf-m-plain {
+  --pf-v6-c-button--PaddingBlockStart: 0;
+  --pf-v6-c-button--PaddingBlockEnd: 0;
+  min-block-size: 2.25rem;
+}
+
+.bank-widget-card__added-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-widget-card__added-icon--check {
+  color: var(--pf-t--global--icon--color--status--success--default);
+}
+
+.bank-widget-card__added-icon--remove {
+  display: none;
+  color: var(--pf-t--global--icon--color--brand--default);
+}
+
+.bank-widget-card__added-action:hover .bank-widget-card__added-icon--check,
+.bank-widget-card__added-action:focus-visible .bank-widget-card__added-icon--check {
+  display: none;
+}
+
+.bank-widget-card__added-action:hover .bank-widget-card__added-icon--remove,
+.bank-widget-card__added-action:focus-visible .bank-widget-card__added-icon--remove {
+  display: inline-flex;
+}
+
+.bank-widget-card__added-action:hover .bank-widget-card__added-icon--remove,
+.bank-widget-card__added-action:focus-visible .bank-widget-card__added-icon--remove {
+  color: var(--pf-t--global--icon--color--brand--hover);
+}
+
+.bank-widget-card__added-icon svg,
+.bank-widget-card__added-icon .pf-v6-svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: inherit;
+  fill: currentColor;
+}
+
+.bank-widget-card__added-icon svg path,
+.bank-widget-card__added-icon .pf-v6-svg path {
+  fill: currentColor;
+}
+
 /* Blue lead icon before widget titles (Find widgets, help panel bank, dashboard grid).
  * Use brand icon token — same as editable-dashboard-toolbar-icon-label__icon — so icons match PF/RHDS blue,
  * not --pf-v6-global--primary-color--100 (often resolves to neutral text in this theme). */
@@ -185,7 +246,7 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
 .editable-dashboard-toolbar-field__row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--pf-t--global--spacer--sm);
   min-width: 0;
   width: 100%;
@@ -245,6 +306,54 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   align-items: center;
   flex-shrink: 0;
   gap: var(--pf-t--global--spacer--xs);
+}
+
+/* Match TextInput height and center check/cancel glyphs on the control row (below FormGroup labels). */
+.editable-dashboard-meta-inline-actions .pf-v6-c-button.pf-m-plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.25rem;
+  --pf-v6-c-button--PaddingBlockStart: 0;
+  --pf-v6-c-button--PaddingBlockEnd: 0;
+}
+
+.editable-dashboard-meta-inline-actions .pf-v6-c-button.pf-m-plain svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+}
+
+.editable-dashboard-meta-inline-action__apply-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  color: var(--pf-t--global--icon--color--brand--default);
+}
+
+.editable-dashboard-meta-inline-action--apply:not(:disabled):not(.pf-m-disabled):not(.pf-m-aria-disabled):hover
+  .editable-dashboard-meta-inline-action__apply-icon {
+  color: var(--pf-t--global--icon--color--brand--hover);
+}
+
+.editable-dashboard-meta-inline-action--apply:is(:disabled, .pf-m-disabled, .pf-m-aria-disabled)
+  .editable-dashboard-meta-inline-action__apply-icon {
+  color: var(--pf-t--global--icon--color--disabled);
+}
+
+.editable-dashboard-meta-inline-action__apply-icon svg,
+.editable-dashboard-meta-inline-action__apply-icon .pf-v6-svg {
+  width: 1rem;
+  height: 1rem;
+  color: inherit;
+  fill: currentColor;
+}
+
+.editable-dashboard-meta-inline-action__apply-icon svg path,
+.editable-dashboard-meta-inline-action__apply-icon .pf-v6-svg path {
+  fill: currentColor;
 }
 
 .editable-dashboard-name-input-wrap {
@@ -427,6 +536,11 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   width: 1em;
   height: 1em;
   vertical-align: middle;
+}
+
+.homepage-hero-greeting__icon .pf-v6-icon-rh-standard {
+  width: 1em;
+  height: 1em;
 }
 
 /*

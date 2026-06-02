@@ -60,7 +60,7 @@ function normalizeWidgetsFromUnknownArray(items: unknown[]): Widget[] | null {
   return out;
 }
 
-/** Shape produced by “Copy configuration string” (homepage, hub row, detail kebab). */
+/** Shape produced by “Copy JSON config” (homepage, hub row, detail kebab). */
 export type DashboardClipboardPayload = {
   dashboardId: string;
   name: string;
@@ -80,7 +80,7 @@ export function parseDashboardConfigClipboardText(text: string): { ok: true; wid
   try {
     data = JSON.parse(text);
   } catch {
-    return { ok: false, message: 'This text is not valid JSON. Paste the complete configuration string.' };
+    return { ok: false, message: 'This text is not valid JSON. Paste the complete JSON config.' };
   }
 
   if (Array.isArray(data)) {
@@ -94,7 +94,7 @@ export function parseDashboardConfigClipboardText(text: string): { ok: true; wid
   if (typeof data !== 'object' || data === null) {
     return {
       ok: false,
-      message: 'Configuration must be a JSON object with a widgets array (use Copy configuration string from a dashboard).'
+      message: 'Configuration must be a JSON object with a widgets array (use Copy JSON config from a dashboard).'
     };
   }
 
@@ -102,7 +102,7 @@ export function parseDashboardConfigClipboardText(text: string): { ok: true; wid
   if (!Array.isArray(o.widgets)) {
     return {
       ok: false,
-      message: 'Missing widgets array. Paste the exported configuration from Copy configuration string.'
+      message: 'Missing widgets array. Paste the exported configuration from Copy JSON config.'
     };
   }
 

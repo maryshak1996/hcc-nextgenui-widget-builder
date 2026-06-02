@@ -3,7 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
-import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
 import BugIcon from '@app/bgimages/bug-icon.svg';
@@ -87,45 +86,8 @@ import {
   EmptyState
 } from '@patternfly/react-core';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
-import {
-  BarsIcon, 
-  BellIcon, 
-  BookmarkIcon,
-  BookOpenIcon, 
-  BrainIcon, 
-  ChartLineIcon,
-  CloudIcon,
-  CodeIcon,
-  CogIcon,
-  CommentsIcon,
-  CreditCardIcon,
-  CubeIcon,
-  DatabaseIcon,
-  EllipsisVIcon,
-  ExclamationTriangleIcon,
-  ExternalLinkAltIcon,
-  EyeIcon,
-  HelpIcon,
-  InProgressIcon,
-  InfoCircleIcon,
-  LightbulbIcon,
-  ListIcon,
-  OutlinedWindowRestoreIcon,
-  PlayIcon,
-  ProjectDiagramIcon,
-  QuestionCircleIcon,
-  RocketIcon,
-  SearchIcon,
-  ServerIcon,
-  ShieldAltIcon,
-  SignOutAltIcon,
-  StarIcon,
-  TachometerAltIcon,
-  TimesIcon,
-  UserIcon,
-  UsersIcon,
-  WrenchIcon
-} from '@patternfly/react-icons';
+import { BarsIcon, BookmarkIcon, BookOpenIcon, BrainIcon, ChartLineIcon, CloudIcon, CodeIcon, CommentsIcon, CreditCardIcon, CubeIcon, DatabaseIcon, EyeIcon, FillDripIcon, HelpIcon, InProgressIcon, LightbulbIcon, ListIcon, OutlinedWindowRestoreIcon, PlayIcon, ProjectDiagramIcon, RocketIcon, ServerIcon, ShieldAltIcon, SignOutAltIcon, StarIcon, TachometerAltIcon, UserIcon, WrenchIcon } from '@patternfly/react-icons';
+import { BellIcon, CogIcon, EllipsisVIcon, ExclamationTriangleIcon, ExternalLinkAltIcon, InfoCircleIcon, QuestionCircleIcon, RhUiAiExperienceIcon, RhUiNotificationIcon, SearchIcon, TimesIcon, UsersIcon } from '@app/icons/rhUiIcons';
 
 interface IAppLayout {
   children: React.ReactNode;
@@ -887,6 +849,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       '/alert-manager',
       '/data-integration',
       '/event-log',
+      '/settings/appearance',
       '/learning-resources'
     ];
     if (settingsPaths.includes(currentPath)) {
@@ -930,6 +893,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { id: '2', title: 'Alert Manager', description: 'Configure and manage system alerts and notifications', category: 'Settings', route: '/alert-manager' },
     { id: '3', title: 'Data Integration', description: 'Manage data integration workflows, connectors, and synchronization settings', category: 'Settings', route: '/data-integration' },
     { id: '4', title: 'Event Log', description: 'View and configure system event logging and monitoring', category: 'Settings', route: '/event-log' },
+    { id: '18', title: 'Appearance', description: 'Customize console theme, contrast mode, and icon set', category: 'Settings', route: '/settings/appearance' },
     { id: '5', title: 'Learning Resources', description: 'Access training materials, tutorials, and documentation resources', category: 'Settings', route: '/learning-resources' },
     
     // IAM Bundle Pages
@@ -3602,6 +3566,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                         Service Accounts
                       </MenuItem>
                     </MenuGroup>
+                    <Divider component="li" />
+                    <MenuItem
+                      icon={<FillDripIcon />}
+                      onClick={() => {
+                        navigate('/settings/appearance');
+                        setIsUtilitiesDropdownOpen(false);
+                      }}
+                    >
+                      Customize appearance
+                    </MenuItem>
                   </MenuList>
                 </Menu>
               </Dropdown>
@@ -3619,16 +3593,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 aria-label="Help"
                 aria-expanded={isDrawerExpanded}
                 className={isDrawerExpanded ? 'pf-m-clicked' : ''}
-                icon={
-                  <img
-                    src={SparkleIcon}
-                    alt=""
-                    aria-hidden
-                    width={20}
-                    height={20}
-                    style={{ display: 'block' }}
-                  />
-                }
+                icon={<RhUiAiExperienceIcon aria-hidden />}
                 iconPosition="start"
               >
                 Help
@@ -3648,7 +3613,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 aria-expanded={isNotificationDrawerOpen}
                 className={isNotificationDrawerOpen ? 'pf-m-clicked' : ''}
               >
-                <BellIcon />
+                <RhUiNotificationIcon aria-hidden />
               </Button>
             </Tooltip>
 
@@ -3698,10 +3663,10 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   <Divider />
                 </div>
                 <DropdownItem
-                  component="a"
-                  href="https://console.redhat.com/settings/profile"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => {
+                    navigate('/settings/appearance');
+                    setIsUserDropdownOpen(false);
+                  }}
                 >
                   My profile
                 </DropdownItem>
@@ -3762,6 +3727,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     '/alert-manager',
     '/data-integration',
     '/event-log',
+    '/settings/appearance',
     '/learning-resources'
   ];
   const secondaryNavPages = ['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'];
@@ -3783,7 +3749,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   // Primary navigation structure (current navigation)
   const primaryNavRoutes = routes.filter((route): route is IAppRoute => {
     // Only individual routes, no expandable groups
-    return !route.routes && !!route.label && ['Overview', 'Alert Manager', 'Data Integration', 'Event Log', 'Learning Resources'].includes(route.label);
+    return !route.routes && !!route.label && ['Overview', 'Alert Manager', 'Data Integration', 'Event Log', 'Appearance', 'Learning Resources'].includes(route.label);
   });
 
   // Secondary navigation structure (IAM bundle)

@@ -20,31 +20,19 @@ import {
   Title,
   Tooltip
 } from '@patternfly/react-core';
-import {
-  CloudMoonIcon,
-  CloudSunIcon,
-  CodeIcon,
-  EllipsisVIcon,
-  HomeIcon,
-  OutlinedCloneIcon,
-  OutlinedMoonIcon,
-  OutlinedSunIcon,
-  PencilAltIcon,
-  PlusCircleIcon,
-  ShareAltIcon
-} from '@patternfly/react-icons';
+import { CodeIcon, HomeIcon, OutlinedCloneIcon, PencilAltIcon } from '@patternfly/react-icons';
+import { EllipsisVIcon, PlusCircleIcon, RhStandardSunIcon, RhUiAsleepIcon, RhUiDarkModeIcon, RhUiLightModeIcon } from '@app/icons/rhUiIcons';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
-import { ShareDashboardModal } from '@app/DashboardHub/ShareDashboardModal';
 import {
   mergeCanvasWidgetsWithCatalog,
   onDashboardCanvasUpdated,
   resolveDashboardCanvasWidgets,
   serializeDashboardConfigPayload
 } from '@app/DashboardHub/dashboardCanvasStorage';
-import { useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, IMPORT_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
 import type { Widget } from '@app/Homepage/widgetTypes';
 import {
   computeDashboardWidgetPlacements,
@@ -101,13 +89,13 @@ function getGreetingSegmentForLocalTime(date: Date): GreetingSegment {
 function HomepageGreetingIcon({ segment }: { segment: GreetingSegment }) {
   switch (segment) {
     case 'morning':
-      return <OutlinedSunIcon aria-hidden />;
+      return <RhStandardSunIcon aria-hidden />;
     case 'afternoon':
-      return <CloudSunIcon aria-hidden />;
+      return <RhUiLightModeIcon aria-hidden />;
     case 'evening':
-      return <CloudMoonIcon aria-hidden />;
+      return <RhUiDarkModeIcon aria-hidden />;
     case 'night':
-      return <OutlinedMoonIcon aria-hidden />;
+      return <RhUiAsleepIcon aria-hidden />;
   }
 }
 
@@ -119,7 +107,6 @@ const Homepage: React.FunctionComponent = () => {
   const [homepageGridWidth, setHomepageGridWidth] = useState(1200);
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
 
@@ -198,10 +185,6 @@ const Homepage: React.FunctionComponent = () => {
     setIsHomepageKebabOpen(false);
   }, []);
 
-  const closeShareModal = useCallback(() => {
-    setIsShareModalOpen(false);
-  }, []);
-
   const closeDuplicateModal = useCallback(() => {
     setIsDuplicateModalOpen(false);
   }, []);
@@ -216,7 +199,6 @@ const Homepage: React.FunctionComponent = () => {
 
   useEffect(() => {
     if (!homepageDashboard) {
-      setIsShareModalOpen(false);
       setIsDuplicateModalOpen(false);
     }
   }, [homepageDashboard]);
@@ -404,7 +386,7 @@ const Homepage: React.FunctionComponent = () => {
                         });
                       }}
                     >
-                      Import from config string
+                      {IMPORT_JSON_CONFIG_MENU_LABEL}
                     </DropdownItem>
                     <DropdownItem
                       value="hp-menu-dup"
@@ -483,7 +465,7 @@ const Homepage: React.FunctionComponent = () => {
                         popperProps={{ position: 'end' }}
                         toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
                           <Tooltip
-                            content="Copied!"
+                            content={COPY_CONFIG_STRING_TOOLTIP_CONTENT}
                             trigger="manual"
                             isVisible={copiedTooltipVisible}
                             entryDelay={0}
@@ -511,7 +493,7 @@ const Homepage: React.FunctionComponent = () => {
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                             >
                               <CodeIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
-                              Copy configuration string
+                              {COPY_JSON_CONFIG_MENU_LABEL}
                             </span>
                           </DropdownItem>
                           <DropdownItem
@@ -526,20 +508,6 @@ const Homepage: React.FunctionComponent = () => {
                             >
                               <OutlinedCloneIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
                               Duplicate dashboard
-                            </span>
-                          </DropdownItem>
-                          <DropdownItem
-                            key="share"
-                            onClick={() => {
-                              closeHomepageKebab();
-                              setIsShareModalOpen(true);
-                            }}
-                          >
-                            <span
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-                            >
-                              <ShareAltIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
-                              Share dashboard
                             </span>
                           </DropdownItem>
                           <Divider component="li" role="separator" />
@@ -681,21 +649,6 @@ const Homepage: React.FunctionComponent = () => {
           </Content>
         )}
       </PageSection>
-      <ShareDashboardModal
-        isOpen={isShareModalOpen && Boolean(homepageDashboard)}
-        onClose={closeShareModal}
-        dashboardId={homepageDashboard?.id ?? ''}
-        dashboardName={homepageDashboard?.name ?? ''}
-        configurationClipboardText={
-          homepageDashboard
-            ? serializeDashboardConfigPayload({
-                dashboardId: homepageDashboard.id,
-                name: homepageDashboard.name,
-                widgets: resolveDashboardCanvasWidgets(homepageDashboard) ?? []
-              })
-            : ''
-        }
-      />
       <DuplicateDashboardModal
         isOpen={isDuplicateModalOpen && Boolean(homepageDashboard)}
         onClose={closeDuplicateModal}

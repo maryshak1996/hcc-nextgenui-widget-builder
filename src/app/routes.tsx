@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { Homepage } from '@app/Homepage/Homepage';
 import { AllServices } from '@app/AllServices/AllServices';
 import { Dashboard } from '@app/Dashboard/Dashboard';
@@ -22,8 +22,8 @@ import { Roles } from '@app/Roles/Roles';
 import { AlertOverriderRole } from '@app/Roles/AlertOverriderRole';
 import { Workspaces } from '@app/Workspaces/Workspaces';
 import { RedHatAccessRequests } from '@app/RedHatAccessRequests/RedHatAccessRequests';
+import { AppearanceSettings } from '@app/Settings/Appearance/AppearanceSettings';
 import { GeneralSettings } from '@app/Settings/General/GeneralSettings';
-import { ProfileSettings } from '@app/Settings/Profile/ProfileSettings';
 import { NotFound } from '@app/NotFound/NotFound';
 
 export interface IAppRoute {
@@ -113,6 +113,13 @@ const routes: AppRouteConfig[] = [
     title: 'Event Log | Red Hat Hybrid Cloud Console',
   },
   {
+    element: <AppearanceSettings />,
+    exact: true,
+    label: 'Appearance',
+    path: '/settings/appearance',
+    title: 'Appearance | Red Hat Hybrid Cloud Console',
+  },
+  {
     element: <LearningResources />,
     exact: true,
     label: 'Learning Resources',
@@ -151,10 +158,10 @@ const routes: AppRouteConfig[] = [
     title: 'General Settings | Red Hat Hybrid Cloud Console',
   },
   {
-    element: <ProfileSettings />,
+    element: <Navigate to="/settings/appearance" replace />,
     exact: true,
     path: '/settings/profile',
-    title: 'Profile Settings | Red Hat Hybrid Cloud Console',
+    title: 'Appearance | Red Hat Hybrid Cloud Console',
   },
   {
     element: <Support />,

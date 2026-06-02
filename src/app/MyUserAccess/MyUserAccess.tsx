@@ -14,7 +14,8 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon, UserIcon } from '@patternfly/react-icons';
+import { UserIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 import { NavLink } from 'react-router-dom';
 
 const MyUserAccess: React.FunctionComponent = () => {

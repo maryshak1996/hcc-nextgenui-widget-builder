@@ -616,6 +616,63 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
       --pf-v6-c-button--PaddingInlineEnd: var(--pf-t--global--spacer--xs);
     }
 
+    .bank-widget-card__added-indicator,
+    .bank-widget-card__added-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+
+    .bank-widget-card__added-indicator {
+      color: var(--pf-t--global--icon--color--status--success--default);
+    }
+
+    .bank-widget-card__added-action.pf-v6-c-button.pf-m-plain {
+      --pf-v6-c-button--PaddingBlockStart: 0;
+      --pf-v6-c-button--PaddingBlockEnd: 0;
+      min-block-size: 2.25rem;
+    }
+
+    .bank-widget-card__added-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bank-widget-card__added-icon--check {
+      color: var(--pf-t--global--icon--color--status--success--default);
+    }
+
+    .bank-widget-card__added-icon--remove {
+      display: none;
+      color: var(--pf-t--global--icon--color--brand--default);
+    }
+
+    .bank-widget-card__added-action:hover .bank-widget-card__added-icon--check,
+    .bank-widget-card__added-action:focus-visible .bank-widget-card__added-icon--check {
+      display: none;
+    }
+
+    .bank-widget-card__added-action:hover .bank-widget-card__added-icon--remove,
+    .bank-widget-card__added-action:focus-visible .bank-widget-card__added-icon--remove {
+      display: inline-flex;
+      color: var(--pf-t--global--icon--color--brand--hover);
+    }
+
+    .bank-widget-card__added-icon svg,
+    .bank-widget-card__added-icon .pf-v6-svg {
+      width: 1.125rem;
+      height: 1.125rem;
+      color: inherit;
+      fill: currentColor;
+    }
+
+    .bank-widget-card__added-icon svg path,
+    .bank-widget-card__added-icon .pf-v6-svg path {
+      fill: currentColor;
+    }
+
     .drag-overlay {
       opacity: 0.9;
       box-shadow: var(--pf-v6-global--BoxShadow--xl) !important;

@@ -14,7 +14,8 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon, ServerIcon } from '@patternfly/react-icons';
+import { ServerIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 import { NavLink } from 'react-router-dom';
 
 const ServiceAccounts: React.FunctionComponent = () => {

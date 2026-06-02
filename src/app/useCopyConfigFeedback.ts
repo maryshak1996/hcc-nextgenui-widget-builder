@@ -2,7 +2,20 @@ import * as React from 'react';
 
 const COPY_FEEDBACK_DURATION_MS = 2000;
 
-/** Brief “Copied!” tooltip on a single kebab (homepage / dashboard detail). */
+/** Menu / action label for copying a dashboard’s serialized JSON configuration. */
+export const COPY_JSON_CONFIG_MENU_LABEL = 'Copy JSON config';
+
+/** Menu / action label for importing a dashboard from pasted JSON configuration. */
+export const IMPORT_JSON_CONFIG_MENU_LABEL = 'Import JSON config';
+
+/** Form label for the JSON config paste field in the import modal. */
+export const IMPORT_JSON_CONFIG_PASTE_LABEL = 'Paste JSON config';
+
+/** Tooltip shown on kebab/menu toggles after copying a dashboard configuration string. */
+export const COPY_CONFIG_STRING_TOOLTIP_CONTENT =
+  'Config copied. You may share with others.';
+
+/** Brief copy-success tooltip on a single kebab (homepage / dashboard detail). */
 export function useCopyConfigFeedback(durationMs = COPY_FEEDBACK_DURATION_MS): {
   copiedTooltipVisible: boolean;
   triggerCopiedFeedback: () => void;
@@ -35,7 +48,7 @@ export function useCopyConfigFeedback(durationMs = COPY_FEEDBACK_DURATION_MS): {
   return { copiedTooltipVisible, triggerCopiedFeedback };
 }
 
-/** Brief “Copied!” tooltip on hub table row kebabs (which row was copied). */
+/** Brief copy-success tooltip on hub table row kebabs (which row was copied). */
 export function useCopyConfigRowFeedback(durationMs = COPY_FEEDBACK_DURATION_MS): {
   copiedFeedbackRowId: string | null;
   triggerCopiedFeedbackForRow: (rowId: string) => void;

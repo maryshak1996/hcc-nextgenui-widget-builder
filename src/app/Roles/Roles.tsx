@@ -22,7 +22,7 @@ import {
   ToolbarItem
 } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { BellIcon, EllipsisVIcon, ExternalLinkAltIcon, UserCheckIcon } from '@patternfly/react-icons';
+import { BellIcon, EllipsisVIcon, ExternalLinkAltIcon, UserCheckIcon } from '@app/icons/rhUiIcons';
 import { useNavigate } from 'react-router-dom';
 
 interface RoleData {

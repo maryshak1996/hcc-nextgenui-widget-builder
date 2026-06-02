@@ -14,7 +14,7 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon, UsersIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon, UsersIcon } from '@app/icons/rhUiIcons';
 
 const Users: React.FunctionComponent = () => {
   const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);

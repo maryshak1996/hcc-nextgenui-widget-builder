@@ -1,0 +1,70 @@
+# Deploy the main-branch UX prototype to GitHub Pages under /prototype/, preserving the
+# pcm-integration demo at the repo root (built from pcm-integration on each main deploy).
+name: Deploy main prototype to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build PCM demo for site root (pcm-integration branch)
+        env:
+          REPO_PAGES_ROOT: /${{ github.event.repository.name }}/
+        run: |
+          git fetch origin pcm-integration
+          git worktree add ../pcm-build pcm-integration
+          cd ../pcm-build
+          npm ci
+          PUBLIC_PATH="${REPO_PAGES_ROOT}" npm run build
+          mkdir -p "${GITHUB_WORKSPACE}/pages-site"
+          cp -r dist/* "${GITHUB_WORKSPACE}/pages-site/"
+
+      - name: Build main prototype for /prototype/ subpath
+        env:
+          REPO_PROTOTYPE_PATH: /${{ github.event.repository.name }}/prototype/
+        run: |
+          npm ci
+          PUBLIC_PATH="${REPO_PROTOTYPE_PATH}" npm run build
+          mkdir -p pages-site/prototype
+          cp -r dist/* pages-site/prototype/
+          cp public/404.html pages-site/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -21,7 +21,8 @@ import {
   ToolbarItem
 } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { AngleDoubleRightIcon, BellIcon, FilterIcon, OutlinedWindowRestoreIcon } from '@patternfly/react-icons';
+import { AngleDoubleRightIcon, OutlinedWindowRestoreIcon } from '@patternfly/react-icons';
+import { BellIcon, FilterIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 
 interface AlertRow {

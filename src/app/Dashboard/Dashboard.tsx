@@ -24,7 +24,8 @@ import {
   Title
 } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { ArrowRightIcon, BellIcon, CogIcon, EnvelopeIcon, ExternalLinkAltIcon, IntegrationIcon, OutlinedWindowRestoreIcon, PlusCircleIcon, UserIcon, UsersIcon } from '@patternfly/react-icons';
+import { ArrowRightIcon, EnvelopeIcon, IntegrationIcon, OutlinedWindowRestoreIcon, UserIcon } from '@patternfly/react-icons';
+import { BellIcon, CogIcon, ExternalLinkAltIcon, PlusCircleIcon, UsersIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 
 const Dashboard: React.FunctionComponent = () => {

@@ -11,7 +11,7 @@ import {
   TextInputGroupMain,
   TextInputGroupUtilities
 } from '@patternfly/react-core';
-import { SearchIcon, TimesIcon } from '@patternfly/react-icons';
+import { SearchIcon, TimesIcon } from '@app/icons/rhUiIcons';
 import type { ShareDirectoryEntry } from '@app/DashboardHub/shareDashboardMockDirectory';
 import { shareDirectoryEntryKey } from '@app/DashboardHub/shareDashboardMockDirectory';
 

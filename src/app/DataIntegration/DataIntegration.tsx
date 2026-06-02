@@ -18,7 +18,8 @@ import {
   Tabs,
   Title
 } from '@patternfly/react-core';
-import { DatabaseIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { DatabaseIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 
 const DataIntegration: React.FunctionComponent = () => {
   const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);

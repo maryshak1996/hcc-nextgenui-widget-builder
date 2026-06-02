@@ -19,7 +19,8 @@ import {
   SearchInput,
   Title
 } from '@patternfly/react-core';
-import { BookOpenIcon, BookmarkIcon, CubesIcon, ExternalLinkAltIcon, StarIcon } from '@patternfly/react-icons';
+import { BookOpenIcon, BookmarkIcon, CubesIcon, StarIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 
 const LearningResources: React.FunctionComponent = () => {
   const [expandedSections, setExpandedSections] = React.useState<{[key: string]: boolean}>({
