@@ -10,7 +10,7 @@ import {
 } from '@patternfly/react-core';
 import { css } from '@patternfly/react-styles';
 import modalBoxStyles from '@patternfly/react-styles/css/components/ModalBox/modal-box';
-import { OutlinedTrashAltIcon } from '@patternfly/react-icons';
+import { OutlinedTrashAltIcon } from '@app/icons/rhUiIcons';
 
 const DELETE_DASHBOARD_MODAL_TITLE_ID = 'delete-dashboard-modal-title';
 

@@ -20,8 +20,18 @@ import {
   Title,
   Tooltip
 } from '@patternfly/react-core';
-import { CodeIcon, HomeIcon, OutlinedCloneIcon, PencilAltIcon } from '@patternfly/react-icons';
-import { EllipsisVIcon, PlusCircleIcon, RhStandardSunIcon, RhUiAsleepIcon, RhUiDarkModeIcon, RhUiLightModeIcon } from '@app/icons/rhUiIcons';
+import {
+  CodeIcon,
+  EllipsisVIcon,
+  HomeIcon,
+  OutlinedCloneIcon,
+  PencilAltIcon,
+  PlusCircleIcon,
+  RhStandardSunIcon,
+  RhUiAsleepIcon,
+  RhUiDarkModeIcon,
+  RhUiLightModeIcon
+} from '@app/icons/rhUiIcons';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';

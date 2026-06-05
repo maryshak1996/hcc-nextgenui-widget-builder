@@ -1,6 +1,22 @@
 import * as React from 'react';
-import { ArrowCircleDownIcon, ArrowCircleUpIcon, ClipboardIcon, ClockIcon, CodeIcon, CubesIcon, FileAltIcon, FlagIcon, FolderIcon, ListIcon, TagIcon, WrenchIcon } from '@patternfly/react-icons';
-import { CheckCircleIcon, ExclamationTriangleIcon, InfoCircleIcon, QuestionCircleIcon } from '@app/icons/rhUiIcons';
+import {
+  ArrowCircleDownIcon,
+  ArrowCircleUpIcon,
+  CheckCircleIcon,
+  ClipboardIcon,
+  ClockIcon,
+  CodeIcon,
+  CubesIcon,
+  ExclamationTriangleIcon,
+  FileAltIcon,
+  FlagIcon,
+  FolderIcon,
+  InfoCircleIcon,
+  ListIcon,
+  QuestionCircleIcon,
+  TagIcon,
+  WrenchIcon
+} from '@app/icons/rhUiIcons';
 
 export const WIDGET_BUILDER_HEADER_ICON_OPTIONS = [
   { id: 'file', label: 'Document', Icon: FileAltIcon },

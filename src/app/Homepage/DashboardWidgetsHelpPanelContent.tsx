@@ -22,8 +22,7 @@ import {
   TextInputGroupUtilities,
   Title
 } from '@patternfly/react-core';
-import { CubesIcon } from '@patternfly/react-icons';
-import { TimesIcon } from '@app/icons/rhUiIcons';
+import { CubesIcon, TimesIcon } from '@app/icons/rhUiIcons';
 import SparkleIcon from '@app/bgimages/sparkle-icon.svg';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 import { BankWidgetCard } from '@app/Homepage/BankWidgetCard';

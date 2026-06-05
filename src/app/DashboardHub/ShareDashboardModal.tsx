@@ -16,7 +16,7 @@ import {
   SelectOption,
   Tooltip
 } from '@patternfly/react-core';
-import { UserIcon } from '@patternfly/react-icons';
+import { UserIcon } from '@app/icons/rhUiIcons';
 import { ShareAltIcon, UsersIcon } from '@app/icons/rhUiIcons';
 import { ShareRecipientTypeahead } from '@app/DashboardHub/ShareRecipientTypeahead';
 import type { ShareDirectoryEntry, ShareDirectoryEntryKind } from '@app/DashboardHub/shareDashboardMockDirectory';

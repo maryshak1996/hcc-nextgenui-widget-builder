@@ -9,191 +9,191 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
   {
     id: 'events',
     title: 'Events',
-    type: 'placeholder',
+    type: 'events',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'rhel',
     title: 'Red Hat Enterprise Linux',
     type: 'product',
     colSpan: 1,
-    rowSpan: 3
+    rowSpan: 6
   },
   {
     id: 'openshift',
     title: 'Red Hat OpenShift',
     type: 'product',
     colSpan: 1,
-    rowSpan: 3
+    rowSpan: 6
   },
   {
     id: 'ansible',
     title: 'Red Hat Ansible Automation Platform',
     type: 'product',
     colSpan: 1,
-    rowSpan: 3
+    rowSpan: 6
   },
   {
     id: 'red-hat-ai',
     title: 'Red Hat AI',
     type: 'product',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'image-builder',
     title: 'Image Builder',
     type: 'product',
     colSpan: 1,
-    rowSpan: 3
+    rowSpan: 6
   },
   {
     id: 'explore-capabilities',
     title: 'Explore capabilities',
     type: 'explore-capabilities',
     colSpan: 3,
-    rowSpan: 5
+    rowSpan: 10
   },
   {
     id: 'quay-io',
     title: 'Quay.io',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'integrations',
     title: 'Integrations',
-    type: 'placeholder',
+    type: 'integrations',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'subscriptions',
     title: 'Subscriptions',
     type: 'subscriptions',
     colSpan: 4,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'my-favorite-services',
     title: 'My favorite services',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'recently-visited',
     title: 'Recently visited',
     type: 'recently-visited',
     colSpan: 1,
-    rowSpan: 4
+    rowSpan: 8
   },
   {
     id: 'support-cases',
     title: 'My support cases',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'bookmarked-learning-resources',
     title: 'Bookmarked learning resources',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'recent-clusters',
     title: 'Recent clusters',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'openshift-subscription-usage',
     title: 'OpenShift subscription usage',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'rhel-subscription-usage',
     title: 'RHEL subscription usage',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'ansible-subscription-usage',
     title: 'Ansible subscription usage',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'openshift-cost-management',
     title: 'OpenShift cost management',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'cluster-status',
     title: 'Cluster status',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'my-account',
     title: 'My account',
-    type: 'placeholder',
+    type: 'my-account',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'advisor-recommendations',
     title: 'Advisor recommendations',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'vulnerabilities',
     title: 'Vulnerabilities',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'red-hat-satellite',
     title: 'Red Hat Satellite',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'activation-keys',
     title: 'Activation Keys',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'manifests',
     title: 'Manifests',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   },
   {
     id: 'simple-content-access-sca',
     title: 'Simple content access (SCA)',
     type: 'placeholder',
     colSpan: 1,
-    rowSpan: 2
+    rowSpan: 4
   }
 ];
 

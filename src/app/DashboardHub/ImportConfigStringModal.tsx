@@ -15,7 +15,7 @@ import {
   TextArea,
   TextInput
 } from '@patternfly/react-core';
-import { CodeIcon } from '@patternfly/react-icons';
+import { CodeIcon } from '@app/icons/rhUiIcons';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import {

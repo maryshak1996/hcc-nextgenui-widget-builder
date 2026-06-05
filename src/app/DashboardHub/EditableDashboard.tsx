@@ -34,34 +34,49 @@ import {
   Title,
   Tooltip
 } from '@patternfly/react-core';
-import { CodeIcon, HomeIcon, OutlinedCloneIcon, OutlinedTrashAltIcon, PencilAltIcon, TimesCircleIcon } from '@patternfly/react-icons';
-import { CheckIcon, CheckCircleIcon, EllipsisVIcon, PlusCircleIcon, TimesIcon } from '@app/icons/rhUiIcons';
+import {
+  CheckIcon,
+  CheckCircleIcon,
+  CodeIcon,
+  EllipsisVIcon,
+  HomeIcon,
+  OutlinedCloneIcon,
+  OutlinedTrashAltIcon,
+  PencilAltIcon,
+  PlusCircleIcon,
+  TimesCircleIcon,
+  TimesIcon
+} from '@app/icons/rhUiIcons';
 import { AddWidgetsDrawer } from '@app/Homepage/AddWidgetsDrawer';
 import { setDashboardBankBridgeState } from '@app/Homepage/dashboardBankBridge';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
 import {
   computeDashboardWidgetPlacements,
-  GAP,
   getDashboardGridColumnCount,
   getEffectiveColumnSpan,
+  getPixelHeightForRowSpan,
   getPixelWidthForColSpan,
   ReadOnlyHomepageWidgetFrame,
   renderHomepageWidgetContent,
-  ROW_HEIGHT,
   SortableWidgetCard,
-  WIDGET_GRID_STYLES
+  WIDGET_GRID_STYLES,
+  type WidgetResizePreview
 } from '@app/Homepage/homepageWidgetGrid';
 import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
 import {
   DndContext,
-  closestCenter,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  defaultDropAnimationSideEffects,
+  pointerWithin,
+  rectIntersection,
   useSensor,
-  useSensors
+  useSensors,
+  type CollisionDetection,
+  type DropAnimation
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
@@ -114,9 +129,33 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
   const gridRef = React.useRef<HTMLDivElement>(null);
   const [gridWidth, setGridWidth] = React.useState(1200);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [resizePreview, setResizePreview] = React.useState<WidgetResizePreview | null>(null);
+
+  const gridCollisionDetection = React.useCallback<CollisionDetection>((args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    return rectIntersection(args);
+  }, []);
+
+  const dropAnimation = React.useMemo<DropAnimation>(
+    () => ({
+      duration: 220,
+      easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+      sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+          active: {
+            opacity: '0.4'
+          }
+        }
+      })
+    }),
+    []
+  );
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -161,8 +200,28 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
 
   const dashboardPlacements = React.useMemo(() => {
     const n = getDashboardGridColumnCount(gridWidth);
-    return computeDashboardWidgetPlacements(canvasWidgets, n);
-  }, [canvasWidgets, gridWidth]);
+    return computeDashboardWidgetPlacements(canvasWidgets, n, resizePreview);
+  }, [canvasWidgets, gridWidth, resizePreview]);
+
+  const handleResizePreviewStart = React.useCallback((preview: WidgetResizePreview) => {
+    setResizePreview(preview);
+  }, []);
+
+  const handleResizePreviewChange = React.useCallback((colSpan: ColumnSpan, rowSpan: RowSpan) => {
+    setResizePreview((current) =>
+      current
+        ? {
+            ...current,
+            colSpan,
+            rowSpan
+          }
+        : null
+    );
+  }, []);
+
+  const handleResizePreviewEnd = React.useCallback(() => {
+    setResizePreview(null);
+  }, []);
 
   const [isEditingSectionTitle, setIsEditingSectionTitle] = React.useState(false);
   const [draftSectionTitle, setDraftSectionTitle] = React.useState(() => canvasTitle);
@@ -363,20 +422,26 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={gridCollisionDetection}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
               <style>{WIDGET_GRID_STYLES}</style>
               <div style={{ width: '100%', minWidth: 0 }}>
                 <SortableContext items={canvasWidgets.map((w) => w.id)} strategy={rectSortingStrategy}>
-                  <div ref={gridRef} className="widgets-grid">
+                  <div
+                    ref={gridRef}
+                    className={`widgets-grid${resizePreview ? ' is-resize-active' : ''}`}
+                  >
                     {canvasWidgets.map((widget) => (
                       <SortableWidgetCard
                         key={widget.id}
                         widget={widget}
                         placement={dashboardPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
                         onSizeChange={onSizeChange}
+                        onResizePreviewStart={handleResizePreviewStart}
+                        onResizePreviewChange={handleResizePreviewChange}
+                        onResizePreviewEnd={handleResizePreviewEnd}
                         onRemove={onRemoveWidget}
                         gridWidth={gridWidth}
                       >
@@ -385,16 +450,16 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
                     ))}
                   </div>
                 </SortableContext>
-                <DragOverlay>
+                <DragOverlay dropAnimation={dropAnimation}>
                   {activeWidget ? (
                     <div
-                      className="drag-overlay"
+                      className="widget-grid-drag-overlay"
                       style={{
                         width: getPixelWidthForColSpan(
                           gridWidth,
                           getEffectiveColumnSpan(gridWidth, activeWidget.colSpan)
                         ),
-                        height: ROW_HEIGHT * activeWidget.rowSpan + GAP * (activeWidget.rowSpan - 1),
+                        height: getPixelHeightForRowSpan(activeWidget.rowSpan),
                         maxWidth: '100%',
                         boxSizing: 'border-box'
                       }}

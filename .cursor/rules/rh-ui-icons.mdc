@@ -1,0 +1,21 @@
+---
+description: Use Red Hat UI outline icons from the project icon barrel in widget and dashboard UI code.
+globs: "src/app/Homepage/**/*.{ts,tsx},src/app/DashboardHub/**/*.{ts,tsx},src/app/icons/rhUiIcons.ts"
+alwaysApply: false
+---
+# Red Hat UI Icons
+
+## Rule
+- **Never import icons from `@patternfly/react-icons` in widget or dashboard UI code.**
+- **Always import from `@app/icons/rhUiIcons`** — use the exported RH UI icons or their PatternFly-name aliases (e.g. `CheckCircleIcon`, `GripVerticalIcon`).
+- **`src/app/icons/rhUiIcons.ts` is the only file** that may import from `@patternfly/react-icons` for RH UI outline icons.
+
+## When adding a new icon
+1. Check whether an RH UI equivalent exists in `@patternfly/react-icons` (`RhUi*Icon`).
+2. Export it from `rhUiIcons.ts` — prefer a descriptive alias if replacing a common PatternFly name.
+3. Use the alias in components so call sites stay readable.
+
+## Widget surfaces covered
+- Dashboard widget grid and cards (`homepageWidgetGrid.tsx`, product widget modules)
+- Widget bank, add-widgets drawer, help panel
+- Dashboard Hub editor and related modals

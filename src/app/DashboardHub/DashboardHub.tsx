@@ -36,8 +36,18 @@ import {
   Thead,
   Tr
 } from '@patternfly/react-table';
-import { CodeIcon, HomeIcon, OutlinedCloneIcon, OutlinedTrashAltIcon, OutlinedWindowRestoreIcon, PencilAltIcon, ThIcon } from '@patternfly/react-icons';
-import { EllipsisVIcon, ExternalLinkAltIcon, PlusCircleIcon } from '@app/icons/rhUiIcons';
+import {
+  CodeIcon,
+  EllipsisVIcon,
+  ExternalLinkAltIcon,
+  HomeIcon,
+  OutlinedCloneIcon,
+  OutlinedTrashAltIcon,
+  OutlinedWindowRestoreIcon,
+  PencilAltIcon,
+  PlusCircleIcon,
+  ThIcon
+} from '@app/icons/rhUiIcons';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';

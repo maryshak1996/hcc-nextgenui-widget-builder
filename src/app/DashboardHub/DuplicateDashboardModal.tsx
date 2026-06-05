@@ -13,7 +13,7 @@ import {
   ModalVariant,
   TextInput
 } from '@patternfly/react-core';
-import { OutlinedCloneIcon } from '@patternfly/react-icons';
+import { OutlinedCloneIcon } from '@app/icons/rhUiIcons';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';

@@ -33,8 +33,7 @@ import {
 } from '@patternfly/react-core';
 import { CodeEditor, CodeEditorControl, Language } from '@patternfly/react-code-editor';
 import type { editor } from 'monaco-editor';
-import { CodeIcon, CopyIcon, CubesIcon, OpenDrawerRightIcon, PanelOpenIcon, RedoIcon, SyncAltIcon, UndoIcon } from '@patternfly/react-icons';
-import { ExternalLinkAltIcon, PlusCircleIcon, SearchIcon, TimesIcon } from '@app/icons/rhUiIcons';
+import { CodeIcon, CopyIcon, CubesIcon, ExternalLinkAltIcon, OpenDrawerRightIcon, PanelOpenIcon, PlusCircleIcon, RedoIcon, SearchIcon, SyncAltIcon, TimesIcon, UndoIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 import { EXAMPLE_BANK_SEARCH_PROMPTS, filterCatalogWidgetsBySearch } from '@app/Homepage/bankWidgetSearch';
 import { AiSearchInputIcon } from '@app/Homepage/AiSearchInputIcon';
@@ -454,7 +453,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
       title: widgetBuilderTitle.trim() || WIDGET_BUILDER_DEFAULT_TITLE,
       type: 'placeholder',
       colSpan: 2,
-      rowSpan: 4
+      rowSpan: 8
     });
     setWidgetBuilderAddedToDashboard(true);
   }, [onAddWidget, widgetBuilderTitle]);

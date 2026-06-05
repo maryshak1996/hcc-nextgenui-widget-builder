@@ -1,9 +1,14 @@
 import type { Widget } from '@app/Homepage/widgetTypes';
+import { MAX_ROW_SPAN, MIN_ROW_SPAN } from '@app/Homepage/widgetTypes';
+import { clampRowSpan, migrateLegacyRowSpan } from '@app/Homepage/homepageWidgetGrid';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
 import { getConsoleDefaultWidgets, isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 
 const STORAGE_PREFIX = 'hcc-dashboard-canvas-';
+
+/** Session layout schema — v2 stores rowSpan as half-row units (1–12). */
+const CANVAS_LAYOUT_VERSION = 2;
 
 const CANVAS_UPDATED = 'hcc-dashboard-canvas-updated';
 
@@ -33,8 +38,8 @@ function isValidWidget(x: unknown): x is { id: string; title: string; type: stri
     typeof o.rowSpan === 'number' &&
     o.colSpan >= 1 &&
     o.colSpan <= 4 &&
-    o.rowSpan >= 1 &&
-    o.rowSpan <= 6
+    o.rowSpan >= MIN_ROW_SPAN &&
+    o.rowSpan <= MAX_ROW_SPAN
   );
 }
 
@@ -51,7 +56,7 @@ function normalizeWidgetsFromUnknownArray(items: unknown[]): Widget[] | null {
       title: item.title,
       type: item.type as Widget['type'],
       colSpan: item.colSpan as Widget['colSpan'],
-      rowSpan: item.rowSpan as Widget['rowSpan'],
+      rowSpan: clampRowSpan(item.rowSpan),
       navigateTo: typeof ext.navigateTo === 'string' ? ext.navigateTo : undefined,
       footerText: typeof ext.footerText === 'string' ? ext.footerText : undefined
     };
@@ -88,7 +93,13 @@ export function parseDashboardConfigClipboardText(text: string): { ok: true; wid
     if (!widgets) {
       return { ok: false, message: 'One or more widgets in the configuration are invalid.' };
     }
-    return { ok: true, widgets };
+    return {
+      ok: true,
+      widgets: widgets.map((widget) => ({
+        ...widget,
+        rowSpan: migrateLegacyRowSpan(widget.rowSpan)
+      }))
+    };
   }
 
   if (typeof data !== 'object' || data === null) {
@@ -110,7 +121,13 @@ export function parseDashboardConfigClipboardText(text: string): { ok: true; wid
   if (!widgets) {
     return { ok: false, message: 'One or more widgets in the configuration are invalid.' };
   }
-  return { ok: true, widgets };
+  return {
+    ok: true,
+    widgets: widgets.map((widget) => ({
+      ...widget,
+      rowSpan: migrateLegacyRowSpan(widget.rowSpan)
+    }))
+  };
 }
 
 /** Merges stored widgets with the catalog so definitions stay current; layout (span) comes from storage. */
@@ -138,6 +155,40 @@ export function resolveDashboardCanvasWidgets(row: HubRow): Widget[] | null {
   return readDashboardCanvasWidgets(row.id);
 }
 
+/** Parses stored canvas JSON (legacy array or versioned object). */
+function parseStoredCanvas(raw: string): { layoutVersion: number; widgets: unknown[] } | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return { layoutVersion: 1, widgets: parsed };
+    }
+    if (typeof parsed === 'object' && parsed !== null) {
+      const o = parsed as Record<string, unknown>;
+      if (Array.isArray(o.widgets)) {
+        const layoutVersion = typeof o.v === 'number' ? o.v : 1;
+        return { layoutVersion, widgets: o.widgets };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeStoredWidgets(items: unknown[], layoutVersion: number): Widget[] | null {
+  const widgets = normalizeWidgetsFromUnknownArray(items);
+  if (!widgets) {
+    return null;
+  }
+  if (layoutVersion >= CANVAS_LAYOUT_VERSION) {
+    return widgets;
+  }
+  return widgets.map((widget) => ({
+    ...widget,
+    rowSpan: migrateLegacyRowSpan(widget.rowSpan)
+  }));
+}
+
 export function readDashboardCanvasWidgets(dashboardId: string): Widget[] | null {
   if (typeof window === 'undefined') {
     return null;
@@ -147,11 +198,11 @@ export function readDashboardCanvasWidgets(dashboardId: string): Widget[] | null
     if (!raw) {
       return null;
     }
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+    const parsed = parseStoredCanvas(raw);
+    if (!parsed || parsed.widgets.length === 0) {
       return null;
     }
-    return normalizeWidgetsFromUnknownArray(parsed);
+    return normalizeStoredWidgets(parsed.widgets, parsed.layoutVersion);
   } catch {
     return null;
   }
@@ -171,7 +222,10 @@ export function writeDashboardCanvasWidgets(dashboardId: string, widgets: Widget
       ...(w.navigateTo ? { navigateTo: w.navigateTo } : {}),
       ...(w.footerText ? { footerText: w.footerText } : {})
     }));
-    window.sessionStorage.setItem(storageKey(dashboardId), JSON.stringify(serial));
+    window.sessionStorage.setItem(
+      storageKey(dashboardId),
+      JSON.stringify({ v: CANVAS_LAYOUT_VERSION, widgets: serial })
+    );
     notifyDashboardCanvasUpdated(dashboardId);
   } catch {
     // ignore
