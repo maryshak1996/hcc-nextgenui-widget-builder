@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
+import { HelpPanelChatbotPanel, HELP_PANEL_CHATBOT_STYLES } from '@app/AppLayout/HelpPanelChatbotPanel';
 import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
 import BugIcon from '@app/bgimages/bug-icon.svg';
@@ -1043,6 +1044,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     };
   }, [isDrawerExpanded]);
 
+  // PatternFly Tabs overflow counts visible tabs on window resize; drawer resize does not fire that.
+  React.useEffect(() => {
+    if (!isDrawerExpanded) {
+      return;
+    }
+    window.dispatchEvent(new Event('resize'));
+  }, [helpPanelWidth, isDrawerExpanded]);
+
   // Debug effect to log selectedMenuItem changes
   React.useEffect(() => {
     console.log('selectedMenuItem changed to:', selectedMenuItem);
@@ -1212,285 +1221,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
   };
 
-  const renderHelpChatPanel = () => (
-    <div
-      data-help-panel="chat"
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0' }}
-    >
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid #d2d2d2',
-          backgroundColor: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Button variant="plain" style={{ padding: '4px', color: '#666' }} aria-label="Chat options menu">
-            <BarsIcon style={{ width: '16px', height: '16px' }} />
-          </Button>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <CommentsIcon style={{ width: '16px', height: '16px', color: 'white' }} />
-          </div>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#151515' }}>Ask Red Hat</div>
-        </div>
-        <div style={{ width: '100%' }}>
-          <Dropdown
-            isOpen={false}
-            onSelect={() => {}}
-            toggle={(toggleRef: React.Ref<any>) => (
-              <MenuToggle
-                ref={toggleRef}
-                isExpanded={false}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  color: '#151515',
-                  textAlign: 'left',
-                  justifyContent: 'flex-start',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #d2d2d2',
-                  borderRadius: '4px'
-                }}
-              >
-                Agent: General Red Hat
-              </MenuToggle>
-            )}
-            shouldFocusToggleOnSelect
-          >
-            <DropdownList>
-              <DropdownItem>Agent: General Red Hat</DropdownItem>
-              <DropdownItem>Support Agent</DropdownItem>
-              <DropdownItem>Feedback Bot</DropdownItem>
-            </DropdownList>
-          </Dropdown>
-        </div>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          padding: '16px',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          minHeight: '0'
-        }}
-      >
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4'
-            }}
-          >
-            Hi! I'm here to help with your questions and feedback. How can I assist you today?
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'flex-end' }}>
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '18px 18px 4px 18px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4',
-              color: 'white',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)'
-            }}
-          >
-            I have a question about the new features
-          </div>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: '#d2d2d2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <UserIcon style={{ width: '12px', height: '12px', color: '#666' }} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              maxWidth: '70%',
-              fontSize: '14px',
-              lineHeight: '1.4'
-            }}
-          >
-            I'd be happy to help! What specific features would you like to know more about? I can provide information about:
-            <br />• New dashboard capabilities
-            <br />• Updated user interface
-            <br />• Enhanced security features
-            <br />• Performance improvements
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <CommentsIcon style={{ width: '12px', height: '12px', color: 'white' }} />
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '12px 16px',
-              borderRadius: '18px 18px 18px 4px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out'
-              }}
-            />
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out 0.2s'
-              }}
-            />
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#999',
-                animation: 'typing 1.4s infinite ease-in-out 0.4s'
-              }}
-            />
-          </div>
-        </div>
-      </div>
-      <div
-        style={{
-          padding: '16px',
-          borderTop: '1px solid #d2d2d2',
-          backgroundColor: 'white',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Type your message..."
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: '1px solid #d2d2d2',
-              borderRadius: '24px',
-              fontSize: '14px',
-              outline: 'none',
-              backgroundColor: 'white'
-            }}
-            disabled
-          />
-          <Button
-            variant="primary"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F56E6E 0%, #5E40BE 100%)',
-              border: 'none'
-            }}
-            disabled
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
-          </Button>
-        </div>
-      </div>
-      <style>{`
-        @keyframes typing {
-          0%, 60%, 100% {
-            transform: translateY(0);
-            opacity: 0.4;
-          }
-          30% {
-            transform: translateY(-10px);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </div>
-  );
+  const renderHelpChatPanel = () => <HelpPanelChatbotPanel />;
 
   const renderCustomHelpByTitle = (title: string) => {
     if (title === 'Alert manager') {
@@ -1570,7 +1301,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
   /** Static help subtabs — always at top of panel; selection mirrors `helpPanelSubTab` (null = none selected). */
   const renderHelpPanelTopTabs = () => {
-    const topActiveKey = helpPanelSubTab !== null ? helpPanelSubTab : HELP_PANEL_TOP_TABS_NONE_KEY;
+    const isChatTabActive = helpPanelSubTab === 5;
+    const mainTabsActiveKey =
+      helpPanelSubTab !== null && !isChatTabActive ? helpPanelSubTab : HELP_PANEL_TOP_TABS_NONE_KEY;
 
     return (
       <div
@@ -1584,66 +1317,91 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           backgroundColor: 'var(--pf-v6-global--BackgroundColor--100)'
         }}
       >
-        <Tabs
-          key={`hcc-help-top-${helpTopTabsMountKey}`}
-          id="hcc-help-panel-top-tabs"
-          hasNoBorderBottom
-          activeKey={topActiveKey}
-          onSelect={(_event, key) => {
-            if (key === HELP_PANEL_TOP_TABS_NONE_KEY) {
-              return;
-            }
-            selectHelpPanelSubTab(typeof key === 'number' ? key : Number(key));
-          }}
-          aria-label="Help navigation"
-        >
-          <Tab
-            eventKey={0}
-            title={
-              <TabTitleIcon>
-                <SearchIcon aria-label="Search" />
-              </TabTitleIcon>
-            }
-            aria-label="Search sub tab"
+        <div className="help-panel-top-tabs-row">
+          <Tabs
+            key={`hcc-help-top-${helpTopTabsMountKey}`}
+            id="hcc-help-panel-top-tabs"
+            className="help-panel-top-tabs-main"
+            hasNoBorderBottom
+            isOverflowHorizontal={{
+              defaultTitleText: 'More',
+              toggleAriaLabel: 'More help tabs',
+              showTabCount: true,
+              popperProps: {
+                appendTo: () => document.body,
+                zIndex: 9999
+              }
+            }}
+            activeKey={mainTabsActiveKey}
+            onSelect={(_event, key) => {
+              if (key === HELP_PANEL_TOP_TABS_NONE_KEY) {
+                return;
+              }
+              selectHelpPanelSubTab(typeof key === 'number' ? key : Number(key));
+            }}
+            aria-label="Help navigation"
           >
-            <span className="pf-v6-u-screen-reader">Search</span>
-          </Tab>
-          <Tab eventKey={1} title={<TabTitleText>Learn</TabTitleText>} aria-label="Learn sub tab">
-            <span className="pf-v6-u-screen-reader">Learn</span>
-          </Tab>
-          <Tab eventKey={2} title={<TabTitleText>APIs</TabTitleText>} aria-label="APIs sub tab">
-            <span className="pf-v6-u-screen-reader">APIs</span>
-          </Tab>
-          <Tab eventKey={3} title={<TabTitleText>Support</TabTitleText>} aria-label="Support sub tab">
-            <span className="pf-v6-u-screen-reader">Support</span>
-          </Tab>
-          <Tab eventKey={4} title={<TabTitleText>Feedback</TabTitleText>} aria-label="Feedback sub tab">
-            <span className="pf-v6-u-screen-reader">Feedback</span>
-          </Tab>
-          <Tab
-            eventKey={5}
-            className="help-panel-chat-tab"
-            title={
-              <TabTitleIcon>
-                <img
-                  src={HappyRobotIcon}
-                  alt=""
-                  aria-hidden
-                  style={{
-                    width: '24px',
-                    height: 'auto',
-                    aspectRatio: '1 / 1',
-                    display: 'block',
-                    objectFit: 'contain'
-                  }}
-                />
-              </TabTitleIcon>
-            }
-            aria-label="Chat sub tab"
+            <Tab
+              eventKey={0}
+              title={
+                <TabTitleIcon>
+                  <SearchIcon aria-label="Search" />
+                </TabTitleIcon>
+              }
+              aria-label="Search sub tab"
+            >
+              <span className="pf-v6-u-screen-reader">Search</span>
+            </Tab>
+            <Tab eventKey={1} title={<TabTitleText>Learn</TabTitleText>} aria-label="Learn sub tab">
+              <span className="pf-v6-u-screen-reader">Learn</span>
+            </Tab>
+            <Tab eventKey={2} title={<TabTitleText>APIs</TabTitleText>} aria-label="APIs sub tab">
+              <span className="pf-v6-u-screen-reader">APIs</span>
+            </Tab>
+            <Tab eventKey={3} title={<TabTitleText>Support</TabTitleText>} aria-label="Support sub tab">
+              <span className="pf-v6-u-screen-reader">Support</span>
+            </Tab>
+            <Tab eventKey={4} title={<TabTitleText>Feedback</TabTitleText>} aria-label="Feedback sub tab">
+              <span className="pf-v6-u-screen-reader">Feedback</span>
+            </Tab>
+          </Tabs>
+          <nav
+            className="help-panel-chat-tab-pinned pf-v6-c-tabs pf-m-no-border-bottom"
+            aria-label="Chat"
           >
-            <span className="pf-v6-u-screen-reader">Chat</span>
-          </Tab>
-        </Tabs>
+            <ul className="pf-v6-c-tabs__list" role="presentation">
+              <li
+                className={`pf-v6-c-tabs__item help-panel-chat-tab${isChatTabActive ? ' pf-m-current' : ''}`}
+                role="presentation"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  className="pf-v6-c-tabs__link"
+                  aria-selected={isChatTabActive}
+                  aria-label="Chat sub tab"
+                  onClick={() => selectHelpPanelSubTab(5)}
+                >
+                  <TabTitleIcon>
+                    <img
+                      src={HappyRobotIcon}
+                      alt=""
+                      aria-hidden
+                      style={{
+                        width: '24px',
+                        height: 'auto',
+                        aspectRatio: '1 / 1',
+                        display: 'block',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </TabTitleIcon>
+                  <span className="pf-v6-u-screen-reader">Chat</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
       </div>
     );
   };
@@ -3987,35 +3745,65 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           }
 
           /*
-           * Avoid horizontal scroll + PatternFly scroll Buttons (plain Button chevrons) on the top strip.
-           * Full-width flex row so margin-inline-start: auto on Chat absorbs remaining space and pins it right.
+           * Search + middle tabs use PF horizontal overflow; chat tab is pinned on the right.
+           * Middle tabs collapse into the "More" menu as the drawer narrows.
            */
-          .help-panel-top-tabs-strip .pf-v6-c-tabs {
+          .help-panel-top-tabs-strip {
+            position: relative;
+            z-index: var(--pf-t--global--z-index--md);
+          }
+
+          .help-panel-top-tabs-row {
+            display: flex;
+            align-items: flex-end;
+            width: 100%;
+            min-width: 0;
+          }
+
+          .help-panel-top-tabs-main.pf-v6-c-tabs {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: visible;
+            width: auto !important;
+          }
+
+          .help-panel-top-tabs-strip .help-panel-top-tabs-main.pf-v6-c-tabs {
             overflow: visible !important;
-            width: 100% !important;
+            width: auto !important;
             max-width: 100% !important;
           }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__list {
+
+          .help-panel-top-tabs-strip .pf-v6-c-tabs__scroll-container {
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          .help-panel-top-tabs-strip .help-panel-top-tabs-main .pf-v6-c-tabs__list {
             display: flex !important;
-            flex-wrap: wrap !important;
-            row-gap: var(--pf-t--global--spacer--xs);
+            flex-wrap: nowrap !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
-            justify-content: flex-start !important;
-            overflow-x: visible !important;
-            overflow-y: visible !important;
+            overflow: hidden !important;
           }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab {
-            margin-inline-start: auto !important;
+
+          .help-panel-chat-tab-pinned.pf-v6-c-tabs {
             flex-shrink: 0 !important;
+            width: auto !important;
+            overflow: visible !important;
           }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs__item.help-panel-chat-tab .pf-v6-c-tabs__link {
+
+          .help-panel-chat-tab-pinned .pf-v6-c-tabs__list {
+            overflow: visible !important;
+          }
+
+          .help-panel-chat-tab-pinned .pf-v6-c-tabs__item.help-panel-chat-tab {
+            margin-inline-start: var(--pf-t--global--spacer--xs) !important;
+          }
+
+          .help-panel-chat-tab-pinned .pf-v6-c-tabs__item.help-panel-chat-tab .pf-v6-c-tabs__link {
             min-width: 2.75rem !important;
             justify-content: center !important;
-          }
-          .help-panel-top-tabs-strip .pf-v6-c-tabs.pf-m-scrollable .pf-v6-c-tabs__scroll-button {
-            display: none !important;
           }
 
           /* Full-bleed grey rule under tab strip (separator from scroll content; insetNone = panel width) */
@@ -4064,7 +3852,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
             height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
           }
+
+          ${HELP_PANEL_CHATBOT_STYLES}
           
           /* Style the overflow button to look like a persistent tab */
           .pf-v6-c-tabs__scroll-button[data-overflowing] {
