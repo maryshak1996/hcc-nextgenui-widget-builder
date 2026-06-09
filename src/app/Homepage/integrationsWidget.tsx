@@ -1,19 +1,27 @@
 import * as React from 'react';
 import { useState } from 'react';
 import {
+  Badge,
   Button,
   Dropdown,
   DropdownItem,
   DropdownList,
   Flex,
   FlexItem,
-  Label,
   MenuToggle,
   MenuToggleElement
 } from '@patternfly/react-core';
-import { Table, Tbody, Td, Tr, type CustomActionsToggleProps } from '@patternfly/react-table';
+import {
+  ExpandableRowContent,
+  Table,
+  Tbody,
+  Td,
+  Tr,
+  type CustomActionsToggleProps
+} from '@patternfly/react-table';
 import { PlusCircleIcon } from '@app/icons/rhUiIcons';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 
 export const INTEGRATIONS_WIDGET_LINKS = {
   manageIntegrations: '/data-integrations'
@@ -53,7 +61,7 @@ const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         id: 'microsoft-teams',
         name: 'Microsoft Office Teams',
         count: 1,
-        iconSrc: 'https://upload.wikimedia.org/wikipedia/commons/c/c9/Microsoft_Office_Teams_%282018%E2%80%93present%29.svg',
+        iconSrc: 'https://1000logos.net/wp-content/uploads/2021/12/Microsoft-Teams-Logo.png',
         iconAlt: 'Microsoft Office Teams'
       },
       {
@@ -95,11 +103,11 @@ const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
   }
 ];
 
-function IntegrationCountLabel({ count }: { count: number }) {
+function IntegrationCountBadge({ count }: { count: number }) {
   return (
-    <Label color={count > 0 ? 'blue' : 'grey'} isCompact>
+    <Badge isRead={count === 0} aria-label={`${count} integrations`}>
       {count}
-    </Label>
+    </Badge>
   );
 }
 
@@ -157,6 +165,8 @@ export function IntegrationsWidgetHeader({
 }
 
 export function IntegrationsWidgetBody() {
+  const colSpan = useWidgetColSpan();
+  const isNarrowLayout = colSpan === 1;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(['communications'])
   );
@@ -175,49 +185,50 @@ export function IntegrationsWidgetBody() {
   };
 
   return (
-    <div className="integrations-widget">
+    <div className={`integrations-widget${isNarrowLayout ? ' integrations-widget--narrow' : ''}`}>
       <div className="integrations-widget__table-wrap">
-        <Table variant="compact" aria-label="Integrations" isExpandable>
-          <Tbody>
-            {INTEGRATION_CATEGORIES.map((category, rowIndex) => {
-              const isExpanded = expandedCategories.has(category.id);
+        <Table aria-label="Integrations" isExpandable>
+          {INTEGRATION_CATEGORIES.map((category, rowIndex) => {
+            const isExpanded = expandedCategories.has(category.id);
+            const hasExpandableContent = category.expandable && category.items.length > 0;
+            const isCategoryExpanded = hasExpandableContent && isExpanded;
 
-              return (
-                <React.Fragment key={category.id}>
-                  <Tr>
-                    <Td
-                      {...(category.expandable
-                        ? {
-                            expand: {
-                              rowIndex,
-                              isExpanded,
-                              onToggle: () => toggleCategory(category.id)
-                            }
+            return (
+              <Tbody key={category.id} isExpanded={isCategoryExpanded}>
+                <Tr isContentExpanded={isCategoryExpanded}>
+                  <Td
+                    {...(category.expandable
+                      ? {
+                          expand: {
+                            rowIndex,
+                            isExpanded,
+                            onToggle: () => toggleCategory(category.id)
                           }
-                        : {})}
-                    />
-                    <Td dataLabel={category.name}>
-                      <Flex
-                        alignItems={{ default: 'alignItemsCenter' }}
-                        spaceItems={{ default: 'spaceItemsSm' }}
-                        flexWrap={{ default: 'wrap' }}
-                      >
-                        <FlexItem>
-                          <Button variant="link" isInline component="a" href="#">
-                            {category.name}
-                          </Button>
-                        </FlexItem>
-                        <FlexItem>
-                          <IntegrationCountLabel count={category.count} />
-                        </FlexItem>
-                      </Flex>
-                    </Td>
-                    <Td isActionCell actions={getManageIntegrationActions(category.name)} />
-                  </Tr>
-                  {isExpanded && category.items.length > 0 && (
-                    <Tr isExpanded>
-                      <Td />
-                      <Td colSpan={2}>
+                        }
+                      : {})}
+                  />
+                  <Td dataLabel={category.name}>
+                    <Flex
+                      alignItems={{ default: 'alignItemsCenter' }}
+                      spaceItems={{ default: 'spaceItemsSm' }}
+                      flexWrap={{ default: 'wrap' }}
+                    >
+                      <FlexItem>
+                        <Button variant="link" isInline component="a" href="#">
+                          {category.name}
+                        </Button>
+                      </FlexItem>
+                      <FlexItem>
+                        <IntegrationCountBadge count={category.count} />
+                      </FlexItem>
+                    </Flex>
+                  </Td>
+                  <Td isActionCell actions={getManageIntegrationActions(category.name)} />
+                </Tr>
+                {hasExpandableContent ? (
+                  <Tr isExpanded={isExpanded}>
+                    <Td noPadding colSpan={3} dataLabel={`${category.name} integrations`}>
+                      <ExpandableRowContent hasNoBackground>
                         <Flex
                           className="integrations-widget__items"
                           spaceItems={{ default: 'spaceItemsMd' }}
@@ -225,7 +236,10 @@ export function IntegrationsWidgetBody() {
                         >
                           {category.items.map((item) => (
                             <FlexItem key={item.id}>
-                              <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                              <Flex
+                                alignItems={{ default: 'alignItemsCenter' }}
+                                spaceItems={{ default: 'spaceItemsSm' }}
+                              >
                                 <FlexItem>
                                   <img
                                     className="integrations-widget__item-icon"
@@ -242,13 +256,13 @@ export function IntegrationsWidgetBody() {
                             </FlexItem>
                           ))}
                         </Flex>
-                      </Td>
-                    </Tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </Tbody>
+                      </ExpandableRowContent>
+                    </Td>
+                  </Tr>
+                ) : null}
+              </Tbody>
+            );
+          })}
         </Table>
       </div>
       <div className="integrations-widget__create">
@@ -286,37 +300,42 @@ export const INTEGRATIONS_WIDGET_STYLES = `
     margin: 0;
   }
 
-  .widget-card--integrations .pf-v6-c-card__body {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
   .integrations-widget {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    height: 100%;
     width: 100%;
+    overflow: hidden;
+    gap: var(--pf-t--global--spacer--md);
   }
 
   .integrations-widget__table-wrap {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
     overflow: auto;
-  }
-
-  .integrations-widget__table-wrap .pf-v6-c-table {
-    --pf-v6-c-table--cell--PaddingBlock: var(--pf-t--global--spacer--sm);
   }
 
   .integrations-widget__table-wrap .pf-v6-c-table tbody > tr > td {
     vertical-align: middle;
   }
 
+  .integrations-widget--narrow .integrations-widget__table-wrap .pf-v6-c-table__toggle {
+    --pf-v6-c-table__toggle--PaddingInlineStart: 0;
+    --pf-v6-c-table__toggle--PaddingInlineEnd: var(--pf-t--global--spacer--xs);
+    width: 1%;
+  }
+
+  .integrations-widget--narrow .integrations-widget__table-wrap .pf-v6-c-table__tr > .pf-v6-c-table__td:first-child {
+    width: 1%;
+    padding-inline-start: 0;
+  }
+
   .integrations-widget__items {
-    padding-block: var(--pf-t--global--spacer--xs);
+    padding-block-start: var(--pf-t--global--spacer--xs);
+    padding-block-end: var(--pf-t--global--spacer--md);
+    padding-inline-start: var(--pf-t--global--spacer--md);
   }
 
   .integrations-widget__item-icon {
@@ -327,8 +346,8 @@ export const INTEGRATIONS_WIDGET_STYLES = `
   }
 
   .integrations-widget__create {
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    margin-top: auto;
     width: fit-content;
-    padding-block-start: var(--pf-t--global--spacer--md);
   }
 `;

@@ -154,12 +154,6 @@ export const MY_ACCOUNT_WIDGET_STYLES = `
     margin: 0;
   }
 
-  .widget-card--my-account .pf-v6-c-card__body {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-  }
-
   .my-account-widget {
     flex: 1 1 auto;
     display: flex;
@@ -171,8 +165,10 @@ export const MY_ACCOUNT_WIDGET_STYLES = `
   }
 
   .my-account-widget__content {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     width: 100%;
   }
 

@@ -13,22 +13,27 @@ export const EVENTS_WIDGET_TOTAL = 523;
 const EVENT_ROW_TEMPLATES = [
   {
     event: 'System deleted',
+    eventHref: '#',
     service: 'Inventory - Red Hat Enterprise Linux'
   },
   {
     event: 'New recommendation',
+    eventHref: '#',
     service: 'Advisor - Red Hat Enterprise Linux'
   },
   {
     event: 'New system registered',
+    eventHref: '#',
     service: 'Inventory - Red Hat Enterprise Linux'
   },
   {
     event: 'New recommendation',
+    eventHref: '#',
     service: 'Advisor - OpenShift'
   },
   {
     event: 'Policy update',
+    eventHref: '#',
     service: 'Compliance - Red Hat Enterprise Linux'
   }
 ] as const;
@@ -36,6 +41,7 @@ const EVENT_ROW_TEMPLATES = [
 interface EventRow {
   id: string;
   event: string;
+  eventHref: string;
   service: string;
   date: string;
 }
@@ -49,6 +55,7 @@ function getEventsForPage(page: number, perPage: number): EventRow[] {
     return {
       id: String(start + index + 1),
       event: template.event,
+      eventHref: template.eventHref,
       service: template.service,
       date: 'Just now'
     };
@@ -112,7 +119,11 @@ export function EventsWidgetBody() {
           <Tbody>
             {rows.map((row) => (
               <Tr key={row.id}>
-                <Td dataLabel="Event">{row.event}</Td>
+                <Td dataLabel="Event">
+                  <Button variant="link" isInline component="a" href={row.eventHref}>
+                    {row.event}
+                  </Button>
+                </Td>
                 <Td dataLabel="Service">
                   <Button variant="link" isInline component="a" href="#">
                     {row.service}
@@ -144,25 +155,22 @@ export const EVENTS_WIDGET_STYLES = `
     margin: 0;
   }
 
-  .widget-card--events .pf-v6-c-card__body {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
   .events-widget {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    height: 100%;
     width: 100%;
+    overflow: hidden;
+    gap: var(--pf-t--global--spacer--md);
   }
 
   .events-widget__table-wrap {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .events-widget__table-wrap .pf-v6-c-table {
@@ -170,7 +178,10 @@ export const EVENTS_WIDGET_STYLES = `
   }
 
   .events-widget__pagination {
-    flex-shrink: 0;
-    padding-block-start: var(--pf-t--global--spacer--md);
+    flex: 0 0 auto;
+    margin-block: 0;
+    margin-top: auto;
+    padding-block-start: 0;
+    padding-inline-end: var(--pf-t--global--spacer--md);
   }
 `;

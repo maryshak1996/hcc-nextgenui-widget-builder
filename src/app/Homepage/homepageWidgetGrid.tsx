@@ -15,9 +15,9 @@ import {
   Flex,
   FlexItem,
   Icon,
-  List,
-  ListItem,
   MenuToggle,
+  SimpleList,
+  SimpleListItem,
   MenuToggleElement,
   Title
 } from '@patternfly/react-core';
@@ -33,6 +33,16 @@ import {
 } from '@app/Homepage/bigThreeProductWidgets';
 import { EventsWidgetBody, EventsWidgetHeader, EVENTS_WIDGET_STYLES } from '@app/Homepage/eventsWidget';
 import {
+  ImageBuilderWidgetBody,
+  ImageBuilderWidgetHeader,
+  IMAGE_BUILDER_WIDGET_STYLES
+} from '@app/Homepage/imageBuilderWidget';
+import {
+  FavoriteServicesWidgetBody,
+  FavoriteServicesWidgetHeader,
+  FAVORITE_SERVICES_WIDGET_STYLES
+} from '@app/Homepage/favoriteServicesWidget';
+import {
   IntegrationsWidgetBody,
   IntegrationsWidgetHeader,
   INTEGRATIONS_WIDGET_STYLES
@@ -42,7 +52,43 @@ import {
   MyAccountWidgetHeader,
   MY_ACCOUNT_WIDGET_STYLES
 } from '@app/Homepage/myAccountWidget';
+import {
+  QuayIoWidgetBody,
+  QuayIoWidgetHeader,
+  QUAY_IO_WIDGET_STYLES
+} from '@app/Homepage/quayIoWidget';
+import { RedHatAiWidgetBody, RedHatAiWidgetHeader, RED_HAT_AI_WIDGET_STYLES } from '@app/Homepage/redHatAiWidget';
 import { SubscriptionsWidgetBody, SubscriptionsWidgetHeader, SUBSCRIPTIONS_WIDGET_STYLES } from '@app/Homepage/subscriptionsWidget';
+import {
+  SupportCasesWidgetBody,
+  SupportCasesWidgetHeader,
+  SUPPORT_CASES_WIDGET_STYLES
+} from '@app/Homepage/supportCasesWidget';
+import {
+  BookmarkedLearningResourcesWidgetBody,
+  BookmarkedLearningResourcesWidgetHeader,
+  BOOKMARKED_LEARNING_RESOURCES_WIDGET_STYLES
+} from '@app/Homepage/bookmarkedLearningResourcesWidget';
+import {
+  RecentClustersWidgetBody,
+  RecentClustersWidgetHeader,
+  RECENT_CLUSTERS_WIDGET_STYLES
+} from '@app/Homepage/recentClustersWidget';
+import {
+  ClusterStatusWidgetBody,
+  ClusterStatusWidgetHeader,
+  CLUSTER_STATUS_WIDGET_STYLES
+} from '@app/Homepage/clusterStatusWidget';
+import {
+  AnsibleSubscriptionUsageWidgetBody,
+  AnsibleSubscriptionUsageWidgetHeader,
+  OpenshiftSubscriptionUsageWidgetBody,
+  OpenshiftSubscriptionUsageWidgetHeader,
+  RhelSubscriptionUsageWidgetBody,
+  RhelSubscriptionUsageWidgetHeader,
+  SUBSCRIPTION_USAGE_WIDGET_STYLES
+} from '@app/Homepage/subscriptionUsageWidget';
+import { CLUSTER_STATUS_DISPLAY_STYLES } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetColSpanContext } from '@app/Homepage/widgetColSpanContext';
 import { MAX_ROW_SPAN, MIN_ROW_SPAN, type ColumnSpan, type RowSpan, type Widget } from '@app/Homepage/widgetTypes';
 import { useSortable } from '@dnd-kit/sortable';
@@ -647,11 +693,14 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
   if (readOnly) {
     return (
-      <Card isFullHeight={isFullHeight} className={`widget-card ${className}`}>
+      <Card
+        isFullHeight={isFullHeight}
+        className={`widget-card ${className}${footerContent ? ' widget-card--has-card-footer' : ''}`}
+      >
         <CardHeader>{renderCardHeader()}</CardHeader>
         <Divider />
-        <CardBody style={{ overflow: 'auto' }}>
-          {children}
+        <CardBody className="widget-card__body">
+          <div className="widget-card__body-content">{children}</div>
         </CardBody>
         {footerContent && <CardFooter>{footerContent}</CardFooter>}
       </Card>
@@ -659,11 +708,14 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   }
 
   return (
-    <Card isFullHeight={isFullHeight} className={`widget-card ${className}`}>
+    <Card
+      isFullHeight={isFullHeight}
+      className={`widget-card ${className}${footerContent ? ' widget-card--has-card-footer' : ''}`}
+    >
       <CardHeader>{renderCardHeader()}</CardHeader>
       <Divider />
-      <CardBody style={{ overflow: 'auto' }}>
-        {children}
+      <CardBody className="widget-card__body">
+        <div className="widget-card__body-content">{children}</div>
       </CardBody>
       {footerContent && (
         <CardFooter>
@@ -673,6 +725,14 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
     </Card>
   );
 };
+
+const RECENTLY_VISITED_LINKS: Array<{ label: string; href: string; bundle?: string }> = [
+  { label: 'Dashboard Hub', href: '/dashboard-hub' },
+  { label: 'Alert manager', href: '/alert-manager', bundle: 'Settings' },
+  { label: 'Data integration', href: '/data-integration', bundle: 'Settings' },
+  { label: 'My user access', href: '/my-user-access', bundle: 'IAM' },
+  { label: 'Event log', href: '/event-log', bundle: 'Settings' }
+];
 
 export function renderHomepageWidgetContent(
   widget: Widget,
@@ -691,6 +751,7 @@ export function renderHomepageWidgetContent(
             onRemove={onRemove}
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             readOnly={readOnly}
             headerExtra={
@@ -710,6 +771,7 @@ export function renderHomepageWidgetContent(
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -730,6 +792,7 @@ export function renderHomepageWidgetContent(
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -750,66 +813,61 @@ export function renderHomepageWidgetContent(
           <WidgetCard 
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--recently-visited"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
           >
-            <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }}>
-              <FlexItem>
-                <Content>
-                  Quick access to your most recently visited services and resources.
-                </Content>
-              </FlexItem>
-              <FlexItem flex={{ default: 'flex_1' }}>
-                <List isPlain>
-                  <ListItem>
-                    <Button variant="link" onClick={() => navigate('/dashboard-hub')}>
-                      Dashboard Hub
-                    </Button>
-                  </ListItem>
-                  <ListItem>
-                    <Button variant="link" onClick={() => navigate('/alert-manager')}>
-                      Alert Manager
-                    </Button>
-                  </ListItem>
-                  <ListItem>
-                    <Button variant="link" onClick={() => navigate('/data-integration')}>
-                      Data Integration
-                    </Button>
-                  </ListItem>
-                  <ListItem>
-                    <Button variant="link" onClick={() => navigate('/my-user-access')}>
-                      My User Access
-                    </Button>
-                  </ListItem>
-                  <ListItem>
-                    <Button variant="link" onClick={() => navigate('/event-log')}>
-                      Event Log
-                    </Button>
-                  </ListItem>
-                </List>
-              </FlexItem>
-            </Flex>
+            <SimpleList aria-label="Recently visited">
+                  {RECENTLY_VISITED_LINKS.map(({ label, href, bundle }) => (
+                    <SimpleListItem
+                      key={href}
+                      component="a"
+                      href={href}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        navigate(href);
+                      }}
+                    >
+                      <span className="recently-visited-item">
+                        <span className="recently-visited-item__label">{label}</span>
+                        {bundle ? (
+                          <span className="recently-visited-item__bundle">{bundle}</span>
+                        ) : null}
+                      </span>
+                    </SimpleListItem>
+                  ))}
+            </SimpleList>
+          </WidgetCard>
+        );
+
+      case 'my-favorite-services':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--favorite-services"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<FavoriteServicesWidgetHeader title={widget.title} />}
+          >
+            <FavoriteServicesWidgetBody navigate={navigate} />
           </WidgetCard>
         );
 
       case 'image-builder':
         return (
-          <WidgetCard 
+          <WidgetCard
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
-            footerContent={
-              <Button variant="link" iconPosition="end" icon={<ArrowRightIcon />}>
-                Images
-              </Button>
-            }
+            headerExtra={<ImageBuilderWidgetHeader title={widget.title} />}
           >
-            <Content>
-              Create customized system images for disks, VMs, and cloud platforms. Image Builder automates configurations, saving you time and ensuring consistent, deployment-ready images every time.
-            </Content>
+            <ImageBuilderWidgetBody />
           </WidgetCard>
         );
 
@@ -957,19 +1015,13 @@ export function renderHomepageWidgetContent(
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
-            footerContent={
-              <Button variant="link" iconPosition="end" icon={<ExternalLinkAltIcon />}>
-                Red Hat AI
-              </Button>
-            }
+            headerExtra={<RedHatAiWidgetHeader title={widget.title} />}
           >
-            <Content>
-              Create, train, and serve artificial intelligence and machine learning (AI/ML) models. Detailed widget
-              content can be provided next.
-            </Content>
+            <RedHatAiWidgetBody />
           </WidgetCard>
         );
 
@@ -995,7 +1047,7 @@ export function renderHomepageWidgetContent(
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
-            className="widget-card--events"
+            className="widget-card--events widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -1005,12 +1057,27 @@ export function renderHomepageWidgetContent(
           </WidgetCard>
         );
 
+      case 'support-cases':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--support-cases widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<SupportCasesWidgetHeader title={widget.title} />}
+          >
+            <SupportCasesWidgetBody />
+          </WidgetCard>
+        );
+
       case 'integrations':
         return (
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
-            className="widget-card--integrations"
+            className="widget-card--integrations widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -1020,12 +1087,117 @@ export function renderHomepageWidgetContent(
           </WidgetCard>
         );
 
+      case 'quay-io':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--quay-io widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<QuayIoWidgetHeader title={widget.title} />}
+          >
+            <QuayIoWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'bookmarked-learning-resources':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--bookmarked-learning-resources widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<BookmarkedLearningResourcesWidgetHeader title={widget.title} />}
+          >
+            <BookmarkedLearningResourcesWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'recent-clusters':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--recent-clusters"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<RecentClustersWidgetHeader title={widget.title} />}
+          >
+            <RecentClustersWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'cluster-status':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--cluster-status"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<ClusterStatusWidgetHeader title={widget.title} />}
+          >
+            <ClusterStatusWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'openshift-subscription-usage':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--subscription-usage"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<OpenshiftSubscriptionUsageWidgetHeader title={widget.title} />}
+          >
+            <OpenshiftSubscriptionUsageWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'rhel-subscription-usage':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--subscription-usage"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<RhelSubscriptionUsageWidgetHeader title={widget.title} />}
+          >
+            <RhelSubscriptionUsageWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'ansible-subscription-usage':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--subscription-usage"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<AnsibleSubscriptionUsageWidgetHeader title={widget.title} />}
+          >
+            <AnsibleSubscriptionUsageWidgetBody />
+          </WidgetCard>
+        );
+
       case 'my-account':
         return (
           <WidgetCard
             title={widget.title}
             widgetId={widget.id}
-            className="widget-card--my-account"
+            className="widget-card--my-account widget-card--pinned-body-footer"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -1098,9 +1270,19 @@ export function ReadOnlyHomepageWidgetFrame({
 
 export const WIDGET_GRID_STYLES = `
     ${BIG_THREE_PRODUCT_WIDGET_STYLES}
+    ${RED_HAT_AI_WIDGET_STYLES}
+    ${IMAGE_BUILDER_WIDGET_STYLES}
+    ${FAVORITE_SERVICES_WIDGET_STYLES}
     ${SUBSCRIPTIONS_WIDGET_STYLES}
+    ${SUPPORT_CASES_WIDGET_STYLES}
     ${EVENTS_WIDGET_STYLES}
     ${INTEGRATIONS_WIDGET_STYLES}
+    ${QUAY_IO_WIDGET_STYLES}
+    ${BOOKMARKED_LEARNING_RESOURCES_WIDGET_STYLES}
+    ${RECENT_CLUSTERS_WIDGET_STYLES}
+    ${CLUSTER_STATUS_DISPLAY_STYLES}
+    ${CLUSTER_STATUS_WIDGET_STYLES}
+    ${SUBSCRIPTION_USAGE_WIDGET_STYLES}
     ${MY_ACCOUNT_WIDGET_STYLES}
     ${WIDGET_CARD_HEADER_LAYOUT_STYLES}
     .pf-v6-c-card.explore-capability-card {
@@ -1202,16 +1384,61 @@ export const WIDGET_GRID_STYLES = `
       --pf-v6-c-card--first-child--PaddingBlockStart: var(--pf-t--global--spacer--sm);
     }
     
+    .widget-card .widget-card__body,
     .widget-card .pf-v6-c-card__body {
       flex-grow: 1 !important;
-      overflow: auto !important;
+      min-height: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
       padding-block-end: var(--pf-t--global--spacer--md);
       padding-inline-start: var(--pf-t--global--spacer--md);
       padding-inline-end: var(--pf-t--global--spacer--md);
     }
 
+    .widget-card .widget-card__body-content {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .widget-card:not(.widget-card--pinned-body-footer) .widget-card__body-content {
+      overflow: auto;
+    }
+
+    .widget-card--pinned-body-footer .widget-card__body-content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .widget-card--has-card-footer .widget-card__body-content {
+      overflow: auto;
+    }
+
+    .widget-card.widget-card--recently-visited .pf-v6-c-card__body,
+    .widget-card.widget-card--favorite-services .pf-v6-c-card__body,
+    .widget-card.widget-card--events .pf-v6-c-card__body,
+    .widget-card.widget-card--support-cases .pf-v6-c-card__body,
+    .widget-card.widget-card--bookmarked-learning-resources .pf-v6-c-card__body,
+    .widget-card.widget-card--recent-clusters .pf-v6-c-card__body {
+      padding-inline-start: 4px !important;
+      padding-inline-end: 4px !important;
+    }
+
+    .widget-card.widget-card--subscription-usage .widget-card__body,
+    .widget-card.widget-card--subscription-usage .pf-v6-c-card__body {
+      padding-inline-start: 0 !important;
+      padding-inline-end: 0 !important;
+      padding-block-end: 0 !important;
+    }
+
     .widget-card.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
       padding-block-start: var(--pf-t--global--spacer--md);
+    }
+
+    .widget-card.widget-card--subscription-usage.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
+      padding-block-start: 0 !important;
     }
     
     .widget-card .pf-v6-c-card__header,
@@ -1328,5 +1555,16 @@ export const WIDGET_GRID_STYLES = `
       .widgets-grid {
         grid-template-columns: minmax(0, 1fr);
       }
+    }
+
+    .recently-visited-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--pf-t--global--spacer--xs);
+    }
+
+    .recently-visited-item__bundle {
+      font-size: var(--pf-t--global--font--size--body--sm);
+      color: var(--pf-t--global--text--color--subtle);
     }
 `;

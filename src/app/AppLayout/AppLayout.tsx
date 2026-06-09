@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
+import { useFavoritedServices } from '@app/favoriteServices/FavoritedServicesContext';
 import { HelpPanelChatbotPanel, HELP_PANEL_CHATBOT_STYLES } from '@app/AppLayout/HelpPanelChatbotPanel';
 import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
@@ -38,6 +39,7 @@ import {
   DrawerHead,
   DrawerPanelContent,
   Dropdown,
+  DropdownGroup,
   DropdownItem,
   DropdownList,
   Flex,
@@ -87,8 +89,35 @@ import {
   EmptyState
 } from '@patternfly/react-core';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
-import { BarsIcon, BookmarkIcon, BookOpenIcon, BrainIcon, ChartLineIcon, CloudIcon, CodeIcon, CommentsIcon, CreditCardIcon, CubeIcon, DatabaseIcon, EyeIcon, FillDripIcon, HelpIcon, InProgressIcon, LightbulbIcon, ListIcon, OutlinedWindowRestoreIcon, PlayIcon, ProjectDiagramIcon, RocketIcon, ServerIcon, ShieldAltIcon, SignOutAltIcon, StarIcon, TachometerAltIcon, UserIcon, WrenchIcon } from '@patternfly/react-icons';
-import { BellIcon, CogIcon, EllipsisVIcon, ExclamationTriangleIcon, ExternalLinkAltIcon, InfoCircleIcon, QuestionCircleIcon, RhUiAiExperienceIcon, RhUiNotificationIcon, SearchIcon, TimesIcon, UsersIcon } from '@app/icons/rhUiIcons';
+import { BarsIcon, BookmarkIcon, BookOpenIcon, CloudIcon, CodeIcon, CommentsIcon, FillDripIcon, HelpIcon, InProgressIcon, LightbulbIcon, OutlinedWindowRestoreIcon, ProjectDiagramIcon, SignOutAltIcon, TachometerAltIcon, UserIcon } from '@patternfly/react-icons';
+import {
+  AttentionBellIcon,
+  AutomationIcon,
+  BellIcon,
+  ClusterIcon,
+  CogIcon,
+  ContainerIcon,
+  CreditCardIcon,
+  DataSourceIcon,
+  EllipsisVIcon,
+  ExclamationTriangleIcon,
+  ExternalLinkAltIcon,
+  InfoCircleIcon,
+  KeyIcon,
+  ListIcon,
+  ModuleIcon,
+  QuestionCircleIcon,
+  RhUiAiExperienceIcon,
+  RhUiMonitoringIcon,
+  RhUiProcessAutomationIcon,
+  RocketIcon,
+  SearchIcon,
+  ServerIcon,
+  ShieldAltIcon,
+  StarIcon,
+  TimesIcon,
+  UsersIcon,
+} from '@app/icons/rhUiIcons';
 
 interface IAppLayout {
   children: React.ReactNode;
@@ -323,7 +352,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Enterprise automation platform',
         details: 'Red Hat Ansible Automation Platform is a comprehensive automation solution that enables organizations to automate IT processes, configure systems, deploy applications, and orchestrate complex workflows across hybrid cloud environments.',
         features: ['IT Automation', 'Configuration Management', 'Application Deployment', 'Workflow Orchestration'],
-        icon: <WrenchIcon />,
+        icon: <RhUiProcessAutomationIcon />,
         url: '/ansible-automation-platform',
         isLink: true
       },
@@ -343,7 +372,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Enterprise Kubernetes platform',
         details: 'Red Hat OpenShift is a comprehensive Kubernetes platform that enables organizations to build, deploy, and manage containerized applications at scale. It provides developer-friendly tools and enterprise-grade security for modern application development.',
         features: ['Container Orchestration', 'Developer Tools', 'Multi-cloud Deployment', 'Built-in Security'],
-        icon: <CubeIcon />,
+        icon: <ClusterIcon />,
         url: '/red-hat-openshift',
         isLink: true
       }
@@ -351,7 +380,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     'Services': [
       {
         id: 'my-favorite-services',
-        name: 'My Favorite Services',
+        name: 'My favorite services',
         description: 'Quick access to your most-used services',
         details: 'Access your frequently used and bookmarked services in one convenient location. Customize your dashboard with the services you use most often to improve your workflow efficiency.',
         features: ['Quick Access', 'Custom Dashboard', 'Service Bookmarks', 'Usage Analytics'],
@@ -363,15 +392,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Artificial intelligence and machine learning services',
         details: 'Build, train, and deploy machine learning models with enterprise-grade AI/ML platforms. Access GPU-accelerated computing, automated model training, and MLOps pipelines.',
         features: ['Model Training', 'GPU Computing', 'MLOps Pipelines', 'Data Science Workbenches'],
-        icon: <BrainIcon />
+        icon: <RhUiAiExperienceIcon />
       },
       {
         id: 'alerting-data-integrations',
-        name: 'Alerting & Data Integrations',
+        name: 'Alerting & data integrations',
         description: 'Monitoring alerts and data pipeline management',
         details: 'Configure intelligent alerting systems and manage data integration workflows across your hybrid cloud infrastructure with real-time monitoring and automated responses.',
         features: ['Real-time Alerts', 'Data Pipelines', 'Integration Workflows', 'Event Processing'],
-        icon: <BellIcon />
+        icon: <AttentionBellIcon />
       },
       {
         id: 'automation',
@@ -379,7 +408,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Infrastructure and application automation',
         details: 'Automate repetitive tasks, configuration management, and deployment processes with comprehensive automation tools and workflow orchestration.',
         features: ['Task Automation', 'Configuration Management', 'Workflow Orchestration', 'Process Optimization'],
-        icon: <WrenchIcon />
+        icon: <AutomationIcon />
       },
       {
         id: 'containers',
@@ -387,7 +416,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Container management and orchestration',
         details: 'Deploy, manage, and scale containerized applications with enterprise Kubernetes platforms, container registries, and orchestration tools.',
         features: ['Container Orchestration', 'Registry Management', 'Application Scaling', 'Service Mesh'],
-        icon: <CubeIcon />
+        icon: <ContainerIcon />
       },
       {
         id: 'deploy',
@@ -399,7 +428,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       },
       {
         id: 'identity-access-mgmt',
-        name: 'Identity & Access Management',
+        name: 'Identity & access management',
         description: 'User authentication and authorization',
         details: 'Secure your applications with comprehensive identity management, single sign-on, multi-factor authentication, and role-based access controls.',
         features: ['Single Sign-On', 'Multi-Factor Auth', 'Role-Based Access', 'Identity Federation'],
@@ -415,11 +444,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       },
       {
         id: 'observability-monitoring',
-        name: 'Observability & Monitoring',
+        name: 'Observability & monitoring',
         description: 'System monitoring and observability',
         details: 'Gain deep insights into your applications and infrastructure with comprehensive monitoring, logging, tracing, and performance analytics.',
         features: ['Application Monitoring', 'Infrastructure Metrics', 'Distributed Tracing', 'Log Analytics'],
-        icon: <EyeIcon />
+        icon: <RhUiMonitoringIcon />
       },
       {
         id: 'operators',
@@ -427,7 +456,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         description: 'Kubernetes operators and lifecycle management',
         details: 'Deploy and manage complex applications on Kubernetes with operators that automate installation, updates, and day-2 operations.',
         features: ['Operator Lifecycle', 'Application Management', 'Automated Updates', 'Cluster Operations'],
-        icon: <PlayIcon />
+        icon: <ModuleIcon />
       },
       {
         id: 'security',
@@ -439,7 +468,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       },
       {
         id: 'subscriptions-spend',
-        name: 'Subscriptions & Spend',
+        name: 'Subscriptions & spend',
         description: 'Subscription management and cost optimization',
         details: 'Manage subscriptions, track usage, optimize costs, and analyze spending patterns across your Red Hat services and cloud resources.',
         features: ['Subscription Tracking', 'Cost Analysis', 'Usage Optimization', 'Spend Management'],
@@ -447,39 +476,22 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       },
       {
         id: 'system-configuration',
-        name: 'System Configuration',
+        name: 'System configuration',
         description: 'System settings and configuration management',
         details: 'Configure and manage system settings, infrastructure parameters, and application configurations with centralized management tools.',
         features: ['Configuration Management', 'System Settings', 'Parameter Tuning', 'Change Tracking'],
-        icon: <ServerIcon />
+        icon: <CogIcon />
       }
     ]
   };
   
-  // Get the first menu item ID from the first non-link group (Services)
-  const getFirstMenuItemId = () => {
-    // Default to "My Favorite Services" as the first selected item
-    return 'my-favorite-services';
-  };
-  
+  const DEFAULT_SERVICES_MENU_ITEM_ID = 'my-favorite-services';
+
   // Service dropdown primary-detail state
-  const [selectedMenuItem, setSelectedMenuItem] = React.useState(getFirstMenuItemId());
+  const [selectedMenuItem, setSelectedMenuItem] = React.useState(DEFAULT_SERVICES_MENU_ITEM_ID);
   
   // Favorited items state
-  const [favoritedItems, setFavoritedItems] = React.useState<Set<string>>(new Set());
-  
-  // Function to toggle favorite status of an item
-  const toggleFavorite = (itemId: string) => {
-    setFavoritedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
+  const { favoritedIds: favoritedItems, toggleFavorite } = useFavoritedServices();
   
   // Logo dropdown and expandable search state
   const [isLogoDropdownOpen, setIsLogoDropdownOpen] = React.useState(false);
@@ -832,6 +844,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
   // Ref for services dropdown to handle outside clicks
   const servicesDropdownRef = React.useRef<HTMLDivElement>(null);
+  const servicesToggleRef = React.useRef<HTMLDivElement>(null);
+  const [servicesDropdownPosition, setServicesDropdownPosition] = React.useState({ top: 0, left: 0 });
   
   // Ref for search container to handle outside clicks
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -974,18 +988,37 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     };
   }, [isLogoDropdownOpen]);
 
-  // Reset to first menu item when dropdown opens
-  React.useEffect(() => {
-    if (isLogoDropdownOpen) {
-      const firstItemId = getFirstMenuItemId();
-      console.log('Setting selectedMenuItem to:', firstItemId);
-      setSelectedMenuItem(firstItemId);
-      // Force re-render with a small delay to ensure Menu component applies selection
-      setTimeout(() => {
-        setSelectedMenuItem(firstItemId);
-        console.log('Re-setting selectedMenuItem to:', firstItemId);
-      }, 10);
+  const handleServicesMenuToggle = () => {
+    if (!isLogoDropdownOpen) {
+      setSelectedMenuItem(DEFAULT_SERVICES_MENU_ITEM_ID);
     }
+    setIsLogoDropdownOpen((isOpen) => !isOpen);
+  };
+
+  // Position services dropdown below the masthead toggle
+  React.useEffect(() => {
+    if (!isLogoDropdownOpen || !servicesToggleRef.current) {
+      return;
+    }
+
+    const updatePosition = () => {
+      if (servicesToggleRef.current) {
+        const rect = servicesToggleRef.current.getBoundingClientRect();
+        setServicesDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
   }, [isLogoDropdownOpen]);
 
   // ResizeObserver to track help panel width changes
@@ -1051,11 +1084,6 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     }
     window.dispatchEvent(new Event('resize'));
   }, [helpPanelWidth, isDrawerExpanded]);
-
-  // Debug effect to log selectedMenuItem changes
-  React.useEffect(() => {
-    console.log('selectedMenuItem changed to:', selectedMenuItem);
-  }, [selectedMenuItem]);
 
   const selectHelpPanelSubTab = React.useCallback((subTabIndex: number) => {
     setCustomHelpTitle(null);
@@ -3110,14 +3138,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           </MastheadLogo>
         </MastheadBrand>
         {/* Application dropdown next to logo */}
-        <div style={{ marginLeft: '4px', marginRight: '4px' }}>
+        <div ref={servicesToggleRef} style={{ marginLeft: '4px', marginRight: '4px' }}>
           <Tooltip 
             content="Browse services" 
             position="bottom"
             {...(isLogoDropdownOpen ? { isVisible: false } : {})}
           >
             <MenuToggle
-              onClick={() => setIsLogoDropdownOpen(!isLogoDropdownOpen)}
+              onClick={handleServicesMenuToggle}
               isExpanded={isLogoDropdownOpen}
               aria-label="Red Hat Hybrid Cloud Console menu"
               style={{ 
@@ -3266,76 +3294,77 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                     variant="control"
                     aria-label="Settings"
                     aria-expanded={isUtilitiesDropdownOpen}
-                    className={isUtilitiesDropdownOpen ? 'pf-m-clicked' : ''}
                   >
                     <CogIcon />
                   </Button>
                 )}
                 shouldFocusToggleOnSelect
               >
-                <Menu>
-                  <MenuList>
-                    <MenuGroup label="Settings">
-                      <MenuItem 
-                        icon={<BellIcon />}
-                        onClick={() => {
-                          navigate('/alert-manager');
-                          setIsUtilitiesDropdownOpen(false);
-                        }}
-                      >
-                        Alert Manager
-                      </MenuItem>
-                      <MenuItem 
-                        icon={<DatabaseIcon />}
-                        onClick={() => {
-                          navigate('/data-integration');
-                          setIsUtilitiesDropdownOpen(false);
-                        }}
-                      >
-                        Data Integration
-                      </MenuItem>
-                    </MenuGroup>
-                    <MenuGroup label="Identity & Access Management">
-                      <MenuItem 
-                        icon={<UsersIcon />}
-                        onClick={() => {
-                          navigate('/user-access');
-                          setIsUtilitiesDropdownOpen(false);
-                        }}
-                      >
-                        User Access
-                      </MenuItem>
-                      <MenuItem 
-                        icon={<ShieldAltIcon />}
-                        onClick={() => {
-                          navigate('/authentication-policy');
-                          setIsUtilitiesDropdownOpen(false);
-                        }}
-                      >
-                        Authentication Policy
-                      </MenuItem>
-                      <MenuItem 
-                        icon={<ServerIcon />}
-                        onClick={() => {
-                          navigate('/service-accounts');
-                          setIsUtilitiesDropdownOpen(false);
-                        }}
-                      >
-                        Service Accounts
-                      </MenuItem>
-                    </MenuGroup>
-                    <Divider component="li" />
-                    <MenuItem
-                      icon={<FillDripIcon />}
+                <DropdownGroup label="Settings">
+                  <DropdownList>
+                    <DropdownItem
+                      icon={<BellIcon />}
                       onClick={() => {
-                        navigate('/settings/appearance');
+                        navigate('/alert-manager');
                         setIsUtilitiesDropdownOpen(false);
                       }}
                     >
-                      Customize appearance
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
+                      Alert manager
+                    </DropdownItem>
+                    <DropdownItem
+                      icon={<DataSourceIcon />}
+                      onClick={() => {
+                        navigate('/data-integration');
+                        setIsUtilitiesDropdownOpen(false);
+                      }}
+                    >
+                      Data integration
+                    </DropdownItem>
+                  </DropdownList>
+                </DropdownGroup>
+                <DropdownGroup label="Identity & access management">
+                  <DropdownList>
+                    <DropdownItem
+                      icon={<UsersIcon />}
+                      onClick={() => {
+                        navigate('/user-access');
+                        setIsUtilitiesDropdownOpen(false);
+                      }}
+                    >
+                      User access
+                    </DropdownItem>
+                    <DropdownItem
+                      icon={<ShieldAltIcon />}
+                      onClick={() => {
+                        navigate('/authentication-policy');
+                        setIsUtilitiesDropdownOpen(false);
+                      }}
+                    >
+                      Authentication policy
+                    </DropdownItem>
+                    <DropdownItem
+                      icon={<KeyIcon />}
+                      onClick={() => {
+                        navigate('/service-accounts');
+                        setIsUtilitiesDropdownOpen(false);
+                      }}
+                    >
+                      Service accounts
+                    </DropdownItem>
+                  </DropdownList>
+                </DropdownGroup>
+                <Divider />
+                <DropdownList>
+                  <DropdownItem
+                    icon={<FillDripIcon />}
+                    onClick={() => {
+                      navigate('/settings/appearance');
+                      setIsUtilitiesDropdownOpen(false);
+                    }}
+                  >
+                    Customize appearance
+                  </DropdownItem>
+                </DropdownList>
               </Dropdown>
             </Tooltip>
 
@@ -3371,7 +3400,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 aria-expanded={isNotificationDrawerOpen}
                 className={isNotificationDrawerOpen ? 'pf-m-clicked' : ''}
               >
-                <RhUiNotificationIcon aria-hidden />
+                <BellIcon aria-hidden />
               </Button>
             </Tooltip>
 
@@ -4055,37 +4084,18 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </Drawer>
       </Page>
       
-      {/* Full-width Services Drawer under Masthead */}
+      {/* Services primary-detail dropdown */}
       {isLogoDropdownOpen && (
         <div
           ref={servicesDropdownRef}
           style={{
             position: 'fixed',
-            top: '72px',
-            left: '24px',
-            right: '24px',
-            backgroundColor: 'white',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+            top: `${servicesDropdownPosition.top}px`,
+            left: `${servicesDropdownPosition.left}px`,
             zIndex: 9999,
-            padding: '24px',
-            borderRadius: '12px',
             animation: 'slideDown 0.3s ease-out'
           }}
         >
-          {/* Close button */}
-          <Button
-            variant="plain"
-            aria-label="Close services panel"
-            onClick={() => setIsLogoDropdownOpen(false)}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              zIndex: 10000
-            }}
-          >
-            <TimesIcon />
-          </Button>
           <style>
             {`
               @keyframes slideDown {
@@ -4098,71 +4108,41 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   transform: translateY(0);
                 }
               }
-              .pf-v6-c-menu {
+              .services-dropdown-panel {
+                box-shadow: var(--pf-v6-c-menu--BoxShadow, var(--pf-t--global--box-shadow--md));
+                background-color: var(--pf-v6-c-menu--BackgroundColor, var(--pf-t--global--background--color--floating--default));
+                border: var(--pf-v6-c-menu--BorderWidth, var(--pf-t--global--border--width--high-contrast--regular)) solid var(--pf-v6-c-menu--BorderColor, var(--pf-t--global--border--color--high-contrast));
+                border-radius: var(--pf-v6-c-menu--BorderRadius, var(--pf-t--global--border--radius--medium));
+                overflow: hidden;
+              }
+              .services-dropdown-panel .pf-v6-c-menu {
                 box-shadow: none !important;
-              }
-              /* Custom selected state for primary-detail menu items */
-              .pf-v6-c-menu__item.pf-m-selected,
-              .pf-v6-c-menu__item[aria-selected="true"],
-              .pf-v6-c-menu__item.pf-m-current {
-                background-color: var(--pf-v6-global--BackgroundColor--200) !important;
-                color: var(--pf-v6-global--Color--100) !important;
-              }
-              /* Hide the checkmark icon for selected menu items */
-              .pf-v6-c-menu__item.pf-m-selected .pf-v6-c-menu__item-select-icon,
-              .pf-v6-c-menu__item[aria-selected="true"] .pf-v6-c-menu__item-select-icon,
-              .pf-v6-c-menu__item.pf-m-current .pf-v6-c-menu__item-select-icon {
-                display: none !important;
-              }
-              /* Ensure hover state works correctly with selected state */
-              .pf-v6-c-menu__item.pf-m-selected:hover,
-              .pf-v6-c-menu__item[aria-selected="true"]:hover,
-              .pf-v6-c-menu__item.pf-m-current:hover {
-                background-color: var(--pf-v6-global--BackgroundColor--200) !important;
-              }
-              /* Force default selected styling for menu items by data attribute */
-              .pf-v6-c-menu__item[data-selected="true"] {
-                background-color: var(--pf-v6-global--BackgroundColor--200) !important;
-                color: var(--pf-v6-global--Color--100) !important;
-              }
-              .pf-v6-c-menu__item[data-selected="true"] .pf-v6-c-menu__item-select-icon {
-                display: none !important;
-              }
-              .pf-v6-c-menu__item[data-selected="true"]:hover {
-                background-color: var(--pf-v6-global--BackgroundColor--200) !important;
-              }
-              /* Explicit styling for My Favorite Services when selected */
-              .pf-v6-c-menu__item[data-item-id="my-favorite-services"][data-selected="true"],
-              .pf-v6-c-menu__item[itemid="my-favorite-services"].pf-m-selected,
-              .pf-v6-c-menu__item[itemid="my-favorite-services"][aria-selected="true"] {
-                background-color: var(--pf-v6-global--BackgroundColor--200) !important;
-                color: var(--pf-v6-global--Color--100) !important;
-              }
-              /* Force My Favorite Services to show default selected background - HIGHEST PRIORITY */
-              .pf-v6-c-menu .pf-v6-c-menu__list .pf-v6-c-menu__item[data-item-id="my-favorite-services"] {
-                background-color: #f0f0f0 !important;
-                color: #151515 !important;
-              }
-              .pf-v6-c-menu .pf-v6-c-menu__list .pf-v6-c-menu__item[data-item-id="my-favorite-services"]:hover {
-                background-color: #e7e7e7 !important;
-                color: #151515 !important;
-              }
-              /* Override when other items are selected */
-              .pf-v6-c-menu .pf-v6-c-menu__list .pf-v6-c-menu__item[data-item-id="my-favorite-services"][data-selected="false"] {
                 background-color: transparent !important;
-                color: var(--pf-v6-global--Color--100) !important;
+                border: none !important;
+                --pf-v6-c-menu--BoxShadow: none;
               }
-              /* Customize star icon color in My Favorite Services - Multiple targeting approaches */
-              .pf-v6-c-menu .pf-v6-c-menu__list .pf-v6-c-menu__item[data-item-id="my-favorite-services"] .pf-v6-c-menu__item-icon svg,
-              .pf-v6-c-menu__item[data-item-id="my-favorite-services"] .pf-v6-c-menu__item-icon svg,
-              .pf-v6-c-menu__item[data-item-id="my-favorite-services"] svg,
-              .pf-v6-c-menu__item[data-item-id="my-favorite-services"] .pf-v6-c-menu__item-icon,
-              [data-item-id="my-favorite-services"] svg {
-                color: #f39200 !important;
-                fill: #f39200 !important;
+              .services-dropdown-panel__scroll {
+                height: 100%;
+                min-height: 0;
+                overflow-y: auto;
+                overflow-x: hidden;
               }
-              /* Try with PatternFly variable as fallback */
-              .pf-v6-c-menu__item[data-item-id="my-favorite-services"] svg {
+              /* Selected state — PF v6 paints row highlight on .pf-v6-c-menu__list-item::before */
+              .services-dropdown-panel .pf-v6-c-menu__list-item.pf-m-selected:not([data-is-link="true"]),
+              .services-dropdown-panel .pf-v6-c-menu__list-item[data-selected="true"]:not([data-is-link="true"]) {
+                --pf-v6-c-menu__list-item--BackgroundColor: var(--pf-t--global--background--color--action--plain--clicked);
+                --pf-v6-c-menu__list-item--BorderWidth: var(--pf-t--global--border--width--action--plain--hover);
+              }
+              .services-dropdown-panel .pf-v6-c-menu__list-item.pf-m-selected:not([data-is-link="true"]):hover,
+              .services-dropdown-panel .pf-v6-c-menu__list-item[data-selected="true"]:not([data-is-link="true"]):hover {
+                --pf-v6-c-menu__list-item--BackgroundColor: var(--pf-t--global--background--color--action--plain--clicked);
+              }
+              .services-dropdown-panel .pf-v6-c-menu__list-item.pf-m-selected .pf-v6-c-menu__item-select-icon,
+              .services-dropdown-panel .pf-v6-c-menu__list-item[data-selected="true"] .pf-v6-c-menu__item-select-icon {
+                display: none !important;
+              }
+              /* Favorited star icon in My favorite services */
+              .services-dropdown-panel .pf-v6-c-menu__list-item[data-item-id="my-favorite-services"] .pf-v6-c-menu__item-icon svg {
                 color: var(--pf-v6-c-button--m-favorited--hover__icon--Color, #f39200) !important;
                 fill: var(--pf-v6-c-button--m-favorited--hover__icon--Color, #f39200) !important;
               }
@@ -4240,9 +4220,8 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 color: #004080 !important;
               }
               /* Prevent link items from showing selected state */
-              .pf-v6-c-menu__item[data-is-link="true"].pf-m-selected {
-                background-color: transparent !important;
-                color: #0066cc !important;
+              .services-dropdown-panel .pf-v6-c-menu__list-item[data-is-link="true"].pf-m-selected {
+                --pf-v6-c-menu__list-item--BackgroundColor: var(--pf-t--global--background--color--action--plain--default);
               }
               .pf-v6-c-menu__item[data-is-link="true"] .pf-v6-c-menu__item-select-icon {
                 display: none !important;
@@ -4250,25 +4229,26 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
 
             `}
           </style>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', height: '800px' }}>
-            <Card style={{ height: '100%' }}>
-              <CardBody style={{ padding: 0, height: '100%' }}>
-                <Split style={{ height: '100%' }}>
-                  {/* Primary (Menu) Side */}
-                  <SplitItem style={{ 
-                    width: '450px', 
-                    minWidth: '450px', 
-                    maxWidth: '450px', 
-                    flexShrink: 0, 
-                    flexGrow: 0, 
-                    borderRight: '1px solid #d2d2d2' 
-                  }}>
-                    <div style={{ height: '100%' }}>
-                      <Menu 
-                        key={`menu-${isLogoDropdownOpen}-${selectedMenuItem}`}
-                        aria-label="Services menu"
-                        activeItemId={selectedMenuItem}
-                        selected={selectedMenuItem}
+          <div className="services-dropdown-panel" style={{ width: '900px', height: '560px' }}>
+            <Split style={{ height: '100%', minHeight: 0 }}>
+              {/* Primary (Menu) Side */}
+              <SplitItem style={{ 
+                width: '450px', 
+                minWidth: '450px', 
+                maxWidth: '450px', 
+                flexShrink: 0, 
+                flexGrow: 0,
+                minHeight: 0,
+                overflow: 'hidden',
+                borderRight: '1px solid var(--pf-t--global--border--color--default)' 
+              }}>
+                <div className="services-dropdown-panel__scroll">
+                  <Menu 
+                    key={`services-menu-${selectedMenuItem}`}
+                    aria-label="Services menu"
+                    isPlain
+                    activeItemId={selectedMenuItem}
+                    selected={selectedMenuItem}
                         onSelect={(event, itemId) => {
                           // Find the clicked item across all groups
                           let clickedItem: MenuItem | null = null;
@@ -4324,6 +4304,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       itemId={item.id}
                                       icon={!item.isLink ? item.icon : undefined}
                                       isSelected={!item.isLink && selectedMenuItem === item.id}
+                                      isActive={!item.isLink && selectedMenuItem === item.id}
                                       data-item-id={item.id}
                                       data-selected={!item.isLink && selectedMenuItem === item.id ? "true" : "false"}
                                       data-is-link={item.isLink ? "true" : "false"}
@@ -4334,10 +4315,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                         ['--pf-v6-c-menu__item--Color' as any]: '#0066cc',
                                         ['--pf-v6-c-menu__item--m-current--Color' as any]: '#0066cc',
                                         ['--pf-v6-c-menu__item--hover--Color' as any]: '#004080'
-                                      } : (!item.isLink && selectedMenuItem === item.id ? {
-                                        backgroundColor: 'var(--pf-v6-global--BackgroundColor--200)',
-                                        color: 'var(--pf-v6-global--Color--100)'
-                                      } : undefined)}
+                                      } : undefined}
                                     >
                                       {item.name}
                                     </MenuItem>
@@ -4351,6 +4329,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       itemId={item.id}
                                       icon={!item.isLink ? item.icon : undefined}
                                       isSelected={!item.isLink && selectedMenuItem === item.id}
+                                      isActive={!item.isLink && selectedMenuItem === item.id}
                                       data-item-id={item.id}
                                       data-selected={!item.isLink && selectedMenuItem === item.id ? "true" : "false"}
                                       data-is-link={item.isLink ? "true" : "false"}
@@ -4361,10 +4340,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                         ['--pf-v6-c-menu__item--Color' as any]: '#0066cc',
                                         ['--pf-v6-c-menu__item--m-current--Color' as any]: '#0066cc',
                                         ['--pf-v6-c-menu__item--hover--Color' as any]: '#004080'
-                                      } : (!item.isLink && selectedMenuItem === item.id ? {
-                                        backgroundColor: 'var(--pf-v6-global--BackgroundColor--200)',
-                                        color: 'var(--pf-v6-global--Color--100)'
-                                      } : undefined)}
+                                      } : undefined}
                                     >
                                       {item.name}
                                     </MenuItem>
@@ -4377,13 +4353,13 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                             </React.Fragment>
                           ))}
                         </MenuList>
-                      </Menu>
-                    </div>
-                  </SplitItem>
+                  </Menu>
+                </div>
+              </SplitItem>
 
-                  {/* Detail Side */}
-                  <SplitItem isFilled>
-                    <div style={{ padding: '24px', height: '100%', overflow: 'auto' }}>
+              {/* Detail Side */}
+              <SplitItem isFilled style={{ minHeight: 0, overflow: 'hidden' }}>
+                <div className="services-dropdown-panel__scroll" style={{ padding: '24px' }}>
                       {(() => {
                         // Find the selected menu item only among non-link items
                         let currentMenuItem: MenuItem | null = null;
@@ -4411,9 +4387,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                   <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--pf-v6-global--Color--200)' }}>
                                     <div style={{ marginBottom: '16px' }}>
                                       <img 
-                                        src="https://console.redhat.com/apps/frontend-assets/favoritedservices/favoriting-emptystate.svg"
+                                        src="https://www.redhat.com/rhdc/managed-files/console-tech-stack.png"
                                         alt="No favorited services"
-                                        style={{ width: '80px', height: '80px' }}
+                                        style={{ height: '200px', width: 'auto' }}
                                       />
                                             </div>
                                     <Title headingLevel="h4" size="lg" style={{ marginBottom: '8px' }}>No favorited services</Title>
@@ -4434,36 +4410,36 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       // Map of itemId to display information with category grouping
                                       const itemMapping: { [key: string]: { name: string, description: string, onClick: () => void, category: string } } = {
                                             'alert-manager-settings': {
-                                              name: 'Alert Manager | Settings',
+                                              name: 'Alert manager | settings',
                                               description: 'Configure and manage system alerts and notifications',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/alert-manager');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             'data-integration-settings': {
-                                              name: 'Data Integration | Settings', 
+                                              name: 'Data integration | settings', 
                                               description: 'Manage data integration workflows and connectors',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/data-integrations');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             'event-log-settings': {
-                                              name: 'Event Log | Settings',
+                                              name: 'Event log | settings',
                                               description: 'View and configure system event logging',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/event-log');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             'overview-settings': {
-                                              name: 'Overview | Settings',
+                                              name: 'Overview | settings',
                                               description: 'Access the main console overview and dashboard',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/overview');
                                                 setIsLogoDropdownOpen(false);
@@ -4472,7 +4448,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             'users': {
                                               name: 'Users',
                                               description: 'Manage user accounts and their access permissions',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => {
                                                 navigate('/users');
                                                 setIsLogoDropdownOpen(false);
@@ -4481,7 +4457,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             'groups': {
                                               name: 'Groups',
                                               description: 'Create and manage user groups and permissions',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => {
                                                 navigate('/groups');
                                                 setIsLogoDropdownOpen(false);
@@ -4490,106 +4466,106 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             'roles': {
                                               name: 'Roles',
                                               description: 'Define and manage user roles with specific permissions',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => {
                                                 navigate('/roles');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             '60day-trial-openshift-ai': {
-                                              name: '60-Day Product Trial | OpenShift AI',
+                                              name: '60-day product trial | OpenShift AI',
                                               description: 'Create, train, and service AI/ML models',
                                               category: 'Red Hat OpenShift',
-                                              onClick: () => console.log('60-Day Product Trial | OpenShift AI clicked')
+                                              onClick: () => console.log('60-day product trial | OpenShift AI clicked')
                                             },
                                             'developer-sandbox-openshift-ai': {
-                                              name: 'Developer Sandbox | OpenShift AI',
+                                              name: 'Developer sandbox | OpenShift AI',
                                               description: 'Create, train, and service AI/ML models',
                                               category: 'Red Hat OpenShift',
-                                              onClick: () => console.log('Developer Sandbox | OpenShift AI clicked')
+                                              onClick: () => console.log('Developer sandbox | OpenShift AI clicked')
                                             },
                                             'authentication-factors': {
-                                              name: 'Authentication Factors',
+                                              name: 'Authentication factors',
                                               description: 'Configure multi-factor authentication and security settings',
-                                              category: 'Identity & Access Management (IAM)',
-                                              onClick: () => console.log('Authentication Factors clicked')
+                                              category: 'Identity & access management (IAM)',
+                                              onClick: () => console.log('Authentication factors clicked')
                                             },
                                             'service-accounts': {
-                                              name: 'Service Accounts',
+                                              name: 'Service accounts',
                                               description: 'Create and manage service accounts for automated systems',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => console.log('Service Accounts clicked')
                                             },
                                             'identity-provider-information': {
-                                              name: 'Identity Provider Information',
+                                              name: 'Identity provider information',
                                               description: 'Configure and manage external identity providers',
-                                              category: 'Identity & Access Management (IAM)',
-                                              onClick: () => console.log('Identity Provider Information clicked')
+                                              category: 'Identity & access management (IAM)',
+                                              onClick: () => console.log('Identity provider information clicked')
                                             },
                                             'workspaces': {
                                               name: 'Workspaces',
                                               description: 'Manage organizational workspaces and their access controls',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => console.log('Workspaces clicked')
                                             },
                                             'directory-domain-services': {
-                                              name: 'Directory and Domain Services',
+                                              name: 'Directory and domain services',
                                               description: 'Configure directory services and domain management',
-                                              category: 'Console Settings',
-                                              onClick: () => console.log('Directory and Domain Services clicked')
+                                              category: 'Console settings',
+                                              onClick: () => console.log('Directory and domain services clicked')
                                             },
                                             'rhel-rhc': {
-                                              name: 'Remote Host Configuration (RHC)',
+                                              name: 'Remote host configuration (RHC)',
                                               description: 'Configure and manage remote host connections',
                                               category: 'Red Hat Enterprise Linux',
-                                              onClick: () => console.log('Remote Host Configuration (RHC) clicked')
+                                              onClick: () => console.log('Remote host configuration (RHC) clicked')
                                             },
                                             'rhel-activation-keys': {
-                                              name: 'Activation Keys',
+                                              name: 'Activation keys',
                                               description: 'Manage activation keys for system registration',
                                               category: 'Red Hat Enterprise Linux',
-                                              onClick: () => console.log('Activation Keys clicked')
+                                              onClick: () => console.log('Activation keys clicked')
                                             },
                                             'rhel-registration-assistant': {
-                                              name: 'Registration Assistant',
+                                              name: 'Registration assistant',
                                               description: 'Step-by-step guidance for registering systems',
                                               category: 'Red Hat Enterprise Linux',
-                                              onClick: () => console.log('Registration Assistant clicked')
+                                              onClick: () => console.log('Registration assistant clicked')
                                             },
                                             'rhel-staleness-deletion': {
-                                              name: 'Staleness & Deletion',
+                                              name: 'Staleness & deletion',
                                               description: 'Configure system staleness detection and automated deletion',
                                               category: 'Red Hat Enterprise Linux',
-                                              onClick: () => console.log('Staleness & Deletion clicked')
+                                              onClick: () => console.log('Staleness & deletion clicked')
                                             },
                                             'ansible-registration-assistant': {
-                                              name: 'Registration Assistant',
+                                              name: 'Registration assistant',
                                               description: 'Guided setup for Ansible automation workflows',
                                               category: 'Red Hat Ansible Automation Platform',
-                                              onClick: () => console.log('Ansible Registration Assistant clicked')
+                                              onClick: () => console.log('Ansible Registration assistant clicked')
                                             },
                                             'console-alert-manager': {
-                                              name: 'Alert Manager',
+                                              name: 'Alert manager',
                                               description: 'Configure and manage system alerts and notifications',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/alert-manager');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             'console-data-integration': {
-                                              name: 'Data Integration',
+                                              name: 'Data integration',
                                               description: 'Manage data integration workflows and connectors',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/data-integrations');
                                                 setIsLogoDropdownOpen(false);
                                               }
                                             },
                                             'console-dashboard-hub': {
-                                              name: 'Dashboard Hub',
+                                              name: 'Dashboard hub',
                                               description: 'Browse, create, and organize dashboards for your workspace',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => {
                                                 navigate('/dashboard-hub');
                                                 setIsLogoDropdownOpen(false);
@@ -4603,69 +4579,69 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                               onClick: () => console.log('Red Hat Insights clicked')
                                             },
                                             'rhel-patch': {
-                                              name: 'Patch Management',
+                                              name: 'Patch management',
                                               description: 'Automated patching and system updates for RHEL environments',
                                               category: 'Red Hat Enterprise Linux',
-                                              onClick: () => console.log('Patch Management clicked')
+                                              onClick: () => console.log('Patch management clicked')
                                             },
                                             'openshift-clusters': {
-                                              name: 'OpenShift Clusters',
+                                              name: 'OpenShift clusters',
                                               description: 'Manage and monitor your OpenShift Kubernetes clusters',
                                               category: 'Red Hat OpenShift',
-                                              onClick: () => console.log('OpenShift Clusters clicked')
+                                              onClick: () => console.log('OpenShift clusters clicked')
                                             },
                                             'container-registry': {
-                                              name: 'Container Registry',
+                                              name: 'Container registry',
                                               description: 'Secure container image registry for storing and managing images',
                                               category: 'Red Hat OpenShift',
-                                              onClick: () => console.log('Container Registry clicked')
+                                              onClick: () => console.log('Container registry clicked')
                                             },
                                             'automation-hub': {
-                                              name: 'Automation Hub',
+                                              name: 'Automation hub',
                                               description: 'Centralized repository for Ansible content collections',
                                               category: 'Red Hat Ansible Automation Platform',
                                               onClick: () => console.log('Automation Hub clicked')
                                             },
                                             'automation-controller': {
-                                              name: 'Automation Controller',
+                                              name: 'Automation controller',
                                               description: 'Enterprise automation control plane for Ansible playbooks',
                                               category: 'Red Hat Ansible Automation Platform',
                                               onClick: () => console.log('Automation Controller clicked')
                                             },
                                             'user-access-item': {
-                                              name: 'User Access',
+                                              name: 'User access',
                                               description: 'Manage user permissions, roles, and access controls',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => console.log('User Access clicked')
                                             },
                                             'service-accounts-item': {
-                                              name: 'Service Accounts',
+                                              name: 'Service accounts',
                                               description: 'Create and manage service accounts for automated systems',
-                                              category: 'Identity & Access Management (IAM)',
+                                              category: 'Identity & access management (IAM)',
                                               onClick: () => console.log('Service Accounts clicked')
                                             },
                                             'preferences': {
                                               name: 'Preferences',
                                               description: 'Customize your console experience, themes, and settings',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => console.log('Preferences clicked')
                                             },
                                             'notifications': {
                                               name: 'Notifications',
                                               description: 'Configure alert preferences and notification settings',
-                                              category: 'Console Settings',
+                                              category: 'Console settings',
                                               onClick: () => console.log('Notifications clicked')
                                             },
                                             'subscriptions': {
                                               name: 'Subscriptions',
                                               description: 'View and manage your Red Hat product subscriptions',
-                                              category: 'Subscription Services',
+                                              category: 'Subscription services',
                                               onClick: () => console.log('Subscriptions clicked')
                                             },
                                             'billing': {
                                               name: 'Billing',
                                               description: 'Access billing information, invoices, and payment methods',
-                                              category: 'Subscription Services',
+                                              category: 'Subscription services',
                                               onClick: () => console.log('Billing clicked')
                                             },
                                             'documentation': {
@@ -4700,9 +4676,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             'Red Hat Enterprise Linux',
                                             'Red Hat OpenShift', 
                                             'Red Hat Ansible Automation Platform',
-                                            'Identity & Access Management (IAM)',
-                                            'Console Settings',
-                                            'Subscription Services',
+                                            'Identity & access management (IAM)',
+                                            'Console settings',
+                                            'Subscription services',
                                             'Other'
                                           ];
 
@@ -4757,7 +4733,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       <MenuItem 
                                         itemId="60day-trial-openshift-ai"
                                         description="Create, train, and service artificial intelligence and machine learning (AI/ML) models."
-                                        onClick={() => console.log('60-Day Product Trial | OpenShift AI clicked')}
+                                        onClick={() => console.log('60-day product trial | OpenShift AI clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -4771,12 +4747,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        60-Day Product Trial | OpenShift AI
+                                        60-day product trial | OpenShift AI
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="developer-sandbox-openshift-ai"
                                         description="Create, train, and service artificial intelligence and machine learning (AI/ML) models."
-                                        onClick={() => console.log('Developer Sandbox | OpenShift AI clicked')}
+                                        onClick={() => console.log('Developer sandbox | OpenShift AI clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -4790,14 +4766,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Developer Sandbox | OpenShift AI
+                                        Developer sandbox | OpenShift AI
                                       </MenuItem>
                                     </MenuList>
                                   </MenuGroup>
                                 </Menu>
                               ) : currentMenuItem.id === 'alerting-data-integrations' ? (
                                 <Menu>
-                                  <MenuGroup label="Console Settings" labelHeadingLevel="h2">
+                                  <MenuGroup label="Console settings" labelHeadingLevel="h2">
                                     <Divider />
                                     <MenuList>
                                       <MenuItem 
@@ -4820,7 +4796,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Alert Manager | Settings
+                                        Alert manager | settings
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="data-integration-settings"
@@ -4842,7 +4818,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Data Integration | Settings
+                                        Data integration | settings
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="event-log-settings"
@@ -4864,7 +4840,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Event Log | Settings
+                                        Event log | settings
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="overview-settings"
@@ -4886,14 +4862,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Overview | Settings
+                                        Overview | settings
                                       </MenuItem>
                                     </MenuList>
                                   </MenuGroup>
                                 </Menu>
                               ) : currentMenuItem.id === 'identity-access-mgmt' ? (
                                 <Menu>
-                                  <MenuGroup label="Identity & Access Management (IAM)" labelHeadingLevel="h2">
+                                  <MenuGroup label="Identity & access management (IAM)" labelHeadingLevel="h2">
                                     <Divider />
                                     <MenuList>
                                       <MenuItem 
@@ -4965,7 +4941,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       <MenuItem 
                                         itemId="authentication-factors"
                                         description="Configure multi-factor authentication and security settings"
-                                        onClick={() => console.log('Authentication Factors clicked')}
+                                        onClick={() => console.log('Authentication factors clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -4979,12 +4955,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Authentication Factors
+                                        Authentication factors
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="service-accounts"
                                         description="Create and manage service accounts for automated systems and application integrations"
-                                        onClick={() => console.log('Service Accounts clicked')}
+                                        onClick={() => console.log('Service accounts clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -4998,12 +4974,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Service Accounts
+                                        Service accounts
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="identity-provider-information"
                                         description="Configure and manage external identity providers and federation settings"
-                                        onClick={() => console.log('Identity Provider Information clicked')}
+                                        onClick={() => console.log('Identity provider information clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5017,7 +4993,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Identity Provider Information
+                                        Identity provider information
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="workspaces"
@@ -5042,13 +5018,13 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                   </MenuGroup>
                                   
                                   <div style={{ marginTop: '24px' }}>
-                                    <MenuGroup label="Console Settings" labelHeadingLevel="h2">
+                                    <MenuGroup label="Console settings" labelHeadingLevel="h2">
                                       <Divider />
                                       <MenuList>
                                         <MenuItem 
                                                                                   itemId="directory-domain-services"
                                         description="Configure directory services and domain management settings"
-                                        onClick={() => console.log('Directory and Domain Services clicked')}
+                                        onClick={() => console.log('Directory and domain services clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5062,7 +5038,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Directory and Domain Services
+                                          Directory and domain services
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
@@ -5076,7 +5052,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       <MenuItem 
                                         itemId="rhel-rhc"
                                         description="Configure and manage remote host connections and system configurations"
-                                        onClick={() => console.log('Remote Host Configuration (RHC) clicked')}
+                                        onClick={() => console.log('Remote host configuration (RHC) clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5090,12 +5066,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Remote Host Configuration (RHC)
+                                        Remote host configuration (RHC)
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="rhel-activation-keys"
                                         description="Manage activation keys for system registration and subscription management"
-                                        onClick={() => console.log('Activation Keys clicked')}
+                                        onClick={() => console.log('Activation keys clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5109,12 +5085,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Activation Keys
+                                        Activation keys
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="rhel-registration-assistant"
                                         description="Step-by-step guidance for registering systems to Red Hat services"
-                                        onClick={() => console.log('Registration Assistant clicked')}
+                                        onClick={() => console.log('Registration assistant clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5128,12 +5104,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Registration Assistant
+                                        Registration assistant
                                       </MenuItem>
                                       <MenuItem 
                                         itemId="rhel-staleness-deletion"
                                         description="Configure system staleness detection and automated deletion policies"
-                                        onClick={() => console.log('Staleness & Deletion clicked')}
+                                        onClick={() => console.log('Staleness & deletion clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5147,7 +5123,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Staleness & Deletion
+                                        Staleness & deletion
                                       </MenuItem>
                                     </MenuList>
                                   </MenuGroup>
@@ -5159,7 +5135,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                         <MenuItem 
                                                                                   itemId="ansible-registration-assistant"
                                         description="Guided setup for registering and configuring Ansible automation workflows"
-                                        onClick={() => console.log('Ansible Registration Assistant clicked')}
+                                        onClick={() => console.log('Ansible Registration assistant clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5173,14 +5149,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Registration Assistant
+                                          Registration assistant
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
                                   </div>
                                   
                                   <div style={{ marginTop: '24px' }}>
-                                    <MenuGroup label="Console Settings" labelHeadingLevel="h2">
+                                    <MenuGroup label="Console settings" labelHeadingLevel="h2">
                                       <Divider />
                                       <MenuList>
                                         <MenuItem 
@@ -5203,7 +5179,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Alert Manager
+                                          Alert manager
                                         </MenuItem>
                                         <MenuItem 
                                                                                   itemId="console-data-integration"
@@ -5225,7 +5201,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Data Integration
+                                          Data integration
                                         </MenuItem>
                                         <MenuItem
                                           itemId="console-dashboard-hub"
@@ -5251,7 +5227,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Dashboard Hub
+                                          Dashboard hub
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
@@ -5284,7 +5260,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                       <MenuItem 
                                         itemId="rhel-patch"
                                         description="Automated patching and system updates for Red Hat Enterprise Linux environments"
-                                        onClick={() => console.log('Patch Management clicked')}
+                                        onClick={() => console.log('Patch management clicked')}
                                         actions={
                                           <MenuItemAction
                                             icon={<StarIcon />}
@@ -5298,7 +5274,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                           />
                                         }
                                       >
-                                        Patch Management
+                                        Patch management
                                       </MenuItem>
                                     </MenuList>
                                   </MenuGroup>
@@ -5310,7 +5286,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                         <MenuItem 
                                           itemId="openshift-clusters"
                                           description="Manage and monitor your OpenShift Kubernetes clusters across hybrid cloud environments"
-                                          onClick={() => console.log('OpenShift Clusters clicked')}
+                                          onClick={() => console.log('OpenShift clusters clicked')}
                                           actions={
                                             <MenuItemAction
                                               icon={<StarIcon />}
@@ -5324,12 +5300,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          OpenShift Clusters
+                                          OpenShift clusters
                                         </MenuItem>
                                         <MenuItem 
                                           itemId="container-registry"
                                           description="Secure container image registry for storing, managing, and deploying container images"
-                                          onClick={() => console.log('Container Registry clicked')}
+                                          onClick={() => console.log('Container registry clicked')}
                                           actions={
                                             <MenuItemAction
                                               icon={<StarIcon />}
@@ -5343,7 +5319,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Container Registry
+                                          Container registry
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
@@ -5370,7 +5346,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Automation Hub
+                                          Automation hub
                                         </MenuItem>
                                         <MenuItem 
                                           itemId="automation-controller"
@@ -5389,14 +5365,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Automation Controller
+                                          Automation controller
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
                                   </div>
                                   
                                   <div style={{ marginTop: '24px' }}>
-                                    <MenuGroup label="Identity & Access Management (IAM)" labelHeadingLevel="h2">
+                                    <MenuGroup label="Identity & access management (IAM)" labelHeadingLevel="h2">
                                       <Divider />
                                       <MenuList>
                                         <MenuItem 
@@ -5416,12 +5392,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          User Access
+                                          User access
                                         </MenuItem>
                                         <MenuItem 
                                           itemId="service-accounts"
                                           description="Create and manage service accounts for automated systems and application integrations"
-                                          onClick={() => console.log('Service Accounts clicked')}
+                                          onClick={() => console.log('Service accounts clicked')}
                                           actions={
                                             <MenuItemAction
                                               icon={<StarIcon />}
@@ -5435,14 +5411,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                             />
                                           }
                                         >
-                                          Service Accounts
+                                          Service accounts
                                         </MenuItem>
                                       </MenuList>
                                     </MenuGroup>
                                   </div>
                                   
                                   <div style={{ marginTop: '24px' }}>
-                                    <MenuGroup label="Console Settings" labelHeadingLevel="h2">
+                                    <MenuGroup label="Console settings" labelHeadingLevel="h2">
                                       <Divider />
                                       <MenuList>
                                         <MenuItem 
@@ -5488,7 +5464,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                   </div>
                                   
                                   <div style={{ marginTop: '24px' }}>
-                                    <MenuGroup label="Subscription Services" labelHeadingLevel="h2">
+                                    <MenuGroup label="Subscription services" labelHeadingLevel="h2">
                                       <Divider />
                                       <MenuList>
                                         <MenuItem 
@@ -5584,11 +5560,9 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                           </Flex>
                         );
                       })()}
-                    </div>
-                  </SplitItem>
-                </Split>
-              </CardBody>
-            </Card>
+                </div>
+              </SplitItem>
+            </Split>
           </div>
         </div>
       )}

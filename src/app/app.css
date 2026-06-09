@@ -526,7 +526,7 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
 .homepage-hero-greeting__icon {
   display: flex;
   flex-shrink: 0;
-  color: var(--pf-t--global--icon--Color--200);
+  color: var(--pf-t--global--text--color--link--default);
   /* Scale with 4xl hero title */
   font-size: clamp(1.5rem, 0.4rem + 2.5vw, 2.25rem);
   line-height: 1;
@@ -536,11 +536,17 @@ form.editable-dashboard-name-group.pf-v6-c-form.editable-dashboard-toolbar-meta-
   width: 1em;
   height: 1em;
   vertical-align: middle;
+  fill: currentColor;
+}
+
+.homepage-hero-greeting__icon svg path {
+  fill: currentColor;
 }
 
 .homepage-hero-greeting__icon .pf-v6-icon-rh-standard {
   width: 1em;
   height: 1em;
+  color: inherit;
 }
 
 /*

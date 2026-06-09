@@ -84,6 +84,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@patternfly/chatbot": "^6.6.0",
     "@patternfly/patternfly": "^6.5.1",
+    "@patternfly/react-charts": "^6.5.1",
     "@patternfly/react-code-editor": "^6.5.1",
     "@patternfly/react-component-groups": "^6.5.0",
     "@patternfly/react-core": "^6.5.1",

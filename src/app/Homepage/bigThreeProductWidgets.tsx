@@ -43,9 +43,9 @@ function BigThreeProductWidgetLayout({
   actions: React.ReactNode;
 }) {
   return (
-    <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }}>
-      <FlexItem>{content}</FlexItem>
-      <FlexItem>{actions}</FlexItem>
+    <Flex className="big-three-product-widget" direction={{ default: 'column' }}>
+      <FlexItem className="big-three-product-widget__content">{content}</FlexItem>
+      <FlexItem className="big-three-product-widget__actions">{actions}</FlexItem>
     </Flex>
   );
 }
@@ -214,8 +214,8 @@ export function RhelNonEmptyWidgetBody() {
   return (
     <BigThreeProductWidgetLayout
       content={
-        <Stack hasGutter>
-          <Content component="p">
+        <Stack className="big-three-product-rhel-summary" hasGutter>
+          <Content component="p" className="big-three-product-rhel-summary__intro">
             You have{' '}
             <Button
               variant="link"
@@ -313,9 +313,39 @@ export const BIG_THREE_PRODUCT_WIDGET_STYLES = `
     margin: 0;
   }
 
+  .big-three-product-widget {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    gap: var(--pf-t--global--spacer--md);
+  }
+
+  .big-three-product-widget__content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .big-three-product-widget__actions {
+    flex: 0 0 auto;
+    margin-top: auto;
+  }
+
   .big-three-product-empty-state__text {
     margin: 0;
     color: var(--pf-t--global--text--color--subtle, var(--pf-v6-global--Color--200));
+  }
+
+  .big-three-product-rhel-summary.pf-v6-l-stack.pf-m-gutter {
+    --pf-v6-l-stack--m-gutter--Gap: var(--pf-t--global--spacer--sm);
+  }
+
+  .big-three-product-rhel-summary__intro {
+    margin: 0;
   }
 
   .widget-card .widget-actions {

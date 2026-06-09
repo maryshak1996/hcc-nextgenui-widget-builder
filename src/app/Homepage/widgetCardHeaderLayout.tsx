@@ -5,7 +5,7 @@ import { WidgetTitleLeadIcon } from '@app/Homepage/homepageWidgetHeaderIcons';
 export interface WidgetCardHeaderLayoutProps {
   widgetId: string;
   title: string;
-  /** Rendered inline after the title in the same wrapping text flow */
+  /** Rendered after the title; stays on the same line when space allows, otherwise wraps below */
   inlineLink?: React.ReactNode;
   /** Kebab menu and drag handle — supplied by WidgetCard on editable surfaces */
   toolbar?: React.ReactNode;
@@ -31,7 +31,9 @@ export function WidgetCardHeaderLayout({
         >
           {title}
         </Title>
-        {inlineLink}
+        {inlineLink ? (
+          <span className="widget-card__header-inline-link">{inlineLink}</span>
+        ) : null}
       </div>
       {toolbar ? <div className="widget-card__header-toolbar">{toolbar}</div> : null}
     </div>
@@ -66,20 +68,33 @@ export const WIDGET_CARD_HEADER_LAYOUT_STYLES = `
     grid-row: 1;
     min-width: 0;
     align-self: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--pf-t--global--spacer--sm);
   }
 
   .widget-card__header-text .pf-v6-c-card__title {
-    display: inline;
+    display: block;
     margin: 0;
     padding: 0;
-    vertical-align: baseline;
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .widget-card__header-text .pf-v6-c-button.pf-m-link {
+  .widget-card__header-text .widget-card__header-inline-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .widget-card__header-text .widget-card__header-inline-link .pf-v6-c-button.pf-m-link {
     display: inline;
     vertical-align: baseline;
-    white-space: normal;
-    margin-inline-start: var(--pf-t--global--spacer--sm);
+    white-space: nowrap;
   }
 
   .widget-card__header-toolbar {

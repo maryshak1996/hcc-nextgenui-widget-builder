@@ -8,12 +8,21 @@ alwaysApply: false
 ## Rule
 - **Never import icons from `@patternfly/react-icons` in widget or dashboard UI code.**
 - **Always import from `@app/icons/rhUiIcons`** — use the exported RH UI icons or their PatternFly-name aliases (e.g. `CheckCircleIcon`, `GripVerticalIcon`).
-- **`src/app/icons/rhUiIcons.ts` is the only file** that may import from `@patternfly/react-icons` for RH UI outline icons.
+- **`src/app/icons/rhUiIcons.ts` is the only file** that may import from `@patternfly/react-icons` for RH UI icons.
+- **Default to outline (`RhUi*Icon`) variants** for all icons.
+
+## Filled icon exceptions
+Use the **filled** RH UI variants (`RhUi*FillIcon`) only for:
+- **Kebab / ellipsis menu** — `EllipsisVIcon` → `RhUiEllipsisVerticalFillIcon`
+- **Drag handle** — `GripVerticalIcon` → `RhUiGripVerticalFillIcon`
+
+Do not use filled variants for other icons unless explicitly requested.
 
 ## When adding a new icon
 1. Check whether an RH UI equivalent exists in `@patternfly/react-icons` (`RhUi*Icon`).
 2. Export it from `rhUiIcons.ts` — prefer a descriptive alias if replacing a common PatternFly name.
 3. Use the alias in components so call sites stay readable.
+4. Apply the filled exceptions above when the icon is a kebab menu or drag handle.
 
 ## Widget surfaces covered
 - Dashboard widget grid and cards (`homepageWidgetGrid.tsx`, product widget modules)
