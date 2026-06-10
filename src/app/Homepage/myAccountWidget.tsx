@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {
   Button,
-  DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm,
@@ -11,6 +10,10 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import {
+  getHorizontalFluidDescriptionListLayout,
+  WidgetDescriptionList
+} from '@app/Homepage/widgetDescriptionList';
 import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 
 export const MY_ACCOUNT_WIDGET_LINKS = {
@@ -97,30 +100,22 @@ export function MyAccountWidgetHeader({
   );
 }
 
+const MY_ACCOUNT_PAIR_COUNT = 3;
+
 export function MyAccountWidgetBody() {
   const colSpan = useWidgetColSpan();
-  const isWideLayout = colSpan >= 2;
+  const fluidLayout = getHorizontalFluidDescriptionListLayout(colSpan, MY_ACCOUNT_PAIR_COUNT);
 
-  const descriptionList = isWideLayout ? (
-    <DescriptionList
-      isCompact
-      columnModifier={{ default: '3Col' }}
+  const descriptionList = (
+    <WidgetDescriptionList
+      horizontalFluid
+      horizontalColumnModifier={fluidLayout.columnModifier}
+      horizontalGridClassName={fluidLayout.className}
       aria-label="Account details"
       className="my-account-widget__description-list"
     >
       <MyAccountDescriptionGroups />
-    </DescriptionList>
-  ) : (
-    <DescriptionList
-      isHorizontal
-      isCompact
-      isFluid
-      columnModifier={{ default: '1Col' }}
-      aria-label="Account details"
-      className="my-account-widget__description-list"
-    >
-      <MyAccountDescriptionGroups />
-    </DescriptionList>
+    </WidgetDescriptionList>
   );
 
   return (

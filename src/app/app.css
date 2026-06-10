@@ -25,6 +25,18 @@ body,
   box-sizing: border-box;
 }
 
+/*
+ * Shared max width for homepage dashboard read view and dashboard editor/detail canvas
+ * (matches Homepage dashboard section layout).
+ */
+.dashboard-canvas-layout {
+  width: 100%;
+  max-width: 1566px;
+  margin-inline: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .hcc-editable-dashboard-toolbar-section.pf-v6-c-page__main-section {
   /* Extra space before canvas / widget strip so fields aren’t flush to the panel below */
   --pf-v6-c-page__main-section--PaddingBlockEnd: var(--pf-t--global--spacer--md);

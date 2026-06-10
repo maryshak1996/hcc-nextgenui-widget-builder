@@ -93,9 +93,11 @@ import {
   serializeDashboardConfigPayload,
   writeDashboardCanvasWidgets
 } from '@app/DashboardHub/dashboardCanvasStorage';
+import { DASHBOARD_CANVAS_LAYOUT_CLASS } from '@app/DashboardHub/dashboardCanvasLayout';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import { scheduleDeferredResizeObserverWork, useDeferredResizeObserverOffsetWidth } from '@app/useDeferredResizeObserver';
 
 type PersistIndicator = 'saved' | 'saving';
 
@@ -127,7 +129,7 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
 }) => {
   const navigate = useNavigate();
   const gridRef = React.useRef<HTMLDivElement>(null);
-  const [gridWidth, setGridWidth] = React.useState(1200);
+  const gridWidth = useDeferredResizeObserverOffsetWidth(() => gridRef.current, [canvasWidgets.length]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [resizePreview, setResizePreview] = React.useState<WidgetResizePreview | null>(null);
 
@@ -158,18 +160,6 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  React.useEffect(() => {
-    const el = gridRef.current;
-    if (!el) {
-      return;
-    }
-    const update = () => setGridWidth(el.offsetWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [canvasWidgets.length]);
 
   const handleDragStart = React.useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -552,7 +542,7 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     const ro = new ResizeObserver(() => {
-      measureDescriptionTruncation();
+      scheduleDeferredResizeObserverWork(measureDescriptionTruncation);
     });
     ro.observe(wrap);
     return () => ro.disconnect();
@@ -852,7 +842,17 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [dashboard, navigate, removeDashboard]);
 
   const dashboardBody = dashboard ? (
-    <>
+    <div className={DASHBOARD_CANVAS_LAYOUT_CLASS}>
+        {isConsoleDefault ? (
+          <PageSection hasBodyWrapper={false}>
+            <Alert
+              variant="info"
+              isInline
+              isPlain
+              title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it and copy its JSON config though."
+            />
+          </PageSection>
+        ) : null}
         <PageSection
           hasBodyWrapper={false}
           className="hcc-editable-dashboard-toolbar-section"
@@ -1351,7 +1351,7 @@ const EditableDashboard: React.FunctionComponent = () => {
             readOnly={isConsoleDefault}
           />
         </PageSection>
-    </>
+    </div>
   ) : null;
 
   return (
@@ -1366,17 +1366,6 @@ const EditableDashboard: React.FunctionComponent = () => {
           <BreadcrumbItem isActive>{breadcrumbLabel}</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>
-
-      {isConsoleDefault ? (
-        <PageSection hasBodyWrapper={false}>
-          <Alert
-            variant="info"
-            isInline
-            isPlain
-            title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it and copy its JSON config though."
-          />
-        </PageSection>
-      ) : null}
 
       {dashboardBody}
 

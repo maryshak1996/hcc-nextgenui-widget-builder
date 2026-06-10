@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {
   Button,
-  DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm
 } from '@patternfly/react-core';
 import { CLUSTER_STATUS_CONFIG, type ClusterStatus } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import { WidgetDescriptionList } from '@app/Homepage/widgetDescriptionList';
 import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 import { RECENT_CLUSTERS_WIDGET_LINKS } from '@app/Homepage/recentClustersWidget';
 
@@ -101,16 +101,14 @@ export function ClusterStatusWidgetBody() {
   return (
     <div className="cluster-status-widget">
       <div className="cluster-status-widget__content">
-        <DescriptionList
-          isHorizontal
-          isCompact
-          isFluid
+        <WidgetDescriptionList
+          horizontalFluid
           columnModifier={columnModifier}
           aria-label="Cluster status"
           className={descriptionListClassName}
         >
           <ClusterStatusDescriptionGroups />
-        </DescriptionList>
+        </WidgetDescriptionList>
       </div>
     </div>
   );

@@ -51,6 +51,8 @@ import {
   WIDGET_GRID_STYLES,
   renderHomepageWidgetContent
 } from '@app/Homepage/homepageWidgetGrid';
+import { DASHBOARD_CANVAS_LAYOUT_CLASS } from '@app/DashboardHub/dashboardCanvasLayout';
+import { useDeferredResizeObserverOffsetWidth } from '@app/useDeferredResizeObserver';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 
 const HOMEPAGE_DASHBOARD_EMPTY_ILLUSTRATION_SRC =
@@ -114,7 +116,10 @@ const Homepage: React.FunctionComponent = () => {
   const { rows, setDashboardAsHomepage } = useDashboardData();
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
   const homepageWidgetsGridRef = useRef<HTMLDivElement>(null);
-  const [homepageGridWidth, setHomepageGridWidth] = useState(1200);
+  const homepageGridWidth = useDeferredResizeObserverOffsetWidth(
+    () => homepageWidgetsGridRef.current,
+    [displayWidgets.length]
+  );
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
@@ -170,18 +175,6 @@ const Homepage: React.FunctionComponent = () => {
   useEffect(() => {
     refreshFromStorage();
   }, [refreshFromStorage]);
-
-  useEffect(() => {
-    const el = homepageWidgetsGridRef.current;
-    if (!el) {
-      return;
-    }
-    const update = () => setHomepageGridWidth(el.offsetWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [displayWidgets.length]);
 
   useEffect(() => {
     return onDashboardCanvasUpdated((detail) => {
@@ -441,7 +434,7 @@ const Homepage: React.FunctionComponent = () => {
       <PageSection className="homepage-dashboard-page-section">
         {homepageDashboard ? (
           <>
-            <div style={{ maxWidth: '1566px', margin: '0 auto', width: '100%' }}>
+            <div className={DASHBOARD_CANVAS_LAYOUT_CLASS}>
               <Flex
                 alignItems={{ default: 'alignItemsFlexStart' }}
                 justifyContent={{ default: 'justifyContentSpaceBetween' }}

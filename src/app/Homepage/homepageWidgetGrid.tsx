@@ -88,8 +88,34 @@ import {
   RhelSubscriptionUsageWidgetHeader,
   SUBSCRIPTION_USAGE_WIDGET_STYLES
 } from '@app/Homepage/subscriptionUsageWidget';
+import {
+  CostManagementWidgetBody,
+  CostManagementWidgetHeader,
+  COST_MANAGEMENT_WIDGET_STYLES
+} from '@app/Homepage/costManagementWidget';
+import {
+  AdvisorRecommendationsWidgetBody,
+  AdvisorRecommendationsWidgetHeader,
+  ADVISOR_RECOMMENDATIONS_WIDGET_STYLES
+} from '@app/Homepage/advisorRecommendationsWidget';
+import {
+  VulnerabilitiesWidgetBody,
+  VulnerabilitiesWidgetHeader,
+  VULNERABILITIES_WIDGET_STYLES
+} from '@app/Homepage/vulnerabilitiesWidget';
+import {
+  RedHatSatelliteWidgetBody,
+  RedHatSatelliteWidgetHeader,
+  RED_HAT_SATELLITE_WIDGET_STYLES
+} from '@app/Homepage/redHatSatelliteWidget';
+import {
+  ActivationKeysWidgetBody,
+  ActivationKeysWidgetHeader,
+  ACTIVATION_KEYS_WIDGET_STYLES
+} from '@app/Homepage/activationKeysWidget';
 import { CLUSTER_STATUS_DISPLAY_STYLES } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetColSpanContext } from '@app/Homepage/widgetColSpanContext';
+import { WIDGET_DESCRIPTION_LIST_STYLES } from '@app/Homepage/widgetDescriptionList';
 import { MAX_ROW_SPAN, MIN_ROW_SPAN, type ColumnSpan, type RowSpan, type Widget } from '@app/Homepage/widgetTypes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -1192,6 +1218,66 @@ export function renderHomepageWidgetContent(
           </WidgetCard>
         );
 
+      case 'openshift-cost-management':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--cost-management"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<CostManagementWidgetHeader title={widget.title} />}
+          >
+            <CostManagementWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'advisor-recommendations':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--advisor-recommendations widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<AdvisorRecommendationsWidgetHeader title={widget.title} />}
+          >
+            <AdvisorRecommendationsWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'vulnerabilities':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--vulnerabilities widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<VulnerabilitiesWidgetHeader title={widget.title} />}
+          >
+            <VulnerabilitiesWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'red-hat-satellite':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--red-hat-satellite"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<RedHatSatelliteWidgetHeader title={widget.title} />}
+          >
+            <RedHatSatelliteWidgetBody />
+          </WidgetCard>
+        );
+
       case 'my-account':
         return (
           <WidgetCard
@@ -1204,6 +1290,21 @@ export function renderHomepageWidgetContent(
             headerExtra={<MyAccountWidgetHeader title={widget.title} />}
           >
             <MyAccountWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'activation-keys':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--activation-keys widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<ActivationKeysWidgetHeader title={widget.title} />}
+          >
+            <ActivationKeysWidgetBody />
           </WidgetCard>
         );
 
@@ -1283,6 +1384,12 @@ export const WIDGET_GRID_STYLES = `
     ${CLUSTER_STATUS_DISPLAY_STYLES}
     ${CLUSTER_STATUS_WIDGET_STYLES}
     ${SUBSCRIPTION_USAGE_WIDGET_STYLES}
+    ${COST_MANAGEMENT_WIDGET_STYLES}
+    ${ADVISOR_RECOMMENDATIONS_WIDGET_STYLES}
+    ${VULNERABILITIES_WIDGET_STYLES}
+    ${RED_HAT_SATELLITE_WIDGET_STYLES}
+    ${ACTIVATION_KEYS_WIDGET_STYLES}
+    ${WIDGET_DESCRIPTION_LIST_STYLES}
     ${MY_ACCOUNT_WIDGET_STYLES}
     ${WIDGET_CARD_HEADER_LAYOUT_STYLES}
     .pf-v6-c-card.explore-capability-card {
@@ -1433,11 +1540,44 @@ export const WIDGET_GRID_STYLES = `
       padding-block-end: 0 !important;
     }
 
+    .widget-card.widget-card--cost-management .widget-card__body,
+    .widget-card.widget-card--cost-management .pf-v6-c-card__body {
+      padding-inline-start: 0 !important;
+      padding-inline-end: 0 !important;
+      padding-block-end: 0 !important;
+    }
+
+    .widget-card.widget-card--advisor-recommendations .widget-card__body,
+    .widget-card.widget-card--advisor-recommendations .pf-v6-c-card__body {
+      padding-inline-start: 0 !important;
+      padding-inline-end: 0 !important;
+      padding-block-end: 0 !important;
+    }
+
+    .widget-card.widget-card--vulnerabilities .widget-card__body,
+    .widget-card.widget-card--vulnerabilities .pf-v6-c-card__body {
+      padding-inline-start: 0 !important;
+      padding-inline-end: 0 !important;
+      padding-block-end: 0 !important;
+    }
+
     .widget-card.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
       padding-block-start: var(--pf-t--global--spacer--md);
     }
 
     .widget-card.widget-card--subscription-usage.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
+      padding-block-start: 0 !important;
+    }
+
+    .widget-card.widget-card--cost-management.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
+      padding-block-start: 0 !important;
+    }
+
+    .widget-card.widget-card--advisor-recommendations.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
+      padding-block-start: 0 !important;
+    }
+
+    .widget-card.widget-card--vulnerabilities.pf-v6-c-card > .pf-v6-c-divider + .pf-v6-c-card__body {
       padding-block-start: 0 !important;
     }
     

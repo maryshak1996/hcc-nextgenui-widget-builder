@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
+import { useDeferredResizeObserverWidth } from '@app/useDeferredResizeObserver';
 import {
   Chart,
   ChartArea,
@@ -31,23 +32,7 @@ interface UsagePoint {
 
 function useChartContainerWidth() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element) {
-      return undefined;
-    }
-
-    const updateWidth = () => {
-      setWidth(Math.max(0, Math.floor(element.clientWidth)));
-    };
-
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const width = useDeferredResizeObserverWidth(() => containerRef.current, []);
 
   return { containerRef, width };
 }

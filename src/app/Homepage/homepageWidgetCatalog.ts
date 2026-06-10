@@ -176,7 +176,7 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
   },
   {
     id: 'activation-keys',
-    title: 'Activation Keys',
+    title: 'Activation keys',
     type: 'placeholder',
     colSpan: 1,
     rowSpan: 4

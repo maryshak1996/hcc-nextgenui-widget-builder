@@ -28,7 +28,18 @@ export default merge(common('development'), {
     // Never serve loose files from disk before webpack’s bundle (avoids stale ./dist).
     static: false,
     client: {
-      overlay: true,
+      overlay: {
+        errors: true,
+        warnings: false,
+        runtimeErrors: (error) => {
+          const message = error?.message ?? String(error);
+          // Benign browser notification when RO callbacks shift layout in the same frame.
+          if (/ResizeObserver loop/i.test(message)) {
+            return false;
+          }
+          return true;
+        },
+      },
     },
   },
   module: {

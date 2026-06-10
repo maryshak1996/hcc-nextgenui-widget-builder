@@ -11,6 +11,7 @@
 export {
   RhUiAddCircleIcon,
   RhUiAiExperienceIcon,
+  RhUiAnalyzeIcon,
   RhUiArrowCircleDownIcon,
   RhUiArrowCircleUpIcon,
   RhUiArrowRightIcon,
@@ -65,6 +66,7 @@ export {
   RhUiNotificationIcon,
   RhUiOpenDrawerRightIcon,
   RhUiPanelOpenIcon,
+  RhUiPathIcon,
   RhUiPendingIcon,
   RhUiPlugIcon,
   RhUiProcessAutomationIcon,
@@ -76,6 +78,7 @@ export {
   RhUiRunningIcon,
   RhUiRestoreWindowIcon,
   RhUiSearchIcon,
+  RhUiSecurityAdvisoryIcon,
   RhUiSecurityIcon,
   RhUiServerIcon,
   RhUiServerStackIcon,
@@ -97,11 +100,14 @@ export {
 } from '@patternfly/react-icons';
 
 export { RhStandardSunIcon } from '@patternfly/react-icons';
+export { RhStandardLightBulbIcon as LightbulbIcon } from '@patternfly/react-icons';
+export { RhStandardSpaceSatelliteIcon as SatelliteIcon } from '@patternfly/react-icons';
 
 /** Drop-in aliases for common PatternFly icon names */
 export { RhUiProcessAutomationIcon as AnsibleTowerIcon } from '@patternfly/react-icons';
 export { RhUiAddCircleIcon as PlusCircleIcon } from '@patternfly/react-icons';
 export { RhUiAiExperienceIcon as AiExperienceIcon } from '@patternfly/react-icons';
+export { RhUiAnalyzeIcon as AnalyzeIcon } from '@patternfly/react-icons';
 export { RhUiMinusCircleIcon as MinusCircleIcon } from '@patternfly/react-icons';
 export { RhUiCloseIcon as TimesIcon } from '@patternfly/react-icons';
 export { RhUiCloseCircleIcon as TimesCircleIcon } from '@patternfly/react-icons';
@@ -126,7 +132,7 @@ export { RhUiGripVerticalFillIcon as GripVerticalIcon } from '@patternfly/react-
 export { RhUiCallIcon as HeadsetIcon } from '@patternfly/react-icons';
 export { RhUiMonitoringIcon as ChartLineIcon } from '@patternfly/react-icons';
 export { RhUiCardPaymentIcon as CreditCardIcon } from '@patternfly/react-icons';
-export { RhUiCardPaymentIcon as DollarSignIcon } from '@patternfly/react-icons';
+export { RhStandardDollarSignIcon as DollarSignIcon } from '@patternfly/react-icons';
 export { RhUiDocumentIcon as FileAltIcon } from '@patternfly/react-icons';
 export { RhUiBuildIcon as WrenchIcon } from '@patternfly/react-icons';
 export { RhUiDuplicateIcon as OutlinedCloneIcon } from '@patternfly/react-icons';
@@ -181,3 +187,5 @@ export { RhUiServerStackIcon as ServerStackIcon } from '@patternfly/react-icons'
 export { RhUiSyncAltIcon as SyncAltIcon } from '@patternfly/react-icons';
 export { RhUiUndoIcon as UndoIcon } from '@patternfly/react-icons';
 export { RhUiTopologyIcon as ProjectDiagramIcon } from '@patternfly/react-icons';
+export { SeverityCriticalIcon as RhUiSeverityCriticalIcon } from '@patternfly/react-icons';
+export { SeverityImportantIcon as RhUiSeverityImportantIcon } from '@patternfly/react-icons';

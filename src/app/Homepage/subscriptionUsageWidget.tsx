@@ -17,6 +17,7 @@ import {
   ToolbarItem
 } from '@patternfly/react-core';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 import {
   AnsibleSubscriptionUsageSkeletonChart,
   OpenshiftSubscriptionUsageChart,
@@ -44,11 +45,11 @@ interface SubscriptionUsageWidgetConfig {
 }
 
 const TIME_FRAME_OPTIONS = [
-  { id: '7', label: '7 days' },
-  { id: '30', label: '30 days' },
-  { id: '90', label: '90 days' },
-  { id: '180', label: '180 days' },
-  { id: '365', label: '1 year' }
+  { id: '7', label: '7 days', toggleLabel: 'Past 7 days (daily)' },
+  { id: '30', label: '30 days', toggleLabel: 'Past 30 days (daily)' },
+  { id: '90', label: '90 days', toggleLabel: 'Past 90 days (daily)' },
+  { id: '180', label: '180 days', toggleLabel: 'Past 180 days (weekly)' },
+  { id: '365', label: '1 year', toggleLabel: 'Past 1 year (monthly)' }
 ] as const;
 
 const DEFAULT_TIME_FRAME = '30';
@@ -133,6 +134,8 @@ function SubscriptionUsageChartPanel({
 }
 
 function SubscriptionUsageWidgetBody({ config }: { config: SubscriptionUsageWidgetConfig }) {
+  const colSpan = useWidgetColSpan();
+  const isWideToolbar = colSpan >= 2;
   const initialTabKey = config.tabs?.[0]?.eventKey ?? 'default';
   const [activeTabKey, setActiveTabKey] = useState(initialTabKey);
   const [selectedVariant, setSelectedVariant] = useState(config.variantLabel);
@@ -143,6 +146,9 @@ function SubscriptionUsageWidgetBody({ config }: { config: SubscriptionUsageWidg
   const dayCount = Number.parseInt(selectedTimeFrame, 10);
   const selectedTimeFrameLabel =
     TIME_FRAME_OPTIONS.find((option) => option.id === selectedTimeFrame)?.label ?? '30 days';
+  const selectedTimeFrameToggleLabel =
+    TIME_FRAME_OPTIONS.find((option) => option.id === selectedTimeFrame)?.toggleLabel ??
+    'Past 30 days (daily)';
 
   const variantToggleText = useMemo(
     () => `Variant: ${selectedVariant}`,
@@ -215,7 +221,13 @@ function SubscriptionUsageWidgetBody({ config }: { config: SubscriptionUsageWidg
                     </DropdownList>
                   </Dropdown>
                 </FlexItem>
-                <FlexItem className="subscription-usage-widget__time-frame-item">
+                <FlexItem
+                  className={
+                    isWideToolbar
+                      ? 'subscription-usage-widget__time-frame-item subscription-usage-widget__time-frame-item--wide'
+                      : 'subscription-usage-widget__time-frame-item'
+                  }
+                >
                   <Dropdown
                     isOpen={isTimeFrameOpen}
                     onOpenChange={setIsTimeFrameOpen}
@@ -229,13 +241,24 @@ function SubscriptionUsageWidgetBody({ config }: { config: SubscriptionUsageWidg
                     toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
                       <MenuToggle
                         ref={toggleRef}
-                        variant="plain"
+                        variant={isWideToolbar ? 'default' : 'plain'}
                         size="sm"
                         isExpanded={isTimeFrameOpen}
                         onClick={() => setIsTimeFrameOpen((open) => !open)}
+                        className={
+                          isWideToolbar
+                            ? 'subscription-usage-widget__time-frame-toggle'
+                            : 'subscription-usage-widget__time-frame-toggle subscription-usage-widget__time-frame-toggle--icon'
+                        }
                         aria-label={`Time frame: ${selectedTimeFrameLabel}`}
                       >
-                        <ClockIcon aria-hidden />
+                        {isWideToolbar ? (
+                          <span className="subscription-usage-widget__time-frame-toggle-text">
+                            {selectedTimeFrameToggleLabel}
+                          </span>
+                        ) : (
+                          <ClockIcon aria-hidden />
+                        )}
                       </MenuToggle>
                     )}
                   >
@@ -392,15 +415,30 @@ export const SUBSCRIPTION_USAGE_WIDGET_STYLES = `
     flex-shrink: 0;
   }
 
-  .subscription-usage-widget__variant-toggle {
+  .subscription-usage-widget__time-frame-item--wide {
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 1;
+  }
+
+  .subscription-usage-widget__variant-toggle,
+  .subscription-usage-widget__time-frame-toggle {
     max-width: min(100%, 20rem);
   }
 
-  .subscription-usage-widget__variant-toggle-text {
+  .subscription-usage-widget__variant-toggle-text,
+  .subscription-usage-widget__time-frame-toggle-text {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .subscription-usage-widget__time-frame-toggle--icon.pf-v6-c-menu-toggle.pf-m-plain {
+    --pf-v6-c-menu-toggle--PaddingBlockStart: var(--pf-t--global--spacer--xs);
+    --pf-v6-c-menu-toggle--PaddingBlockEnd: var(--pf-t--global--spacer--xs);
+    --pf-v6-c-menu-toggle--PaddingInlineStart: var(--pf-t--global--spacer--sm);
+    --pf-v6-c-menu-toggle--PaddingInlineEnd: var(--pf-t--global--spacer--sm);
   }
 
   .subscription-usage-widget__chart-frame {

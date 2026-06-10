@@ -2,7 +2,6 @@ import * as React from 'react';
 import {
   Button,
   Content,
-  DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm,
@@ -13,6 +12,7 @@ import {
 import { ExclamationCircleIcon, ExclamationTriangleIcon } from '@app/icons/rhUiIcons';
 import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import { WidgetDescriptionList } from '@app/Homepage/widgetDescriptionList';
 
 /** Product artwork for empty-state widgets. */
 export const BIG_THREE_PRODUCT_IMAGES = {
@@ -229,7 +229,7 @@ export function RhelNonEmptyWidgetBody() {
             </Button>{' '}
             registered with Red Hat Lightspeed.
           </Content>
-          <DescriptionList isHorizontal isCompact isFluid>
+          <WidgetDescriptionList horizontalFluid>
             <DescriptionListGroup>
               <DescriptionListTerm
                 icon={
@@ -264,7 +264,7 @@ export function RhelNonEmptyWidgetBody() {
                 </Button>
               </DescriptionListDescription>
             </DescriptionListGroup>
-          </DescriptionList>
+          </WidgetDescriptionList>
         </Stack>
       }
       actions={
