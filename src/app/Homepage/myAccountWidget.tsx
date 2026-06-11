@@ -122,7 +122,7 @@ export function MyAccountWidgetBody() {
     <Flex
       className="my-account-widget"
       direction={{ default: 'column' }}
-      spaceItems={{ default: 'spaceItemsMd' }}
+      spaceItems={{ default: 'spaceItemsXs' }}
     >
       <FlexItem className="my-account-widget__content">{descriptionList}</FlexItem>
       <FlexItem className="my-account-widget__footer">
@@ -160,8 +160,8 @@ export const MY_ACCOUNT_WIDGET_STYLES = `
   }
 
   .my-account-widget__content {
-    flex: 1 1 0;
-    min-height: 0;
+    flex: 1 1 auto;
+    min-height: min-content;
     overflow-x: hidden;
     overflow-y: auto;
     width: 100%;
@@ -173,7 +173,6 @@ export const MY_ACCOUNT_WIDGET_STYLES = `
 
   .my-account-widget__footer {
     flex-shrink: 0;
-    margin-top: auto;
     width: fit-content;
   }
 `;

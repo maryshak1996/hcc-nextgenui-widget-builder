@@ -183,7 +183,7 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
   },
   {
     id: 'manifests',
-    title: 'Manifests',
+    title: 'Subscriptions manifests',
     type: 'placeholder',
     colSpan: 1,
     rowSpan: 4

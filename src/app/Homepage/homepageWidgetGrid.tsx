@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import {
   Button,
@@ -24,12 +24,12 @@ import {
 import { ArrowRightIcon, EllipsisVIcon, ExternalLinkAltIcon, GripVerticalIcon } from '@app/icons/rhUiIcons';
 import { WidgetCardHeaderLayout, WIDGET_CARD_HEADER_LAYOUT_STYLES } from '@app/Homepage/widgetCardHeaderLayout';
 import {
-  AnsibleEmptyWidgetBody,
+  AnsibleWidgetBody,
   BIG_THREE_PRODUCT_LINKS,
   BIG_THREE_PRODUCT_WIDGET_STYLES,
   BigThreeProductHeader,
-  OpenshiftEmptyWidgetBody,
-  RhelNonEmptyWidgetBody
+  OpenshiftWidgetBody,
+  RhelWidgetBody
 } from '@app/Homepage/bigThreeProductWidgets';
 import { EventsWidgetBody, EventsWidgetHeader, EVENTS_WIDGET_STYLES } from '@app/Homepage/eventsWidget';
 import {
@@ -113,6 +113,16 @@ import {
   ActivationKeysWidgetHeader,
   ACTIVATION_KEYS_WIDGET_STYLES
 } from '@app/Homepage/activationKeysWidget';
+import {
+  ManifestsWidgetBody,
+  ManifestsWidgetHeader,
+  MANIFESTS_WIDGET_STYLES
+} from '@app/Homepage/manifestsWidget';
+import {
+  SimpleContentAccessWidgetBody,
+  SimpleContentAccessWidgetHeader,
+  SIMPLE_CONTENT_ACCESS_WIDGET_STYLES
+} from '@app/Homepage/simpleContentAccessWidget';
 import { CLUSTER_STATUS_DISPLAY_STYLES } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetColSpanContext } from '@app/Homepage/widgetColSpanContext';
 import { WIDGET_DESCRIPTION_LIST_STYLES } from '@app/Homepage/widgetDescriptionList';
@@ -120,6 +130,7 @@ import { MAX_ROW_SPAN, MIN_ROW_SPAN, type ColumnSpan, type RowSpan, type Widget 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Resizable, type ResizeCallback, type ResizeStartCallback } from 're-resizable';
+import { scheduleDeferredResizeObserverWork } from '@app/useDeferredResizeObserver';
 
 
 export const ROW_HEIGHT = 80; // Logical row height in pixels (two grid sub-rows)
@@ -198,6 +209,210 @@ export function getRowSpanFromPixelHeight(height: number): RowSpan {
   }
 
   return MAX_ROW_SPAN;
+}
+
+/** Smallest row span whose grid track height fits `requiredHeight` (px). */
+export function getMinimumRowSpanForPixelHeight(requiredHeight: number): RowSpan {
+  const safeHeight = Math.max(0, Math.ceil(requiredHeight));
+
+  for (const span of ALL_ROW_SPANS) {
+    if (getPixelHeightForRowSpan(span) >= safeHeight) {
+      return span;
+    }
+  }
+
+  return MAX_ROW_SPAN;
+}
+
+/** True when body content or a nested scroll region is taller than its visible box. */
+export function widgetCardBodyHasVerticalClipping(widgetRoot: HTMLElement): boolean {
+  const bodyContent = widgetRoot.querySelector<HTMLElement>('.widget-card__body-content');
+  if (!bodyContent) {
+    return false;
+  }
+
+  if (bodyContent.scrollHeight > bodyContent.clientHeight + 1) {
+    return true;
+  }
+
+  const descendants = Array.from(bodyContent.querySelectorAll<HTMLElement>('*'));
+  for (const element of descendants) {
+    const { overflowY, overflow } = getComputedStyle(element);
+    const scrollable =
+      overflowY === 'auto' || overflowY === 'scroll' || overflow === 'auto' || overflow === 'scroll';
+    if (scrollable && element.scrollHeight > element.clientHeight + 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function sumElementHeights(elements: (HTMLElement | null | undefined)[]): number {
+  return elements.reduce((total, element) => total + (element?.getBoundingClientRect().height ?? 0), 0);
+}
+
+/** Sum the natural laid-out height of widget body content (not the grid cell). */
+function measurePinnedWidgetBodyNaturalHeight(bodyContent: HTMLElement): number {
+  const directChild = bodyContent.firstElementChild;
+  if (!(directChild instanceof HTMLElement)) {
+    return bodyContent.scrollHeight;
+  }
+
+  const directStyle = getComputedStyle(directChild);
+  const padding =
+    parseFloat(directStyle.paddingTop) + parseFloat(directStyle.paddingBottom);
+  const directHeight = directChild.getBoundingClientRect().height;
+
+  if (directHeight > 0) {
+    return directHeight + padding;
+  }
+
+  return bodyContent.scrollHeight;
+}
+
+/** Measure the pixel height needed to show a widget card header, body, and footer without clipping. */
+export function measureWidgetCardFitHeight(
+  widgetRoot: HTMLElement,
+  options: { naturalLayout?: boolean } = {}
+): number | null {
+  const naturalLayout =
+    options.naturalLayout ?? widgetRoot.classList.contains('is-auto-sizing');
+
+  const card = widgetRoot.querySelector<HTMLElement>('.widget-card');
+  if (!card) {
+    return null;
+  }
+
+  const header = card.querySelector<HTMLElement>('.pf-v6-c-card__header');
+  const divider = card.querySelector<HTMLElement>('.pf-v6-c-divider');
+  const cardBody = card.querySelector<HTMLElement>('.widget-card__body, .pf-v6-c-card__body');
+  const bodyContent = card.querySelector<HTMLElement>('.widget-card__body-content');
+  const footer = card.querySelector<HTMLElement>('.pf-v6-c-card__footer');
+
+  if (!bodyContent) {
+    return null;
+  }
+
+  const cardStyles = getComputedStyle(card);
+  const bodyPadding =
+    cardBody != null
+      ? parseFloat(getComputedStyle(cardBody).paddingTop) +
+        parseFloat(getComputedStyle(cardBody).paddingBottom)
+      : 0;
+  const borderHeight =
+    parseFloat(cardStyles.borderTopWidth) + parseFloat(cardStyles.borderBottomWidth);
+
+  if (naturalLayout) {
+    const chromeHeight = sumElementHeights([header, divider, footer]) + bodyPadding + borderHeight;
+    const bodyNaturalHeight = measurePinnedWidgetBodyNaturalHeight(bodyContent);
+    const wrapperHeight = Math.ceil(widgetRoot.getBoundingClientRect().height);
+    return Math.max(Math.ceil(chromeHeight + bodyNaturalHeight), wrapperHeight);
+  }
+
+  let total = sumElementHeights([header, divider, footer]) + bodyPadding + bodyContent.scrollHeight + borderHeight;
+
+  return Math.ceil(total);
+}
+
+export type WidgetAutoSizeFitHandler = (
+  id: string,
+  colSpan: ColumnSpan,
+  rowSpan: RowSpan,
+  complete: boolean
+) => void;
+
+/** Measure and apply the minimum row span that fits widget body + footer content. */
+export function useWidgetAutoSizeMeasurement({
+  enabled,
+  paused = false,
+  wrapperRef,
+  widgetId,
+  widgetColSpan,
+  gridWidth,
+  onAutoSizeFit
+}: {
+  enabled: boolean;
+  paused?: boolean;
+  wrapperRef: React.RefObject<HTMLElement | null>;
+  widgetId: string;
+  widgetColSpan: ColumnSpan;
+  gridWidth: number;
+  onAutoSizeFit: WidgetAutoSizeFitHandler;
+}) {
+  const previousFitRowSpanRef = useRef<RowSpan | null>(null);
+
+  useEffect(() => {
+    if (!enabled) {
+      previousFitRowSpanRef.current = null;
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || paused) {
+      return undefined;
+    }
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let debounceId = 0;
+
+    const runMeasure = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const fitHeight = measureWidgetCardFitHeight(wrapper, { naturalLayout: true });
+      if (fitHeight == null) {
+        return;
+      }
+
+      let fitRowSpan = getMinimumRowSpanForPixelHeight(fitHeight);
+      if (
+        !wrapper.classList.contains('is-auto-sizing') &&
+        widgetCardBodyHasVerticalClipping(wrapper) &&
+        fitRowSpan < MAX_ROW_SPAN
+      ) {
+        fitRowSpan = clampRowSpan(fitRowSpan + 1);
+      }
+
+      const fitColSpan = getEffectiveColumnSpan(gridWidth, widgetColSpan);
+      const isStable =
+        previousFitRowSpanRef.current === fitRowSpan &&
+        (!widgetCardBodyHasVerticalClipping(wrapper) || wrapper.classList.contains('is-auto-sizing'));
+      previousFitRowSpanRef.current = fitRowSpan;
+      onAutoSizeFit(widgetId, fitColSpan, fitRowSpan, isStable);
+    };
+
+    const scheduleMeasure = () => {
+      window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        scheduleDeferredResizeObserverWork(() => {
+          window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(runMeasure);
+          });
+        });
+      }, 150);
+    };
+
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(wrapper);
+    const card = wrapper.querySelector('.widget-card');
+    if (card) {
+      observer.observe(card);
+    }
+    scheduleMeasure();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(debounceId);
+      observer.disconnect();
+    };
+  }, [enabled, paused, gridWidth, widgetId, widgetColSpan, onAutoSizeFit, wrapperRef]);
 }
 
 /** Clamp and coerce persisted row span values. */
@@ -419,6 +634,8 @@ interface SortableWidgetCardProps {
     onRemove?: () => void;
   }>;
   onSizeChange: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => void;
+  onAutoSizeFit: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan, complete: boolean) => void;
+  needsAutoSize: boolean;
   onResizePreviewStart: (
     preview: WidgetResizePreview
   ) => void;
@@ -433,6 +650,8 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
   placement,
   children,
   onSizeChange,
+  onAutoSizeFit,
+  needsAutoSize,
   onResizePreviewStart,
   onResizePreviewChange,
   onResizePreviewEnd,
@@ -443,6 +662,7 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
   const [previewColSpan, setPreviewColSpan] = useState<ColumnSpan>(widget.colSpan);
   const [previewRowSpan, setPreviewRowSpan] = useState<RowSpan>(widget.rowSpan);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const {
     attributes,
@@ -456,6 +676,14 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
     disabled: isResizing,
     animateLayoutChanges: () => false
   });
+
+  const setWrapperRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      wrapperRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
 
   const columnCount = getDashboardGridColumnCount(gridWidth);
   const effectiveColSpan = getEffectiveColumnSpan(gridWidth, widget.colSpan);
@@ -492,6 +720,16 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
   const getRowSpanFromHeight = (height: number): RowSpan => {
     return getRowSpanFromPixelHeight(height);
   };
+
+  useWidgetAutoSizeMeasurement({
+    enabled: needsAutoSize,
+    paused: isResizing || isDragging,
+    wrapperRef,
+    widgetId: widget.id,
+    widgetColSpan: widget.colSpan,
+    gridWidth,
+    onAutoSizeFit
+  });
 
   useEffect(() => {
     if (!isResizing) {
@@ -549,7 +787,7 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
     zIndex: isDragging ? 1000 : isResizing ? 999 : 'auto',
     gridColumn: `${placement.columnStart} / span ${displayColSpan}`,
     gridRow: `${placement.rowStart} / span ${displayRowSpan}`,
-    alignSelf: isResizing ? 'start' : undefined,
+    alignSelf: isResizing || needsAutoSize ? 'start' : undefined,
     minWidth: 0,
     minHeight: 0,
     boxSizing: 'border-box'
@@ -564,9 +802,9 @@ export const SortableWidgetCard: React.FC<SortableWidgetCardProps> = ({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setWrapperRef}
       style={style}
-      className={`widget-wrapper${isDragging ? ' is-dragging' : ''}${isResizing ? ' is-resizing' : ''}`}
+      className={`widget-wrapper${isDragging ? ' is-dragging' : ''}${isResizing ? ' is-resizing' : ''}${needsAutoSize ? ' is-auto-sizing' : ''}`}
     >
       <WidgetColSpanContext.Provider value={displayColSpan}>
         <Resizable
@@ -788,7 +1026,7 @@ export function renderHomepageWidgetContent(
               />
             }
           >
-            <RhelNonEmptyWidgetBody />
+            <RhelWidgetBody />
           </WidgetCard>
         );
 
@@ -809,7 +1047,7 @@ export function renderHomepageWidgetContent(
               />
             }
           >
-            <OpenshiftEmptyWidgetBody />
+            <OpenshiftWidgetBody />
           </WidgetCard>
         );
 
@@ -830,7 +1068,7 @@ export function renderHomepageWidgetContent(
               />
             }
           >
-            <AnsibleEmptyWidgetBody />
+            <AnsibleWidgetBody />
           </WidgetCard>
         );
 
@@ -1308,6 +1546,36 @@ export function renderHomepageWidgetContent(
           </WidgetCard>
         );
 
+      case 'manifests':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--manifests widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<ManifestsWidgetHeader title={widget.title} />}
+          >
+            <ManifestsWidgetBody />
+          </WidgetCard>
+        );
+
+      case 'simple-content-access-sca':
+        return (
+          <WidgetCard
+            title={widget.title}
+            widgetId={widget.id}
+            className="widget-card--simple-content-access-sca widget-card--pinned-body-footer"
+            dragHandleProps={dragHandleProps}
+            onRemove={onRemove}
+            readOnly={readOnly}
+            headerExtra={<SimpleContentAccessWidgetHeader title={widget.title} />}
+          >
+            <SimpleContentAccessWidgetBody />
+          </WidgetCard>
+        );
+
       // Placeholder widgets (Data Integrations, Alert Manager, etc.)
       default:
         return (
@@ -1343,27 +1611,60 @@ export function ReadOnlyHomepageWidgetFrame({
   widget,
   gridWidth,
   placement,
-  children
+  children,
+  autoSize = false,
+  onAutoSizeFit
 }: {
   widget: Widget;
   /** Width of `.widgets-grid` (ResizeObserver); omit only if unavailable (falls back to wide desktop). */
   gridWidth?: number;
   placement: DashboardWidgetPlacement;
   children: React.ReactNode;
+  autoSize?: boolean;
+  onAutoSizeFit?: WidgetAutoSizeFitHandler;
 }) {
   const w = gridWidth ?? 1600;
   const effectiveColSpan = getEffectiveColumnSpan(w, widget.colSpan);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const needsAutoSize = autoSize && Boolean(onAutoSizeFit);
+
+  useWidgetAutoSizeMeasurement({
+    enabled: needsAutoSize,
+    wrapperRef,
+    widgetId: widget.id,
+    widgetColSpan: widget.colSpan,
+    gridWidth: w,
+    onAutoSizeFit: onAutoSizeFit ?? (() => undefined)
+  });
+
+  const explicitWidth = getPixelWidthForColSpan(w, effectiveColSpan);
+  const explicitHeight = getPixelHeightForRowSpan(widget.rowSpan);
+
   const style: React.CSSProperties = {
     gridColumn: `${placement.columnStart} / span ${effectiveColSpan}`,
     gridRow: `${placement.rowStart} / span ${widget.rowSpan}`,
+    alignSelf: needsAutoSize ? 'start' : undefined,
     minWidth: 0,
     minHeight: 0,
     boxSizing: 'border-box'
   };
   return (
     <WidgetColSpanContext.Provider value={effectiveColSpan}>
-      <div className="widget-wrapper read-only-homepage-widget" style={style}>
-        {children}
+      <div
+        ref={wrapperRef}
+        className={`widget-wrapper read-only-homepage-widget${needsAutoSize ? ' is-auto-sizing' : ''}`}
+        style={style}
+      >
+        <div
+          className="widget-resizable-root"
+          style={{
+            width: explicitWidth,
+            height: needsAutoSize ? undefined : explicitHeight,
+            boxSizing: 'border-box'
+          }}
+        >
+          {children}
+        </div>
       </div>
     </WidgetColSpanContext.Provider>
   );
@@ -1389,6 +1690,8 @@ export const WIDGET_GRID_STYLES = `
     ${VULNERABILITIES_WIDGET_STYLES}
     ${RED_HAT_SATELLITE_WIDGET_STYLES}
     ${ACTIVATION_KEYS_WIDGET_STYLES}
+    ${MANIFESTS_WIDGET_STYLES}
+    ${SIMPLE_CONTENT_ACCESS_WIDGET_STYLES}
     ${WIDGET_DESCRIPTION_LIST_STYLES}
     ${MY_ACCOUNT_WIDGET_STYLES}
     ${WIDGET_CARD_HEADER_LAYOUT_STYLES}
@@ -1453,8 +1756,16 @@ export const WIDGET_GRID_STYLES = `
       position: relative;
     }
 
-    .widget-wrapper.read-only-homepage-widget {
-      height: 100%;
+    .widget-wrapper.read-only-homepage-widget .widget-resizable-root {
+      min-width: 0 !important;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .widget-wrapper.read-only-homepage-widget .widget-resizable-root .widget-card {
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .widget-wrapper.is-dragging {
@@ -1469,6 +1780,73 @@ export const WIDGET_GRID_STYLES = `
 
     .widget-wrapper.is-resizing {
       z-index: 999;
+    }
+
+    /* During auto-size, unlock flex/scroll constraints so natural content height can be measured. */
+    .widget-wrapper.is-auto-sizing {
+      overflow: visible;
+      z-index: 2;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-resizable-root {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card {
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card__body,
+    .widget-wrapper.is-auto-sizing .widget-card .pf-v6-c-card__body {
+      flex-grow: 0 !important;
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card__body-content {
+      flex: none !important;
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card__body-content > * {
+      height: auto !important;
+      min-height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      flex: none !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card__body-content [class*='__content'],
+    .widget-wrapper.is-auto-sizing .widget-card__body-content [class*='__footer'],
+    .widget-wrapper.is-auto-sizing .widget-card__body-content [class*='__actions'],
+    .widget-wrapper.is-auto-sizing .widget-card__body-content [class*='__create'] {
+      flex: none !important;
+      height: auto !important;
+      min-height: auto !important;
+      overflow: visible !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .widget-card__body-content [class*='__table-wrap'] {
+      overflow: visible !important;
+      flex: none !important;
+      height: auto !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .subscriptions-widget-body {
+      grid-auto-rows: auto !important;
+      align-content: start !important;
+      height: auto !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .subscriptions-widget-body .subscriptions-status-alert {
+      height: auto !important;
     }
 
     .widget-grid-drag-overlay {
@@ -1517,6 +1895,20 @@ export const WIDGET_GRID_STYLES = `
       display: flex;
       flex-direction: column;
       overflow: hidden;
+    }
+
+    /* Tight space above pinned in-card actions; card body keeps md padding below footer */
+    .widget-card--pinned-body-footer .widget-card__body-content > [class*='-widget'] {
+      gap: var(--pf-t--global--spacer--xs);
+      row-gap: var(--pf-t--global--spacer--xs);
+    }
+
+    .widget-card--pinned-body-footer .widget-card__body-content [class*='__actions'],
+    .widget-card--pinned-body-footer .widget-card__body-content [class*='__footer'],
+    .widget-card--pinned-body-footer .widget-card__body-content [class*='__pagination'],
+    .widget-card--pinned-body-footer .widget-card__body-content [class*='__create'] {
+      margin-top: 0;
+      padding-block-start: 0;
     }
 
     .widget-card--has-card-footer .widget-card__body-content {

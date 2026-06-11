@@ -277,8 +277,6 @@ export const ADVISOR_RECOMMENDATIONS_WIDGET_STYLES = `
 
   .advisor-recommendations-widget__footer {
     flex-shrink: 0;
-    margin-top: auto;
-    padding-block-start: var(--pf-t--global--spacer--md);
     width: fit-content;
   }
 `;

@@ -308,7 +308,7 @@ export const INTEGRATIONS_WIDGET_STYLES = `
     height: 100%;
     width: 100%;
     overflow: hidden;
-    gap: var(--pf-t--global--spacer--md);
+    gap: var(--pf-t--global--spacer--xs);
   }
 
   .integrations-widget__table-wrap {
@@ -347,7 +347,6 @@ export const INTEGRATIONS_WIDGET_STYLES = `
 
   .integrations-widget__create {
     flex: 0 0 auto;
-    margin-top: auto;
     width: fit-content;
   }
 `;

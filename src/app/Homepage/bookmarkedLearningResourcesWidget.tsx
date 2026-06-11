@@ -204,7 +204,7 @@ export const BOOKMARKED_LEARNING_RESOURCES_WIDGET_STYLES = `
     height: 100%;
     width: 100%;
     overflow: hidden;
-    gap: var(--pf-t--global--spacer--md);
+    gap: var(--pf-t--global--spacer--xs);
   }
 
   .bookmarked-learning-resources-widget__table-wrap {
@@ -241,7 +241,6 @@ export const BOOKMARKED_LEARNING_RESOURCES_WIDGET_STYLES = `
   .bookmarked-learning-resources-widget__pagination {
     flex: 0 0 auto;
     margin-block: 0;
-    margin-top: auto;
     padding-block-start: 0;
     padding-inline-end: var(--pf-t--global--spacer--md);
   }

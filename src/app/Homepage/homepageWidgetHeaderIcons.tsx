@@ -5,15 +5,16 @@ import {
   AiExperienceIcon,
   BookmarkIcon,
   ChartLineIcon,
+  CheckClipboardIcon,
   CloudIcon,
   ClusterIcon,
   CommentsIcon,
   CreditCardIcon,
   CubesIcon,
-  DatabaseIcon,
   DataSourceIcon,
   ExclamationTriangleIcon,
   ExternalLinkAltIcon,
+  FolderOpenIcon,
   HistoryIcon,
   KeyIcon,
   LightbulbIcon,
@@ -25,7 +26,6 @@ import {
   SatelliteIcon,
   ShieldAltIcon,
   StarIcon,
-  SyncIcon,
   UserIcon
 } from '@app/icons/rhUiIcons';
 
@@ -58,8 +58,8 @@ export const WIDGET_HEADER_ICON_MAP: Record<string, WidgetHeaderIconComponent> =
   vulnerabilities: ExclamationTriangleIcon,
   'red-hat-satellite': SatelliteIcon,
   'activation-keys': KeyIcon,
-  manifests: DatabaseIcon,
-  'simple-content-access-sca': SyncIcon
+  manifests: CheckClipboardIcon,
+  'simple-content-access-sca': FolderOpenIcon
 };
 
 export function getWidgetHeaderIcon(widgetId: string): WidgetHeaderIconComponent {

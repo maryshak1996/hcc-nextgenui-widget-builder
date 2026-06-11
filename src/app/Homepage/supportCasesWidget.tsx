@@ -241,7 +241,7 @@ export const SUPPORT_CASES_WIDGET_STYLES = `
     height: 100%;
     width: 100%;
     overflow: hidden;
-    gap: var(--pf-t--global--spacer--md);
+    gap: var(--pf-t--global--spacer--xs);
   }
 
   .support-cases-widget__table-wrap {
@@ -307,7 +307,6 @@ export const SUPPORT_CASES_WIDGET_STYLES = `
   .support-cases-widget__pagination {
     flex: 0 0 auto;
     margin-block: 0;
-    margin-top: auto;
     padding-block-start: 0;
     padding-inline-end: var(--pf-t--global--spacer--md);
   }

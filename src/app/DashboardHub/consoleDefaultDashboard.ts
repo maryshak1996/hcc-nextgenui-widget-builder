@@ -1,6 +1,6 @@
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
-import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
+import { type ColumnSpan, type RowSpan, type Widget } from '@app/Homepage/widgetTypes';
 
 export const CONSOLE_DEFAULT_DASHBOARD_ID = 'd-console-default';
 
@@ -24,17 +24,15 @@ const CONSOLE_DEFAULT_WIDGET_IDS: readonly string[] = [
   'recently-visited'
 ];
 
-/** Grid sizes tuned for the console-default mock (cols 1–3 main + col 4 sidebar). */
-const CONSOLE_DEFAULT_WIDGET_SIZES: Partial<
-  Record<string, { colSpan: ColumnSpan; rowSpan: RowSpan }>
-> = {
-  rhel: { colSpan: 1, rowSpan: 6 },
-  ansible: { colSpan: 1, rowSpan: 6 },
-  openshift: { colSpan: 1, rowSpan: 6 },
+/** Canonical column + row spans for the built-in console homepage (matches builder fit-to-content sizing). */
+const CONSOLE_DEFAULT_WIDGET_SIZES: Partial<Record<string, { colSpan: ColumnSpan; rowSpan: RowSpan }>> = {
+  rhel: { colSpan: 1, rowSpan: 4 },
+  ansible: { colSpan: 1, rowSpan: 4 },
+  openshift: { colSpan: 1, rowSpan: 4 },
   subscriptions: { colSpan: 3, rowSpan: 4 },
-  events: { colSpan: 3, rowSpan: 8 },
-  'my-account': { colSpan: 1, rowSpan: 6 },
-  'recently-visited': { colSpan: 1, rowSpan: 12 }
+  events: { colSpan: 3, rowSpan: 7 },
+  'my-account': { colSpan: 1, rowSpan: 5 },
+  'recently-visited': { colSpan: 1, rowSpan: 6 }
 };
 
 export function isConsoleDefaultDashboardId(id: string): boolean {
@@ -75,7 +73,9 @@ export function getConsoleDefaultWidgets(): Widget[] {
     }
     const title = CONSOLE_DEFAULT_WIDGET_TITLES[id] ?? w.title;
     const size = CONSOLE_DEFAULT_WIDGET_SIZES[id];
-    return size ? { ...w, title, ...size } : { ...w, title };
+    return size
+      ? { ...w, title, colSpan: size.colSpan, rowSpan: size.rowSpan }
+      : { ...w, title };
   });
 }
 

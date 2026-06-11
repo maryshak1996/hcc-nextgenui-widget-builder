@@ -24,6 +24,7 @@ export {
   RhUiCallIcon,
   RhUiCardPaymentIcon,
   RhUiCheckCircleIcon,
+  RhUiCheckClipboardIcon,
   RhUiCheckIcon,
   RhUiClipboardIcon,
   RhUiClockIcon,
@@ -52,6 +53,7 @@ export {
   RhUiFilterIcon,
   RhUiFlagIcon,
   RhUiFolderIcon,
+  RhUiFolderOpenIcon,
   RhUiGripVerticalFillIcon,
   RhUiHistoryIcon,
   RhUiHomeIcon,
@@ -116,6 +118,7 @@ export { RhUiSettingsIcon as CogIcon } from '@patternfly/react-icons';
 export { RhUiNotificationIcon as BellIcon } from '@patternfly/react-icons';
 export { RhUiInformationIcon as InfoCircleIcon } from '@patternfly/react-icons';
 export { RhUiCheckCircleIcon as CheckCircleIcon } from '@patternfly/react-icons';
+export { RhUiCheckClipboardIcon as CheckClipboardIcon } from '@patternfly/react-icons';
 export { RhUiCheckIcon as CheckIcon } from '@patternfly/react-icons';
 export { RhUiWarningIcon as ExclamationTriangleIcon } from '@patternfly/react-icons';
 export { RhUiErrorIcon as ExclamationCircleIcon } from '@patternfly/react-icons';
@@ -166,6 +169,7 @@ export { RhUiDataSourceIcon as DataSourceIcon } from '@patternfly/react-icons';
 export { RhUiDesktopIcon as DesktopIcon } from '@patternfly/react-icons';
 export { RhUiFlagIcon as FlagIcon } from '@patternfly/react-icons';
 export { RhUiFolderIcon as FolderIcon } from '@patternfly/react-icons';
+export { RhUiFolderOpenIcon as FolderOpenIcon } from '@patternfly/react-icons';
 export { RhUiHistoryIcon as HistoryIcon } from '@patternfly/react-icons';
 export { RhUiHomeIcon as HomeIcon } from '@patternfly/react-icons';
 export { RhUiImageIcon as ImageIcon } from '@patternfly/react-icons';
@@ -189,3 +193,6 @@ export { RhUiUndoIcon as UndoIcon } from '@patternfly/react-icons';
 export { RhUiTopologyIcon as ProjectDiagramIcon } from '@patternfly/react-icons';
 export { SeverityCriticalIcon as RhUiSeverityCriticalIcon } from '@patternfly/react-icons';
 export { SeverityImportantIcon as RhUiSeverityImportantIcon } from '@patternfly/react-icons';
+export { SeverityModerateIcon as RhUiSeverityModerateIcon } from '@patternfly/react-icons';
+export { SeverityMinorIcon as RhUiSeverityMinorIcon } from '@patternfly/react-icons';
+export { InfinityIcon as RhUiInfinityIcon } from '@patternfly/react-icons';

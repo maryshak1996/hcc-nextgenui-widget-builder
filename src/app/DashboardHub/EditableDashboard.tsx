@@ -62,7 +62,7 @@ import {
   WIDGET_GRID_STYLES,
   type WidgetResizePreview
 } from '@app/Homepage/homepageWidgetGrid';
-import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
+import { MIN_ROW_SPAN, type ColumnSpan, type RowSpan, type Widget } from '@app/Homepage/widgetTypes';
 import {
   DndContext,
   DragEndEvent,
@@ -108,8 +108,10 @@ interface EditableDashboardCanvasProps {
   titleFallback: string;
   onCanvasTitleCommit: (title: string) => void;
   canvasWidgets: Widget[];
+  autoSizeWidgetIds: ReadonlySet<string>;
   onOpenAddWidgets: () => void;
   onSizeChange: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => void;
+  onAutoSizeFit: (id: string, colSpan: ColumnSpan, rowSpan: RowSpan, complete: boolean) => void;
   onRemoveWidget: (id: string) => void;
   onReorder: (next: Widget[]) => void;
   /** Built-in console default: show widgets without drag, resize, or title edit. */
@@ -121,8 +123,10 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
   titleFallback,
   onCanvasTitleCommit,
   canvasWidgets,
+  autoSizeWidgetIds,
   onOpenAddWidgets,
   onSizeChange,
+  onAutoSizeFit,
   onRemoveWidget,
   onReorder,
   readOnly = false
@@ -383,6 +387,8 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
                       widget={widget}
                       gridWidth={gridWidth}
                       placement={dashboardPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
+                      autoSize={autoSizeWidgetIds.has(widget.id)}
+                      onAutoSizeFit={onAutoSizeFit}
                     >
                       {renderHomepageWidgetContent(widget, {
                         navigate,
@@ -429,6 +435,8 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
                         widget={widget}
                         placement={dashboardPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
                         onSizeChange={onSizeChange}
+                        onAutoSizeFit={onAutoSizeFit}
+                        needsAutoSize={autoSizeWidgetIds.has(widget.id)}
                         onResizePreviewStart={handleResizePreviewStart}
                         onResizePreviewChange={handleResizePreviewChange}
                         onResizePreviewEnd={handleResizePreviewEnd}
@@ -515,6 +523,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   const isAddWidgetsDrawerChromeOpen = !isConsoleDefault && isWidgetDrawerOpen;
   const [removedWidgets, setRemovedWidgets] = React.useState<Widget[]>(() => createHomepageWidgetClones());
   const [canvasWidgets, setCanvasWidgets] = React.useState<Widget[]>([]);
+  const [autoSizeWidgetIds, setAutoSizeWidgetIds] = React.useState<Set<string>>(() => new Set());
 
   React.useEffect(() => {
     if (dashboard) {
@@ -557,6 +566,7 @@ const EditableDashboard: React.FunctionComponent = () => {
     if (isConsoleDefault && dashboard) {
       const merged = mergeCanvasWidgetsWithCatalog(getConsoleDefaultWidgets(), all);
       setCanvasWidgets(merged);
+      setAutoSizeWidgetIds(new Set());
       const onCanvas = new Set(merged.map((w) => w.id));
       setRemovedWidgets(all.filter((w) => !onCanvas.has(w.id)));
       skipNextCanvasPersist.current = true;
@@ -566,10 +576,12 @@ const EditableDashboard: React.FunctionComponent = () => {
     if (stored && stored.length > 0) {
       const merged = mergeCanvasWidgetsWithCatalog(stored, all);
       setCanvasWidgets(merged);
+      setAutoSizeWidgetIds(new Set());
       const onCanvas = new Set(merged.map((w) => w.id));
       setRemovedWidgets(all.filter((w) => !onCanvas.has(w.id)));
     } else {
       setCanvasWidgets([]);
+      setAutoSizeWidgetIds(new Set());
       setRemovedWidgets(all);
     }
     skipNextCanvasPersist.current = true;
@@ -731,7 +743,13 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const handleAddWidgetFromBank = React.useCallback((widget: Widget) => {
     setRemovedWidgets((prev) => prev.filter((w) => w.id !== widget.id));
-    setCanvasWidgets((prev) => (prev.some((w) => w.id === widget.id) ? prev : [...prev, widget]));
+    setCanvasWidgets((prev) => {
+      if (prev.some((w) => w.id === widget.id)) {
+        return prev;
+      }
+      return [...prev, { ...widget, rowSpan: MIN_ROW_SPAN }];
+    });
+    setAutoSizeWidgetIds((ids) => new Set(ids).add(widget.id));
   }, []);
 
   const handleRemoveFromCanvas = React.useCallback(
@@ -740,6 +758,14 @@ const EditableDashboard: React.FunctionComponent = () => {
       if (w) {
         setCanvasWidgets((prev) => prev.filter((x) => x.id !== widgetId));
         setRemovedWidgets((prev) => [...prev, w]);
+        setAutoSizeWidgetIds((ids) => {
+          if (!ids.has(widgetId)) {
+            return ids;
+          }
+          const next = new Set(ids);
+          next.delete(widgetId);
+          return next;
+        });
       }
     },
     [canvasWidgets]
@@ -772,7 +798,33 @@ const EditableDashboard: React.FunctionComponent = () => {
     []
   );
 
+  const handleAutoSizeFit = React.useCallback(
+    (id: string, colSpan: ColumnSpan, rowSpan: RowSpan, complete: boolean) => {
+      setCanvasWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, colSpan, rowSpan } : w)));
+      if (!complete) {
+        return;
+      }
+      setAutoSizeWidgetIds((ids) => {
+        if (!ids.has(id)) {
+          return ids;
+        }
+        const next = new Set(ids);
+        next.delete(id);
+        return next;
+      });
+    },
+    []
+  );
+
   const handleCanvasSizeChange = React.useCallback((id: string, colSpan: ColumnSpan, rowSpan: RowSpan) => {
+    setAutoSizeWidgetIds((ids) => {
+      if (!ids.has(id)) {
+        return ids;
+      }
+      const next = new Set(ids);
+      next.delete(id);
+      return next;
+    });
     setCanvasWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, colSpan, rowSpan } : w)));
   }, []);
 
@@ -1344,8 +1396,10 @@ const EditableDashboard: React.FunctionComponent = () => {
             titleFallback={dashboard.name}
             onCanvasTitleCommit={(title) => updateCanvasTitle(dashboard.id, title)}
             canvasWidgets={canvasWidgets}
+            autoSizeWidgetIds={autoSizeWidgetIds}
             onOpenAddWidgets={() => setIsWidgetDrawerOpen(true)}
             onSizeChange={handleCanvasSizeChange}
+            onAutoSizeFit={handleAutoSizeFit}
             onRemoveWidget={handleRemoveFromCanvas}
             onReorder={handleCanvasReorder}
             readOnly={isConsoleDefault}

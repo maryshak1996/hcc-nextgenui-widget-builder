@@ -167,7 +167,6 @@ export const ACTIVATION_KEYS_WIDGET_STYLES = `
 
   .activation-keys-widget__footer {
     flex-shrink: 0;
-    margin-top: auto;
     width: fit-content;
   }
 `;
