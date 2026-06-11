@@ -53,7 +53,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import { resolveDashboardCanvasWidgets, serializeDashboardConfigPayload } from '@app/DashboardHub/dashboardCanvasStorage';
-import { isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
+import { isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { ImportConfigStringModal } from '@app/DashboardHub/ImportConfigStringModal';
@@ -496,9 +496,9 @@ const DashboardHub: React.FunctionComponent = () => {
                     <DropdownList>
                       <DropdownItem
                         key="edit"
-                        isDisabled={Boolean(row.isConsoleDefault)}
+                        isDisabled={isPrebuiltHubRow(row)}
                         onClick={() => {
-                          if (row.isConsoleDefault) {
+                          if (isPrebuiltHubRow(row)) {
                             return;
                           }
                           navigate(`/dashboard-hub/${row.id}`);
@@ -560,10 +560,10 @@ const DashboardHub: React.FunctionComponent = () => {
                       <Divider component="li" role="separator" />
                       <DropdownItem
                         key="delete"
-                        isDanger={!isConsoleDefaultHubRow(row)}
-                        isDisabled={isConsoleDefaultHubRow(row)}
+                        isDanger={!isPrebuiltHubRow(row)}
+                        isDisabled={isPrebuiltHubRow(row)}
                         onClick={() => {
-                          if (isConsoleDefaultHubRow(row)) {
+                          if (isPrebuiltHubRow(row)) {
                             return;
                           }
                           setDeleteTargetRow(row);
@@ -575,7 +575,7 @@ const DashboardHub: React.FunctionComponent = () => {
                         >
                           <OutlinedTrashAltIcon
                             style={{
-                              color: isConsoleDefaultHubRow(row)
+                              color: isPrebuiltHubRow(row)
                                 ? 'var(--pf-t--global--icon--Color--200)'
                                 : 'var(--pf-t--global--danger-color--200)'
                             }}

@@ -34,6 +34,7 @@ import {
 } from '@app/icons/rhUiIcons';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
+import { isConsoleDefaultHubRow, isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import {
@@ -146,8 +147,9 @@ const Homepage: React.FunctionComponent = () => {
     : '';
 
   /** Hero title in the widget area; built-in dashboard uses a product welcome line instead of the hub name. */
-  const homepageDashboardBodyTitle =
-    homepageDashboard?.isConsoleDefault === true ? CONSOLE_DEFAULT_BODY_TITLE : canvasTitle;
+  const homepageDashboardBodyTitle = isConsoleDefaultHubRow(homepageDashboard)
+    ? CONSOLE_DEFAULT_BODY_TITLE
+    : canvasTitle;
 
   const sortedHubRows = useMemo(
     () => [...rows].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -324,14 +326,14 @@ const Homepage: React.FunctionComponent = () => {
                             <MenuItemAction
                               icon={<PencilAltIcon />}
                               aria-label={
-                                row.isConsoleDefault === true
-                                  ? `Edit ${row.name} (not available, Console default is not editable)`
+                                isPrebuiltHubRow(row)
+                                  ? `Edit ${row.name} (not available, system dashboards are not editable)`
                                   : `Edit ${row.name}`
                               }
-                              isDisabled={row.isConsoleDefault === true}
+                              isDisabled={isPrebuiltHubRow(row)}
                               onClick={(e) => {
                                 e?.stopPropagation?.();
-                                if (row.isConsoleDefault === true) {
+                                if (isPrebuiltHubRow(row)) {
                                   return;
                                 }
                                 closeHomepageHeroMenu();
@@ -528,15 +530,15 @@ const Homepage: React.FunctionComponent = () => {
                       </Dropdown>
                     </FlexItem>
                     <FlexItem>
-                      {homepageDashboard.isConsoleDefault === true ? (
-                        <Tooltip content="The 'Console default' dashboard is not editable.">
+                      {isPrebuiltHubRow(homepageDashboard) ? (
+                        <Tooltip content={`The '${homepageDashboard.name}' dashboard is not editable.`}>
                           <span style={{ display: 'inline-block' }} tabIndex={0}>
                             <Button
                               variant="secondary"
                               icon={<PencilAltIcon />}
                               iconPosition="start"
                               isDisabled
-                              aria-label="Edit dashboard (not available for Console default)"
+                              aria-label={`Edit dashboard (not available for ${homepageDashboard.name})`}
                             >
                               Edit dashboard
                             </Button>
@@ -614,15 +616,15 @@ const Homepage: React.FunctionComponent = () => {
                     clusters, and more.
                   </EmptyStateBody>
                   <EmptyStateFooter>
-                    {homepageDashboard.isConsoleDefault === true ? (
-                      <Tooltip content="The 'Console default' dashboard is not editable.">
+                    {isPrebuiltHubRow(homepageDashboard) ? (
+                      <Tooltip content={`The '${homepageDashboard.name}' dashboard is not editable.`}>
                         <span style={{ display: 'inline-block' }} tabIndex={0}>
                           <Button
                             variant="primary"
                             icon={<PencilAltIcon />}
                             iconPosition="start"
                             isDisabled
-                            aria-label="Edit dashboard (not available for Console default)"
+                            aria-label={`Edit dashboard (not available for ${homepageDashboard.name})`}
                           >
                             Edit dashboard
                           </Button>

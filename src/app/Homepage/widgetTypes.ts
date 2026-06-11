@@ -19,4 +19,6 @@ export interface Widget {
   footerText?: string;
   footerIcon?: ReactNode;
   navigateTo?: string;
+  /** Initial tab for RHEL/OpenShift tabbed widgets (e.g. OpenShift dashboard). */
+  defaultProductTab?: 'rhel' | 'openshift';
 }

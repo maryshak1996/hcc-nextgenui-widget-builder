@@ -9,9 +9,11 @@ import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { DASHBOARD_HUB_ROWS } from '@app/DashboardHub/dashboardHubMockData';
 import {
   CONSOLE_DEFAULT_DASHBOARD_ID,
-  getConsoleDefaultWidgets,
-  mergeConsoleDefaultIntoRows
-} from '@app/DashboardHub/consoleDefaultDashboard';
+  getPrebuiltDashboardWidgets,
+  isPrebuiltDashboardId,
+  isPrebuiltDashboardName,
+  mergePrebuiltDashboardsIntoRows
+} from '@app/DashboardHub/prebuiltDashboards';
 import {
   clearDashboardCanvasWidgets,
   mergeCanvasWidgetsWithCatalog,
@@ -35,10 +37,7 @@ function isDashboardNameInUse(
   if (!key) {
     return false;
   }
-  if (
-    key === normalizeDashboardNameKey('Console default') &&
-    excludeDashboardId !== CONSOLE_DEFAULT_DASHBOARD_ID
-  ) {
+  if (isPrebuiltDashboardName(candidate, excludeDashboardId)) {
     return true;
   }
   return allRows.some(
@@ -54,6 +53,7 @@ function isHubRow(value: unknown): value is HubRow {
   const canvasOk = row.canvasTitle === undefined || typeof row.canvasTitle === 'string';
   const homeOk = row.isHomepage === undefined || typeof row.isHomepage === 'boolean';
   const consoleOk = row.isConsoleDefault === undefined || typeof row.isConsoleDefault === 'boolean';
+  const prebuiltOk = row.isPrebuilt === undefined || typeof row.isPrebuilt === 'boolean';
   return (
     typeof row.id === 'string' &&
     typeof row.name === 'string' &&
@@ -61,7 +61,8 @@ function isHubRow(value: unknown): value is HubRow {
     typeof row.lastModified === 'string' &&
     canvasOk &&
     homeOk &&
-    consoleOk
+    consoleOk &&
+    prebuiltOk
   );
 }
 
@@ -93,9 +94,9 @@ function readRowsFromSessionStorage(): HubRow[] | null {
 function initialRows(): HubRow[] {
   const stored = readRowsFromSessionStorage();
   if (stored) {
-    return mergeConsoleDefaultIntoRows(stored.map(withCanvasTitle));
+    return mergePrebuiltDashboardsIntoRows(stored.map(withCanvasTitle));
   }
-  return mergeConsoleDefaultIntoRows(DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r })));
+  return mergePrebuiltDashboardsIntoRows(DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r })));
 }
 
 function formatLastModifiedDate(): string {
@@ -212,7 +213,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, [rows]);
 
   const updateDashboardName = React.useCallback((id: string, name: string) => {
-    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+    if (isPrebuiltDashboardId(id)) {
       return;
     }
     const trimmed = name.trim();
@@ -228,7 +229,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, []);
 
   const updateDashboardDescription = React.useCallback((id: string, description: string) => {
-    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+    if (isPrebuiltDashboardId(id)) {
       return;
     }
     const trimmed = description.trim();
@@ -239,7 +240,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, []);
 
   const updateCanvasTitle = React.useCallback((id: string, canvasTitle: string) => {
-    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+    if (isPrebuiltDashboardId(id)) {
       return;
     }
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, canvasTitle } : row)));
@@ -311,7 +312,7 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
   }, []);
 
   const removeDashboard = React.useCallback((id: string) => {
-    if (id === CONSOLE_DEFAULT_DASHBOARD_ID) {
+    if (isPrebuiltDashboardId(id)) {
       return;
     }
     let showHomepageFallbackToast = false;
@@ -409,10 +410,9 @@ const DashboardDataProvider: React.FunctionComponent<{ children: React.ReactNode
           setHomepageSetToast({ name: trimmedCustomName });
         });
       }
-      const raw =
-        id === CONSOLE_DEFAULT_DASHBOARD_ID
-          ? getConsoleDefaultWidgets()
-          : readDashboardCanvasWidgets(id);
+      const raw = isPrebuiltDashboardId(id)
+        ? getPrebuiltDashboardWidgets(id)
+        : readDashboardCanvasWidgets(id);
       if (raw && raw.length) {
         writeDashboardCanvasWidgets(createdId, mergeCanvasWidgetsWithCatalog(raw));
       }

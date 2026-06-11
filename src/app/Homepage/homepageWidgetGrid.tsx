@@ -304,10 +304,13 @@ export function measureWidgetCardFitHeight(
     parseFloat(cardStyles.borderTopWidth) + parseFloat(cardStyles.borderBottomWidth);
 
   if (naturalLayout) {
+    const cardHeight = Math.ceil(card.getBoundingClientRect().height);
+    if (cardHeight > 0) {
+      return cardHeight;
+    }
     const chromeHeight = sumElementHeights([header, divider, footer]) + bodyPadding + borderHeight;
     const bodyNaturalHeight = measurePinnedWidgetBodyNaturalHeight(bodyContent);
-    const wrapperHeight = Math.ceil(widgetRoot.getBoundingClientRect().height);
-    return Math.max(Math.ceil(chromeHeight + bodyNaturalHeight), wrapperHeight);
+    return Math.ceil(chromeHeight + bodyNaturalHeight);
   }
 
   let total = sumElementHeights([header, divider, footer]) + bodyPadding + bodyContent.scrollHeight + borderHeight;
@@ -371,9 +374,8 @@ export function useWidgetAutoSizeMeasurement({
         return;
       }
 
-      let fitRowSpan = getMinimumRowSpanForPixelHeight(fitHeight);
+      let fitRowSpan = getRowSpanFromPixelHeight(fitHeight);
       if (
-        !wrapper.classList.contains('is-auto-sizing') &&
         widgetCardBodyHasVerticalClipping(wrapper) &&
         fitRowSpan < MAX_ROW_SPAN
       ) {
@@ -1482,7 +1484,7 @@ export function renderHomepageWidgetContent(
             readOnly={readOnly}
             headerExtra={<AdvisorRecommendationsWidgetHeader title={widget.title} />}
           >
-            <AdvisorRecommendationsWidgetBody />
+            <AdvisorRecommendationsWidgetBody defaultProductTab={widget.defaultProductTab} />
           </WidgetCard>
         );
 
@@ -1497,7 +1499,7 @@ export function renderHomepageWidgetContent(
             readOnly={readOnly}
             headerExtra={<VulnerabilitiesWidgetHeader title={widget.title} />}
           >
-            <VulnerabilitiesWidgetBody />
+            <VulnerabilitiesWidgetBody defaultProductTab={widget.defaultProductTab} />
           </WidgetCard>
         );
 
@@ -1847,6 +1849,14 @@ export const WIDGET_GRID_STYLES = `
 
     .widget-wrapper.is-auto-sizing .subscriptions-widget-body .subscriptions-status-alert {
       height: auto !important;
+    }
+
+    .widget-wrapper.is-auto-sizing .vulnerabilities-widget--wide,
+    .widget-wrapper.is-auto-sizing .vulnerabilities-widget--wide .vulnerabilities-widget__panel,
+    .widget-wrapper.is-auto-sizing .vulnerabilities-widget--wide .vulnerabilities-widget__content {
+      flex: none !important;
+      height: auto !important;
+      min-height: auto !important;
     }
 
     .widget-grid-drag-overlay {

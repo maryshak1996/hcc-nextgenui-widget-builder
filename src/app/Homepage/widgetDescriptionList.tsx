@@ -26,6 +26,10 @@ export function getHorizontalFluidDescriptionListLayout(
     return { className: WIDGET_DESCRIPTION_LIST_4_COL_CLASS };
   }
 
+  if (colSpan === 3 && pairCount >= 4) {
+    return { columnModifier: { default: '3Col' } };
+  }
+
   if (colSpan >= 2 && pairCount >= 4) {
     return { columnModifier: { default: '2Col' } };
   }

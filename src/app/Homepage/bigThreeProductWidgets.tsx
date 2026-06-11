@@ -724,6 +724,33 @@ export const BIG_THREE_PRODUCT_WIDGET_STYLES = `
     overflow-y: auto;
   }
 
+  /* Compact height when the card does not pin actions to the bottom (e.g. Ansible dashboard). */
+  .widget-card:not(.widget-card--pinned-body-footer) .big-three-product-widget:has(.big-three-product-empty-state) {
+    height: auto;
+    flex: 0 1 auto;
+  }
+
+  .widget-card:not(.widget-card--pinned-body-footer)
+    .big-three-product-widget:has(.big-three-product-empty-state)
+    .big-three-product-widget__content {
+    flex: 0 1 auto;
+    overflow-y: visible;
+  }
+
+  /* Pinned-footer cards: keep actions at the bottom even for empty product states. */
+  .widget-card--pinned-body-footer .big-three-product-widget:has(.big-three-product-empty-state) {
+    height: 100%;
+    flex: 1 1 auto;
+  }
+
+  .widget-card--pinned-body-footer
+    .big-three-product-widget:has(.big-three-product-empty-state)
+    .big-three-product-widget__content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   .big-three-product-widget__actions {
     flex: 0 0 auto;
   }

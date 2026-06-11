@@ -133,10 +133,15 @@ export function VulnerabilitiesWidgetHeader({
 
 const VULNERABILITY_PAIR_COUNT = VULNERABILITY_ROWS.length;
 
-export function VulnerabilitiesWidgetBody() {
+export function VulnerabilitiesWidgetBody({
+  defaultProductTab = 'rhel'
+}: {
+  defaultProductTab?: 'rhel' | 'openshift';
+} = {}) {
   const colSpan = useWidgetColSpan();
+  const isWideLayout = colSpan >= 4;
   const fluidLayout = getHorizontalFluidDescriptionListLayout(colSpan, VULNERABILITY_PAIR_COUNT);
-  const [activeTabKey, setActiveTabKey] = useState<string>(VULNERABILITIES_VIEW_TABS[0].eventKey);
+  const [activeTabKey, setActiveTabKey] = useState<string>(defaultProductTab);
 
   const handleTabSelect = (
     _event: React.MouseEvent<HTMLElement> | React.KeyboardEvent | MouseEvent,
@@ -161,7 +166,9 @@ export function VulnerabilitiesWidgetBody() {
   );
 
   return (
-    <div className="vulnerabilities-widget">
+    <div
+      className={`vulnerabilities-widget${isWideLayout ? ' vulnerabilities-widget--wide' : ''}`}
+    >
       <Tabs
         activeKey={activeTabKey}
         onSelect={handleTabSelect}
@@ -274,5 +281,54 @@ export const VULNERABILITIES_WIDGET_STYLES = `
   .vulnerabilities-widget__footer {
     flex-shrink: 0;
     width: fit-content;
+  }
+
+  /*
+   * Full-width (4-col) layout — natural card height + auto-sized row span so only the
+   * 16px grid gap sits below the card; md spacing between metrics and footer actions.
+   */
+  .widget-wrapper:has(.widget-card--vulnerabilities .vulnerabilities-widget--wide) {
+    align-self: start;
+  }
+
+  .widget-wrapper:has(.widget-card--vulnerabilities .vulnerabilities-widget--wide) .widget-resizable-root {
+    height: auto !important;
+  }
+
+  .widget-wrapper:has(.widget-card--vulnerabilities .vulnerabilities-widget--wide) .widget-card {
+    height: auto !important;
+  }
+
+  .widget-card--vulnerabilities .pf-v6-c-card__body:has(.vulnerabilities-widget--wide) {
+    flex-grow: 0 !important;
+  }
+
+  .widget-card--vulnerabilities .widget-card__body-content:has(.vulnerabilities-widget--wide) {
+    flex: 0 1 auto;
+    align-items: flex-start;
+  }
+
+  .vulnerabilities-widget--wide {
+    flex: 0 1 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .vulnerabilities-widget--wide .vulnerabilities-widget__panel {
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-t--global--spacer--md);
+  }
+
+  .vulnerabilities-widget--wide .vulnerabilities-widget__content {
+    flex: 0 1 auto;
+    min-height: auto;
+    overflow-y: visible;
+  }
+
+  .widget-card--vulnerabilities .vulnerabilities-widget--wide .vulnerabilities-widget__footer {
+    margin-top: 0 !important;
+    padding-block-start: 0 !important;
   }
 `;

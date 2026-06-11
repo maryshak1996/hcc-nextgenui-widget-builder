@@ -8,10 +8,15 @@ export interface HubRow {
   /** When true, this dashboard is the user’s console homepage (at most one). */
   isHomepage?: boolean;
   /**
-   * Product-provided dashboard (layout is code-defined, not session storage).
+   * Product-provided console homepage dashboard (layout is code-defined, not session storage).
    * Cannot be renamed, edited on-canvas, or deleted; users override by setting another homepage.
    */
   isConsoleDefault?: boolean;
+  /**
+   * Other system-maintained dashboards (layout is code-defined, not session storage).
+   * Cannot be renamed, edited on-canvas, or deleted; users may duplicate to customize.
+   */
+  isPrebuilt?: boolean;
 }
 
 export const DASHBOARD_DUPLICATE_NAME_ERROR = 'A dashboard with this name already exists.';

@@ -2,7 +2,7 @@ import type { Widget } from '@app/Homepage/widgetTypes';
 import { MAX_ROW_SPAN, MIN_ROW_SPAN } from '@app/Homepage/widgetTypes';
 import { clampRowSpan, migrateLegacyRowSpan } from '@app/Homepage/homepageWidgetGrid';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
-import { getConsoleDefaultWidgets, isConsoleDefaultHubRow } from '@app/DashboardHub/consoleDefaultDashboard';
+import { getPrebuiltDashboardWidgets, isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 
 const STORAGE_PREFIX = 'hcc-dashboard-canvas-';
@@ -149,8 +149,8 @@ export function mergeCanvasWidgetsWithCatalog(stored: Widget[], catalog: Widget[
 
 /** Session-backed layout, or the built-in console-default layout when applicable. */
 export function resolveDashboardCanvasWidgets(row: HubRow): Widget[] | null {
-  if (isConsoleDefaultHubRow(row)) {
-    return getConsoleDefaultWidgets();
+  if (isPrebuiltHubRow(row)) {
+    return getPrebuiltDashboardWidgets(row.id);
   }
   return readDashboardCanvasWidgets(row.id);
 }

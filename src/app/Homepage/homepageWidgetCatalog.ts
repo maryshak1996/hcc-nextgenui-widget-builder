@@ -1,4 +1,28 @@
-import type { Widget } from '@app/Homepage/widgetTypes';
+import type { ColumnSpan, Widget } from '@app/Homepage/widgetTypes';
+
+/** Default dashboard column width when a widget is added (user can resize afterward). */
+const DEFAULT_THREE_COL_WIDGET_IDS = new Set<string>(['explore-capabilities', 'subscriptions']);
+
+const DEFAULT_TWO_COL_WIDGET_IDS = new Set<string>([
+  'events',
+  'integrations',
+  'support-cases',
+  'recent-clusters',
+  'openshift-cost-management',
+  'openshift-subscription-usage',
+  'rhel-subscription-usage',
+  'ansible-subscription-usage'
+]);
+
+export function getDefaultDashboardWidgetColSpan(widgetId: string): ColumnSpan {
+  if (DEFAULT_THREE_COL_WIDGET_IDS.has(widgetId)) {
+    return 3;
+  }
+  if (DEFAULT_TWO_COL_WIDGET_IDS.has(widgetId)) {
+    return 2;
+  }
+  return 1;
+}
 
 /**
  * Full widget bank for search and “Add widgets” (same catalog everywhere).
@@ -10,7 +34,7 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
     id: 'events',
     title: 'Events',
     type: 'events',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
@@ -66,14 +90,14 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
     id: 'integrations',
     title: 'Integrations',
     type: 'integrations',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
     id: 'subscriptions',
     title: 'Subscriptions',
     type: 'subscriptions',
-    colSpan: 4,
+    colSpan: 3,
     rowSpan: 4
   },
   {
@@ -94,7 +118,7 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
     id: 'support-cases',
     title: 'My support cases',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
@@ -108,35 +132,35 @@ export const HOMEPAGE_WIDGET_CATALOG: Readonly<Widget[]> = [
     id: 'recent-clusters',
     title: 'Recent clusters',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
     id: 'openshift-subscription-usage',
     title: 'OpenShift subscription usage',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
     id: 'rhel-subscription-usage',
     title: 'RHEL subscription usage',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
     id: 'ansible-subscription-usage',
     title: 'Ansible subscription usage',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
     id: 'openshift-cost-management',
     title: 'OpenShift cost management',
     type: 'placeholder',
-    colSpan: 1,
+    colSpan: 2,
     rowSpan: 4
   },
   {
@@ -206,15 +230,17 @@ export const DEFAULT_HOMEPAGE_WIDGET_IDS: readonly string[] = [
   'ansible'
 ];
 
-const catalogById: Map<string, Widget> = new Map(HOMEPAGE_WIDGET_CATALOG.map((w) => [w.id, w]));
-
 export function createHomepageWidgetClones(): Widget[] {
-  return HOMEPAGE_WIDGET_CATALOG.map((w) => ({ ...w }));
+  return HOMEPAGE_WIDGET_CATALOG.map((w) => ({
+    ...w,
+    colSpan: getDefaultDashboardWidgetColSpan(w.id)
+  }));
 }
 
 export function createDefaultHomepageLayout(): { gridWidgets: Widget[]; bankWidgets: Widget[] } {
   const all = createHomepageWidgetClones();
-  const grid = DEFAULT_HOMEPAGE_WIDGET_IDS.map((id) => catalogById.get(id)).filter(
+  const clonesById = new Map(all.map((w) => [w.id, w] as const));
+  const grid = DEFAULT_HOMEPAGE_WIDGET_IDS.map((id) => clonesById.get(id)).filter(
     (w): w is Widget => w !== undefined
   );
   const gridId = new Set(grid.map((w) => w.id));

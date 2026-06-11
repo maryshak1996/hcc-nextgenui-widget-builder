@@ -7,7 +7,10 @@ import {
 } from '@patternfly/react-core';
 import { CLUSTER_STATUS_CONFIG, type ClusterStatus } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
-import { WidgetDescriptionList } from '@app/Homepage/widgetDescriptionList';
+import {
+  getHorizontalFluidDescriptionListLayout,
+  WidgetDescriptionList
+} from '@app/Homepage/widgetDescriptionList';
 import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 import { RECENT_CLUSTERS_WIDGET_LINKS } from '@app/Homepage/recentClustersWidget';
 
@@ -83,29 +86,21 @@ export function ClusterStatusWidgetHeader({
   );
 }
 
+const CLUSTER_STATUS_PAIR_COUNT = CLUSTER_STATUS_ORDER.length;
+
 export function ClusterStatusWidgetBody() {
   const colSpan = useWidgetColSpan();
-  const columnModifier =
-    colSpan === 1
-      ? { default: '1Col' as const }
-      : colSpan === 2
-        ? { default: '3Col' as const }
-        : undefined;
-  const descriptionListClassName = [
-    'cluster-status-widget__description-list',
-    colSpan >= 3 ? 'cluster-status-widget__description-list--5-col' : ''
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const fluidLayout = getHorizontalFluidDescriptionListLayout(colSpan, CLUSTER_STATUS_PAIR_COUNT);
 
   return (
     <div className="cluster-status-widget">
       <div className="cluster-status-widget__content">
         <WidgetDescriptionList
           horizontalFluid
-          columnModifier={columnModifier}
+          horizontalColumnModifier={fluidLayout.columnModifier}
+          horizontalGridClassName={fluidLayout.className}
           aria-label="Cluster status"
-          className={descriptionListClassName}
+          className="cluster-status-widget__description-list"
         >
           <ClusterStatusDescriptionGroups />
         </WidgetDescriptionList>
@@ -140,10 +135,6 @@ export const CLUSTER_STATUS_WIDGET_STYLES = `
   .cluster-status-widget__description-list {
     --pf-v6-c-description-list--GridTemplateColumns--min: 0;
     align-items: center;
-  }
-
-  .cluster-status-widget__description-list--5-col {
-    --pf-v6-c-description-list--GridTemplateColumns--count: 5;
   }
 
   .cluster-status-widget__description-list .pf-v6-c-description-list__group {

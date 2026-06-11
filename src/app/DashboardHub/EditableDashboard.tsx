@@ -80,11 +80,13 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
+import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import {
-  CONSOLE_DEFAULT_BODY_TITLE,
-  getConsoleDefaultWidgets,
-  isConsoleDefaultHubRow
-} from '@app/DashboardHub/consoleDefaultDashboard';
+  getPrebuiltDashboardAutoSizeWidgetIds,
+  getPrebuiltDashboardWidgets,
+  isConsoleDefaultHubRow,
+  isPrebuiltHubRow
+} from '@app/DashboardHub/prebuiltDashboards';
 import { DASHBOARD_DUPLICATE_NAME_ERROR } from '@app/DashboardHub/dashboardHubMockData';
 import {
   mergeCanvasWidgetsWithCatalog,
@@ -491,6 +493,7 @@ const EditableDashboard: React.FunctionComponent = () => {
     removeDashboard
   } = useDashboardData();
   const dashboard = dashboardId ? rows.find((r) => r.id === dashboardId) : undefined;
+  const isPrebuilt = Boolean(dashboard && isPrebuiltHubRow(dashboard));
   const isConsoleDefault = Boolean(dashboard && isConsoleDefaultHubRow(dashboard));
   const homepageRow = React.useMemo(() => rows.find((r) => r.isHomepage), [rows]);
   const currentHomepageLabel = homepageRow
@@ -520,7 +523,7 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const [isWidgetDrawerOpen, setIsWidgetDrawerOpen] = React.useState(false);
   /** Unified grey behind toolbar + widget bank (inline styles avoid PF cascade hiding app.css). */
-  const isAddWidgetsDrawerChromeOpen = !isConsoleDefault && isWidgetDrawerOpen;
+  const isAddWidgetsDrawerChromeOpen = !isPrebuilt && isWidgetDrawerOpen;
   const [removedWidgets, setRemovedWidgets] = React.useState<Widget[]>(() => createHomepageWidgetClones());
   const [canvasWidgets, setCanvasWidgets] = React.useState<Widget[]>([]);
   const [autoSizeWidgetIds, setAutoSizeWidgetIds] = React.useState<Set<string>>(() => new Set());
@@ -563,10 +566,10 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     const all = createHomepageWidgetClones();
-    if (isConsoleDefault && dashboard) {
-      const merged = mergeCanvasWidgetsWithCatalog(getConsoleDefaultWidgets(), all);
+    if (isPrebuilt && dashboard) {
+      const merged = mergeCanvasWidgetsWithCatalog(getPrebuiltDashboardWidgets(dashboard.id), all);
       setCanvasWidgets(merged);
-      setAutoSizeWidgetIds(new Set());
+      setAutoSizeWidgetIds(new Set(getPrebuiltDashboardAutoSizeWidgetIds(dashboard.id)));
       const onCanvas = new Set(merged.map((w) => w.id));
       setRemovedWidgets(all.filter((w) => !onCanvas.has(w.id)));
       skipNextCanvasPersist.current = true;
@@ -585,14 +588,14 @@ const EditableDashboard: React.FunctionComponent = () => {
       setRemovedWidgets(all);
     }
     skipNextCanvasPersist.current = true;
-  }, [isConsoleDefault, dashboardId, dashboard]);
+  }, [isPrebuilt, dashboardId, dashboard]);
 
   const skipNextCanvasPersist = React.useRef(false);
 
   /** Persist layout so the console home can show a read-only replica. */
   React.useEffect(() => {
-    if (!dashboardId || isConsoleDefault) {
-      if (isConsoleDefault) {
+    if (!dashboardId || isPrebuilt) {
+      if (isPrebuilt) {
         skipNextCanvasPersist.current = true;
       }
       return;
@@ -602,7 +605,7 @@ const EditableDashboard: React.FunctionComponent = () => {
       return;
     }
     writeDashboardCanvasWidgets(dashboardId, canvasWidgets);
-  }, [dashboardId, isConsoleDefault, canvasWidgets]);
+  }, [dashboardId, isPrebuilt, canvasWidgets]);
 
   React.useEffect(
     () => () => {
@@ -652,7 +655,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [dashboard, localName, isDashboardNameTaken, updateDashboardName, autosaveEnabled, runAutosavePersistFlow]);
 
   const applyDescriptionIfDirty = React.useCallback(() => {
-    if (!dashboard || isConsoleDefault) {
+    if (!dashboard || isPrebuilt) {
       return;
     }
     const next = localDescription.trim();
@@ -667,7 +670,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [
     autosaveEnabled,
     dashboard,
-    isConsoleDefault,
+    isPrebuilt,
     localDescription,
     runAutosavePersistFlow,
     updateDashboardDescription
@@ -679,7 +682,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [applyDescriptionIfDirty]);
 
   const handleDescriptionBlur = React.useCallback(() => {
-    if (!dashboard || isConsoleDefault || !autosaveEnabled) {
+    if (!dashboard || isPrebuilt || !autosaveEnabled) {
       return;
     }
     const next = localDescription.trim();
@@ -692,7 +695,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [
     autosaveEnabled,
     dashboard,
-    isConsoleDefault,
+    isPrebuilt,
     localDescription,
     runAutosavePersistFlow,
     updateDashboardDescription
@@ -787,9 +790,9 @@ const EditableDashboard: React.FunctionComponent = () => {
       canvasWidgetIds: new Set(canvasWidgets.map((w) => w.id)),
       addWidgetToDashboard: handleAddWidgetFromBank,
       removeWidgetFromDashboard: handleRemoveWidgetFromBank,
-      canAddWidgets: !isConsoleDefault,
+      canAddWidgets: !isPrebuilt,
     });
-  }, [dashboardId, canvasWidgets, handleAddWidgetFromBank, handleRemoveWidgetFromBank, isConsoleDefault]);
+  }, [dashboardId, canvasWidgets, handleAddWidgetFromBank, handleRemoveWidgetFromBank, isPrebuilt]);
 
   React.useEffect(
     () => () => {
@@ -833,11 +836,11 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, []);
 
   const toggleWidgetDrawer = React.useCallback(() => {
-    if (isConsoleDefault) {
+    if (isPrebuilt) {
       return;
     }
     setIsWidgetDrawerOpen((open) => !open);
-  }, [isConsoleDefault]);
+  }, [isPrebuilt]);
 
   const handleCopyConfigurationString = React.useCallback(() => {
     if (!dashboard) {
@@ -877,7 +880,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   );
 
   const handleKebabDelete = React.useCallback(() => {
-    if (!dashboard || isConsoleDefaultHubRow(dashboard)) {
+    if (!dashboard || isPrebuiltHubRow(dashboard)) {
       return;
     }
     setIsKebabOpen(false);
@@ -885,7 +888,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   }, [dashboard]);
 
   const handleDeleteDashboardConfirm = React.useCallback(() => {
-    if (!dashboard || isConsoleDefaultHubRow(dashboard)) {
+    if (!dashboard || isPrebuiltHubRow(dashboard)) {
       return;
     }
     removeDashboard(dashboard.id);
@@ -895,13 +898,17 @@ const EditableDashboard: React.FunctionComponent = () => {
 
   const dashboardBody = dashboard ? (
     <div className={DASHBOARD_CANVAS_LAYOUT_CLASS}>
-        {isConsoleDefault ? (
+        {isPrebuilt ? (
           <PageSection hasBodyWrapper={false}>
             <Alert
               variant="info"
               isInline
               isPlain
-              title="The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it and copy its JSON config though."
+              title={
+                isConsoleDefault
+                  ? "The 'Console-default' dashboard is a system maintained dashboard and you cannot edit it. You may duplicate it and copy its JSON config though."
+                  : 'This is a system-maintained dashboard and cannot be edited. You may duplicate it and copy its JSON config though.'
+              }
             />
           </PageSection>
         ) : null}
@@ -967,17 +974,17 @@ const EditableDashboard: React.FunctionComponent = () => {
                         ) : null}
                         <TextInput
                           className={
-                            isConsoleDefault
+                            isPrebuilt
                               ? 'editable-dashboard-name-input editable-dashboard-name-input--non-interactive'
                               : 'editable-dashboard-name-input'
                           }
                           id="dashboard-name-input"
                           type="text"
                           value={localName}
-                          readOnlyVariant={isConsoleDefault ? 'default' : undefined}
-                          tabIndex={isConsoleDefault ? -1 : undefined}
+                          readOnlyVariant={isPrebuilt ? 'default' : undefined}
+                          tabIndex={isPrebuilt ? -1 : undefined}
                           onMouseDown={
-                            isConsoleDefault
+                            isPrebuilt
                               ? (e: React.MouseEvent<HTMLInputElement>) => {
                                   e.preventDefault();
                                 }
@@ -985,7 +992,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                           }
                           onChange={(_event, value) => setLocalName(value)}
                           onFocus={() => {
-                            if (!isConsoleDefault) {
+                            if (!isPrebuilt) {
                               setIsNameFieldFocused(true);
                               setIsDescriptionFieldFocused(false);
                             }
@@ -1014,7 +1021,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       </div>
                     </FormGroup>
                         </div>
-                        {!isConsoleDefault && isNameFieldFocused && (
+                        {!isPrebuilt && isNameFieldFocused && (
                           <span className="editable-dashboard-meta-inline-actions">
                             <Button
                               variant="plain"
@@ -1064,7 +1071,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                         value={localDescription}
                         onChange={(_event, value) => setLocalDescription(value)}
                         onFocus={() => {
-                          if (!isConsoleDefault) {
+                          if (!isPrebuilt) {
                             setIsDescriptionFieldFocused(true);
                             setIsNameFieldFocused(false);
                           }
@@ -1075,7 +1082,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                             return;
                           }
                           e.preventDefault();
-                          if (!dashboard || isConsoleDefault) {
+                          if (!dashboard || isPrebuilt) {
                             return;
                           }
                           const next = localDescription.trim();
@@ -1086,19 +1093,19 @@ const EditableDashboard: React.FunctionComponent = () => {
                           applyDescriptionChange();
                         }}
                         onMouseDown={
-                          isConsoleDefault
+                          isPrebuilt
                             ? (e: React.MouseEvent<HTMLInputElement>) => {
                                 e.preventDefault();
                               }
                             : undefined
                         }
                         maxLength={500}
-                        readOnly={isConsoleDefault}
-                        readOnlyVariant={isConsoleDefault ? 'default' : undefined}
-                        tabIndex={isConsoleDefault ? -1 : undefined}
+                        readOnly={isPrebuilt}
+                        readOnlyVariant={isPrebuilt ? 'default' : undefined}
+                        tabIndex={isPrebuilt ? -1 : undefined}
                         placeholder="(Optional) Short description of the dashboard"
                         className={
-                          isConsoleDefault
+                          isPrebuilt
                             ? 'editable-dashboard-description-input editable-dashboard-description-input--readonly'
                             : 'editable-dashboard-description-input'
                         }
@@ -1113,7 +1120,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                         />
                       ) : null}
                         </div>
-                        {!isConsoleDefault && isDescriptionFieldFocused && (
+                        {!isPrebuilt && isDescriptionFieldFocused && (
                           <span className="editable-dashboard-meta-inline-actions">
                             <Button
                               variant="plain"
@@ -1166,7 +1173,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                 spaceItems={{ default: 'spaceItemsMd' }}
                 style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
               >
-                  {!isConsoleDefault && !autosaveEnabled && (
+                  {!isPrebuilt && !autosaveEnabled && (
                     <>
                       <FlexItem>
                         <Button variant="secondary" onClick={handleSaveManual} isDisabled={!isDirty}>
@@ -1226,7 +1233,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       id={`dashboard-autosave-${dashboard.id}`}
                       label="Autosave"
                       isChecked={autosaveEnabled}
-                      isDisabled={isConsoleDefault}
+                      isDisabled={isPrebuilt}
                       onChange={(_event, checked) => setAutosaveEnabled(checked)}
                     />
                   </FlexItem>
@@ -1235,7 +1242,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       <Tabs
                         id={`editable-dashboard-widget-tabs-${dashboard.id}`}
                         aria-label={
-                          isConsoleDefault
+                          isPrebuilt
                             ? 'Widgets unavailable on Console default dashboard'
                             : 'Close widget panel'
                         }
@@ -1243,7 +1250,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                         variant="secondary"
                         activeKey="widgets-panel"
                         onSelect={() => {
-                          if (!isConsoleDefault) {
+                          if (!isPrebuilt) {
                             toggleWidgetDrawer();
                           }
                         }}
@@ -1252,7 +1259,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                       >
                         <Tab
                           eventKey="widgets-panel"
-                          isDisabled={isConsoleDefault}
+                          isDisabled={isPrebuilt}
                           title={
                             <TabTitleText>
                               <span className="editable-dashboard-toolbar-icon-label__inner">
@@ -1270,9 +1277,9 @@ const EditableDashboard: React.FunctionComponent = () => {
                         variant="plain"
                         className="editable-dashboard-toolbar-plain-icon-action"
                         onClick={toggleWidgetDrawer}
-                        isDisabled={isConsoleDefault}
+                        isDisabled={isPrebuilt}
                         title={
-                          isConsoleDefault
+                          isPrebuilt
                             ? 'Widgets cannot be added to the built-in Console default dashboard.'
                             : undefined
                         }
@@ -1348,8 +1355,8 @@ const EditableDashboard: React.FunctionComponent = () => {
                         </DropdownItem>
                         <Divider component="li" role="separator" />
                         <DropdownItem
-                          isDanger={!isConsoleDefault}
-                          isDisabled={isConsoleDefault}
+                          isDanger={!isPrebuilt}
+                          isDisabled={isPrebuilt}
                           onClick={handleKebabDelete}
                         >
                           <span
@@ -1357,7 +1364,7 @@ const EditableDashboard: React.FunctionComponent = () => {
                           >
                             <OutlinedTrashAltIcon
                               style={{
-                                color: isConsoleDefault
+                                color: isPrebuilt
                                   ? 'var(--pf-t--global--icon--Color--200)'
                                   : 'var(--pf-t--global--danger-color--200)'
                               }}
@@ -1372,7 +1379,7 @@ const EditableDashboard: React.FunctionComponent = () => {
             </div>
           </div>
 
-          {!isConsoleDefault && (
+          {!isPrebuilt && (
             <AddWidgetsDrawer
               isOpen={isWidgetDrawerOpen}
               removedWidgets={removedWidgets}
@@ -1402,7 +1409,7 @@ const EditableDashboard: React.FunctionComponent = () => {
             onAutoSizeFit={handleAutoSizeFit}
             onRemoveWidget={handleRemoveFromCanvas}
             onReorder={handleCanvasReorder}
-            readOnly={isConsoleDefault}
+            readOnly={isPrebuilt}
           />
         </PageSection>
     </div>

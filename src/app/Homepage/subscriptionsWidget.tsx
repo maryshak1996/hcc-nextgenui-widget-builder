@@ -7,6 +7,7 @@ import {
   InfoCircleIcon
 } from '@app/icons/rhUiIcons';
 import { WidgetCardHeaderLayout } from '@app/Homepage/widgetCardHeaderLayout';
+import { useWidgetColSpan } from '@app/Homepage/widgetColSpanContext';
 
 export const SUBSCRIPTIONS_WIDGET_LINKS = {
   manageSubscriptions: 'https://console.redhat.com/subscriptions'
@@ -48,9 +49,29 @@ export function SubscriptionsWidgetHeader({
   );
 }
 
+function getSubscriptionsStatusGridColumns(colSpan: number): number {
+  if (colSpan >= 4) {
+    return 4;
+  }
+  if (colSpan >= 3) {
+    return 4;
+  }
+  if (colSpan === 2) {
+    return 2;
+  }
+  return 1;
+}
+
 export function SubscriptionsWidgetBody() {
+  const colSpan = useWidgetColSpan();
+  const statusGridColumns = getSubscriptionsStatusGridColumns(colSpan);
+  const isWideLayout = colSpan >= 4;
+
   return (
-    <div className="subscriptions-widget-body">
+    <div
+      className={`subscriptions-widget-body${isWideLayout ? ' subscriptions-widget-body--wide' : ''}`}
+      style={{ gridTemplateColumns: `repeat(${statusGridColumns}, minmax(0, 1fr))` }}
+    >
       <Alert
         variant="success"
         isInline
@@ -102,18 +123,21 @@ export const SUBSCRIPTIONS_WIDGET_STYLES = `
     flex-direction: column !important;
     min-height: 0 !important;
     overflow: hidden !important;
+    flex-grow: 0 !important;
+  }
+
+  .widget-card--subscriptions .widget-card__body-content {
+    flex: 0 1 auto;
+    align-items: flex-start;
   }
 
   .subscriptions-widget-body {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9.375rem, 1fr));
-    grid-auto-rows: 1fr;
+    grid-auto-rows: auto;
     gap: var(--pf-t--global--spacer--md);
-    min-height: 0;
-    height: 100%;
     width: 100%;
-    align-content: stretch;
+    align-content: start;
   }
 
   .subscriptions-widget-body .subscriptions-status-alert {
@@ -123,16 +147,17 @@ export const SUBSCRIPTIONS_WIDGET_STYLES = `
       "title"
       "description";
     justify-items: center;
-    align-content: center;
+    align-content: start;
     text-align: center;
-    height: 100%;
+    height: auto;
     min-height: 0;
     margin: 0;
+    padding-block: var(--pf-t--global--spacer--md);
   }
 
   .subscriptions-widget-body .subscriptions-status-alert .pf-v6-c-alert__icon {
     margin-inline-end: 0;
-    margin-block-start: 0;
+    margin-block: 0;
     align-self: center;
   }
 
@@ -145,5 +170,21 @@ export const SUBSCRIPTIONS_WIDGET_STYLES = `
     padding-block-start: var(--pf-t--global--spacer--xs);
     text-align: center;
     align-self: center;
+    font-size: var(--pf-t--global--font--size--heading--md);
+    font-weight: var(--pf-t--global--font--weight--heading--heading);
+    line-height: var(--pf-t--global--font--line-height--heading--md);
+  }
+
+  /* Full-width (4-col) — one row of status cards; size to content, grid gap only below */
+  .widget-wrapper:has(.widget-card--subscriptions .subscriptions-widget-body--wide) {
+    align-self: start;
+  }
+
+  .widget-wrapper:has(.widget-card--subscriptions .subscriptions-widget-body--wide) .widget-resizable-root {
+    height: auto !important;
+  }
+
+  .widget-wrapper:has(.widget-card--subscriptions .subscriptions-widget-body--wide) .widget-card {
+    height: auto !important;
   }
 `;

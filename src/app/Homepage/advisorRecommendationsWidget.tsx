@@ -133,10 +133,14 @@ export function AdvisorRecommendationsWidgetHeader({
 
 const ADVISOR_RECOMMENDATION_PAIR_COUNT = ADVISOR_RECOMMENDATION_ROWS.length;
 
-export function AdvisorRecommendationsWidgetBody() {
+export function AdvisorRecommendationsWidgetBody({
+  defaultProductTab = 'rhel'
+}: {
+  defaultProductTab?: 'rhel' | 'openshift';
+} = {}) {
   const colSpan = useWidgetColSpan();
   const fluidLayout = getHorizontalFluidDescriptionListLayout(colSpan, ADVISOR_RECOMMENDATION_PAIR_COUNT);
-  const [activeTabKey, setActiveTabKey] = useState<string>(ADVISOR_VIEW_TABS[0].eventKey);
+  const [activeTabKey, setActiveTabKey] = useState<string>(defaultProductTab);
 
   const handleTabSelect = (
     _event: React.MouseEvent<HTMLElement> | React.KeyboardEvent | MouseEvent,
