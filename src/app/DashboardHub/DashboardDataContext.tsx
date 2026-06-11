@@ -6,7 +6,10 @@ import {
 } from '@patternfly/react-core';
 import { useNavigate } from 'react-router-dom';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
-import { DASHBOARD_HUB_ROWS } from '@app/DashboardHub/dashboardHubMockData';
+import {
+  DASHBOARD_HUB_ROWS,
+  LEGACY_PLACEHOLDER_DASHBOARD_IDS
+} from '@app/DashboardHub/dashboardHubMockData';
 import {
   CONSOLE_DEFAULT_DASHBOARD_ID,
   getPrebuiltDashboardWidgets,
@@ -91,10 +94,17 @@ function readRowsFromSessionStorage(): HubRow[] | null {
   }
 }
 
+function withoutLegacyPlaceholderRows(rows: HubRow[]): HubRow[] {
+  const legacyIds = new Set(LEGACY_PLACEHOLDER_DASHBOARD_IDS);
+  return rows.filter((row) => !legacyIds.has(row.id));
+}
+
 function initialRows(): HubRow[] {
   const stored = readRowsFromSessionStorage();
   if (stored) {
-    return mergePrebuiltDashboardsIntoRows(stored.map(withCanvasTitle));
+    return mergePrebuiltDashboardsIntoRows(
+      withoutLegacyPlaceholderRows(stored).map(withCanvasTitle)
+    );
   }
   return mergePrebuiltDashboardsIntoRows(DASHBOARD_HUB_ROWS.map((r) => withCanvasTitle({ ...r })));
 }
