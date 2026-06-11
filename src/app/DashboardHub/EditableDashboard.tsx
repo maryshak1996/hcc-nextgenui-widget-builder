@@ -57,6 +57,7 @@ import {
   getEffectiveColumnSpan,
   getPixelHeightForRowSpan,
   getPixelWidthForColSpan,
+  getWidgetsGridColumnStyle,
   ReadOnlyHomepageWidgetFrame,
   renderHomepageWidgetContent,
   SortableWidgetCard,
@@ -136,7 +137,13 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
 }) => {
   const navigate = useNavigate();
   const gridRef = React.useRef<HTMLDivElement>(null);
-  const gridWidth = useDeferredResizeObserverOffsetWidth(() => gridRef.current, [canvasWidgets.length]);
+  const [gridEl, setGridEl] = React.useState<HTMLDivElement | null>(null);
+  const setGridRef = React.useCallback((node: HTMLDivElement | null) => {
+    gridRef.current = node;
+    setGridEl(node);
+  }, []);
+  const gridWidth = useDeferredResizeObserverOffsetWidth(() => gridEl, [gridEl, canvasWidgets.length]);
+  const widgetsGridColumnStyle = React.useMemo(() => getWidgetsGridColumnStyle(gridWidth), [gridWidth]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [resizePreview, setResizePreview] = React.useState<WidgetResizePreview | null>(null);
 
@@ -379,9 +386,9 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
               <>
                 <style>{WIDGET_GRID_STYLES}</style>
                 <div
-                  ref={gridRef}
+                  ref={setGridRef}
                   className="widgets-grid homepage-readonly-grid"
-                  style={{ width: '100%', minWidth: 0 }}
+                  style={{ width: '100%', minWidth: 0, ...widgetsGridColumnStyle }}
                   aria-label="Dashboard widgets (read-only)"
                 >
                   {canvasWidgets.map((widget) => (
@@ -429,8 +436,9 @@ const EditableDashboardCanvas: React.FC<EditableDashboardCanvasProps> = ({
               <div style={{ width: '100%', minWidth: 0 }}>
                 <SortableContext items={canvasWidgets.map((w) => w.id)} strategy={rectSortingStrategy}>
                   <div
-                    ref={gridRef}
+                    ref={setGridRef}
                     className={`widgets-grid${resizePreview ? ' is-resize-active' : ''}`}
+                    style={widgetsGridColumnStyle}
                   >
                     {canvasWidgets.map((widget) => (
                       <SortableWidgetCard

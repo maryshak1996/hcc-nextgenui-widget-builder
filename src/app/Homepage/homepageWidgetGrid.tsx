@@ -146,15 +146,31 @@ export const GRID_ROW_HEIGHT = ROW_HEIGHT / 2;
  */
 export const GAP = 16;
 
-/** Matches `.widgets-grid` responsive `grid-template-columns` breakpoints. */
+/**
+ * Column count for packing, resize snaps, and `grid-template-columns`.
+ * Uses the measured `.widgets-grid` width — not viewport media queries — so layout matches
+ * the main content column when a sidebar or max-width wrapper is present.
+ */
 export function getDashboardGridColumnCount(gridWidth: number): number {
-  if (gridWidth <= 768) {
+  const w =
+    gridWidth > 0
+      ? gridWidth
+      : typeof window !== 'undefined'
+        ? window.innerWidth
+        : 1600;
+  if (w <= 768) {
     return 1;
   }
-  if (gridWidth <= 1200) {
+  if (w <= 1200) {
     return 2;
   }
   return 4;
+}
+
+/** Inline grid columns — must stay in sync with {@link getDashboardGridColumnCount}. */
+export function getWidgetsGridColumnStyle(gridWidth: number): React.CSSProperties {
+  const n = getDashboardGridColumnCount(gridWidth);
+  return { gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` };
 }
 
 export function getWidgetGridSingleColumnWidth(gridWidth: number): number {
@@ -1741,10 +1757,9 @@ export const WIDGET_GRID_STYLES = `
       transform: translateY(0px) !important;
     }
     
-    /* Responsive columns — breakpoints must match getDashboardGridColumnCount() */
+    /* Column count is set inline via getWidgetsGridColumnStyle() — not viewport media queries */
     .widgets-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
       grid-auto-rows: ${GRID_ROW_HEIGHT}px;
       grid-auto-flow: row;
       gap: ${GAP}px;
@@ -2112,20 +2127,6 @@ export const WIDGET_GRID_STYLES = `
     
     .resize-preview-indicator.visible {
       opacity: 1;
-    }
-    
-    /* Responsive: 2 columns on medium screens */
-    @media (max-width: 1200px) {
-      .widgets-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-    
-    /* Responsive: 1 column on small screens */
-    @media (max-width: 768px) {
-      .widgets-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
     }
 
     .recently-visited-item {

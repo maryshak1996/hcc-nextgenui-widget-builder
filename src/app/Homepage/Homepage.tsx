@@ -48,6 +48,7 @@ import type { Widget } from '@app/Homepage/widgetTypes';
 import {
   computeDashboardWidgetPlacements,
   getDashboardGridColumnCount,
+  getWidgetsGridColumnStyle,
   ReadOnlyHomepageWidgetFrame,
   WIDGET_GRID_STYLES,
   renderHomepageWidgetContent
@@ -117,9 +118,18 @@ const Homepage: React.FunctionComponent = () => {
   const { rows, setDashboardAsHomepage } = useDashboardData();
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
   const homepageWidgetsGridRef = useRef<HTMLDivElement>(null);
+  const [homepageGridEl, setHomepageGridEl] = useState<HTMLDivElement | null>(null);
+  const setHomepageWidgetsGridRef = useCallback((node: HTMLDivElement | null) => {
+    homepageWidgetsGridRef.current = node;
+    setHomepageGridEl(node);
+  }, []);
   const homepageGridWidth = useDeferredResizeObserverOffsetWidth(
-    () => homepageWidgetsGridRef.current,
-    [displayWidgets.length]
+    () => homepageGridEl,
+    [homepageGridEl, displayWidgets.length]
+  );
+  const homepageWidgetsGridColumnStyle = useMemo(
+    () => getWidgetsGridColumnStyle(homepageGridWidth),
+    [homepageGridWidth]
   );
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
@@ -585,9 +595,9 @@ const Homepage: React.FunctionComponent = () => {
               </div>
               {displayWidgets.length > 0 ? (
                 <div
-                  ref={homepageWidgetsGridRef}
+                  ref={setHomepageWidgetsGridRef}
                   className="widgets-grid homepage-readonly-grid"
-                  style={{ minWidth: 0, width: '100%' }}
+                  style={{ minWidth: 0, width: '100%', ...homepageWidgetsGridColumnStyle }}
                   aria-label="Read-only preview of your homepage dashboard"
                 >
                   {displayWidgets.map((widget) => (
