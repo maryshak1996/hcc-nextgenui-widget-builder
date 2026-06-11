@@ -35,7 +35,8 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x);
 }
 
-function normalizeBlocks(raw: unknown): PreviewBlock[] | null {
+/** Validates a stored blocks array (session storage / clipboard import). */
+export function parsePreviewBlocks(raw: unknown): PreviewBlock[] | null {
   if (!Array.isArray(raw)) {
     return null;
   }
@@ -82,16 +83,16 @@ function normalizeBlocks(raw: unknown): PreviewBlock[] | null {
 /** Accept `{ blocks }`, `{ layout, blocks }`, legacy `{ body: { blocks } }`, or a root-level blocks array. */
 function normalizeBodyDocument(obj: unknown): PreviewBlock[] | null {
   if (Array.isArray(obj)) {
-    return normalizeBlocks(obj);
+    return parsePreviewBlocks(obj);
   }
   if (!isRecord(obj)) {
     return null;
   }
   if (Array.isArray(obj.blocks)) {
-    return normalizeBlocks(obj.blocks);
+    return parsePreviewBlocks(obj.blocks);
   }
   if (isRecord(obj.body) && Array.isArray(obj.body.blocks)) {
-    return normalizeBlocks(obj.body.blocks);
+    return parsePreviewBlocks(obj.body.blocks);
   }
   return null;
 }

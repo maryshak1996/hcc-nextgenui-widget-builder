@@ -11,6 +11,7 @@
 export {
   RhUiAddCircleIcon,
   RhUiAiExperienceIcon,
+  RhUiAiSearchIcon,
   RhUiAnalyzeIcon,
   RhUiArrowCircleDownIcon,
   RhUiArrowCircleUpIcon,
@@ -109,6 +110,7 @@ export { RhStandardSpaceSatelliteIcon as SatelliteIcon } from '@patternfly/react
 export { RhUiProcessAutomationIcon as AnsibleTowerIcon } from '@patternfly/react-icons';
 export { RhUiAddCircleIcon as PlusCircleIcon } from '@patternfly/react-icons';
 export { RhUiAiExperienceIcon as AiExperienceIcon } from '@patternfly/react-icons';
+export { RhUiAiSearchIcon as AiSearchIcon } from '@patternfly/react-icons';
 export { RhUiAnalyzeIcon as AnalyzeIcon } from '@patternfly/react-icons';
 export { RhUiMinusCircleIcon as MinusCircleIcon } from '@patternfly/react-icons';
 export { RhUiCloseIcon as TimesIcon } from '@patternfly/react-icons';

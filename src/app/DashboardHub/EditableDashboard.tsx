@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { RouterBreadcrumbItem } from '@app/RouterBreadcrumbItem';
 import {
   Alert,
   Breadcrumb,
@@ -1422,8 +1423,8 @@ const EditableDashboard: React.FunctionComponent = () => {
     >
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/">Home</BreadcrumbItem>
-          <BreadcrumbItem to="/dashboard-hub">Dashboard Hub</BreadcrumbItem>
+          <RouterBreadcrumbItem to="/">Home</RouterBreadcrumbItem>
+          <RouterBreadcrumbItem to="/dashboard-hub">Dashboard Hub</RouterBreadcrumbItem>
           <BreadcrumbItem isActive>{breadcrumbLabel}</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>

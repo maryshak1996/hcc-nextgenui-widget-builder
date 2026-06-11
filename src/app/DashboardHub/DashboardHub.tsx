@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { RouterBreadcrumbItem } from '@app/RouterBreadcrumbItem';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -276,7 +277,7 @@ const DashboardHub: React.FunctionComponent = () => {
     <>
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/">Home</BreadcrumbItem>
+          <RouterBreadcrumbItem to="/">Home</RouterBreadcrumbItem>
           <BreadcrumbItem isActive>Dashboard Hub</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>

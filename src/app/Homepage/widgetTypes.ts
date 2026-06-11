@@ -1,4 +1,11 @@
 import type { ReactNode } from 'react';
+import type { PreviewBlock } from '@app/Homepage/widgetBuilderPreviewParser';
+
+/** Serializable body + header icon from the widget builder. */
+export interface CustomBuilderWidgetContent {
+  headerIconId: string;
+  blocks: PreviewBlock[];
+}
 
 export type ColumnSpan = 1 | 2 | 3 | 4;
 
@@ -21,4 +28,6 @@ export interface Widget {
   navigateTo?: string;
   /** Initial tab for RHEL/OpenShift tabbed widgets (e.g. OpenShift dashboard). */
   defaultProductTab?: 'rhel' | 'openshift';
+  /** Widget builder output — custom title icon and parsed body blocks. */
+  customBuilder?: CustomBuilderWidgetContent;
 }

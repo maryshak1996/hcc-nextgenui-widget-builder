@@ -37,7 +37,7 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
     }
     
     .widget-drawer-panel .pf-v6-c-panel__main-body {
-      padding: 24px;
+      padding: var(--pf-t--global--spacer--lg);
       min-height: 0;
     }
     
@@ -61,24 +61,30 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
       box-shadow: none !important;
     }
 
-    /* Plain strip (not CardHeader) so PF card-title rules do not flatten Title typography */
-    .widget-drawer .widget-drawer-subsection-heading {
+    /* CardTitle + Divider: standard PF subsection header without flattening Title size */
+    .widget-drawer .widget-drawer-subsection-card-title.pf-v6-c-card__title {
+      --pf-v6-c-card__title--FontSize: inherit;
+      --pf-v6-c-card__title--LineHeight: inherit;
       padding-block: var(--pf-t--global--spacer--md);
       padding-inline: var(--pf-t--global--spacer--lg);
       box-sizing: border-box;
       background: var(--pf-t--global--background--color--100);
     }
 
-    .widget-drawer .widget-drawer-subsection-heading__icon {
+    .widget-drawer .widget-drawer-subsection-card-title__icon {
       display: inline-flex;
       flex-shrink: 0;
       line-height: 0;
       color: var(--pf-t--global--icon--color--default);
     }
 
-    .widget-drawer .widget-drawer-subsection-heading__icon svg {
+    .widget-drawer .widget-drawer-subsection-card-title__icon svg {
       width: 1.25rem;
       height: 1.25rem;
+    }
+
+    .widget-drawer .widget-drawer-subsection-card > .pf-v6-c-divider {
+      margin: 0;
     }
 
     .add-widgets-example-prompts {
@@ -100,26 +106,26 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
     .removed-widgets-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 16px;
+      gap: var(--pf-t--global--spacer--md);
+      margin-top: var(--pf-t--global--spacer--md);
     }
 
     .add-widgets-bank-grid {
       margin-top: 0;
-      gap: 8px;
+      gap: var(--pf-t--global--spacer--sm);
     }
 
     .add-widgets-bank-add {
       flex-shrink: 0;
     }
 
-    .widget-drawer .add-widgets-bank-search-ai-icon {
+    .widget-drawer .add-widgets-bank-search-icon {
       display: inline-flex;
       line-height: 0;
       color: var(--pf-t--global--icon--color--default);
     }
 
-    .widget-drawer .add-widgets-bank-search-ai-icon svg {
+    .widget-drawer .add-widgets-bank-search-icon svg {
       display: block;
     }
 
@@ -182,131 +188,33 @@ export const ADD_WIDGETS_DRAWER_STYLES = `
       width: 100%;
     }
 
-    /* Title + Icon: one row; labels use PF form label classes; gap between label and control via __field. */
+    /* Title + Icon: side-by-side FormGroups */
     .widget-drawer .add-widgets-builder-title-icon-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      column-gap: var(--pf-t--global--spacer--lg);
-      row-gap: var(--pf-t--global--spacer--md);
       width: 100%;
       flex-shrink: 0;
     }
 
-    .widget-drawer .add-widgets-builder-title-icon-row__field {
-      display: flex;
-      align-items: center;
-      gap: var(--pf-t--global--spacer--sm);
-      min-width: 0;
-    }
-
-    .widget-drawer .add-widgets-builder-title-icon-row__field--title {
-      flex: 1 1 auto;
-      min-width: min(100%, 12rem);
-    }
-
-    .widget-drawer .add-widgets-builder-title-icon-row__field--icon {
-      flex: 0 0 auto;
-    }
-
-    .widget-drawer .add-widgets-builder-title-icon-row .pf-v6-c-form__label {
+    .widget-drawer .add-widgets-builder-title-form-group.pf-v6-c-form__group,
+    .widget-drawer .add-widgets-builder-icon-form-group.pf-v6-c-form__group {
       margin: 0;
-      flex-shrink: 0;
     }
 
-    .widget-drawer .add-widgets-builder-title-icon-row .pf-v6-c-form__label-text {
-      font-weight: var(--pf-t--global--font--weight--body--bold);
-    }
-
-    .widget-drawer .add-widgets-builder-title-icon-row__control {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .widget-drawer .add-widgets-builder-title-icon-row__field--title .add-widgets-builder-title-icon-row__control .pf-v6-c-form-control {
+    .widget-drawer .add-widgets-builder-title-form-group .pf-v6-c-form-control {
       width: 100%;
     }
 
-    .widget-drawer .add-widgets-builder-title-icon-row__control--icon {
-      flex: 0 0 auto;
-    }
-
-    /*
-     * Icon field: TextInputGroup border wraps the icon with even padding (icon is in-flow; dummy
-     * input is an invisible overlay for PatternFly markup).
-     */
-    .widget-drawer .add-widgets-builder-header-icon-trigger {
-      cursor: pointer;
-      max-width: 100%;
+    /* Icon-only MenuToggle — matches TextInput control height */
+    .widget-drawer .add-widgets-builder-header-icon-toggle.pf-v6-c-menu-toggle {
+      min-width: auto;
       width: fit-content;
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger .pf-v6-c-text-input-group {
-      width: fit-content;
-      min-width: 0;
-      /* Match default TextInput / .pf-v6-c-form-control single-line height */
-      min-height: calc(
-        (var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body))
-          + (2 * var(--pf-t--global--spacer--control--vertical--default))
-          + (2 * var(--pf-t--global--border--width--control--default))
-      );
-      display: flex;
-      align-items: center;
-      box-sizing: border-box;
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger .pf-v6-c-text-input-group__main.pf-m-icon {
-      flex: 1 1 auto;
-      align-self: stretch;
-      min-width: 0 !important;
-      min-height: 100%;
-      display: inline-flex;
-      align-items: center;
       justify-content: center;
-      box-sizing: border-box;
-      padding-block: 0;
-      padding-inline: var(--pf-t--global--spacer--control--horizontal--default);
     }
 
-    .widget-drawer .add-widgets-builder-header-icon-trigger .pf-v6-c-text-input-group__text {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
+    .widget-drawer .add-widgets-builder-header-icon-toggle__icon {
+      display: block;
       width: 1.125rem;
       height: 1.125rem;
-      min-width: 1.125rem;
-      min-height: 1.125rem;
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger .pf-v6-c-text-input-group__icon:not(.pf-m-status) {
-      position: static !important;
-      transform: none !important;
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger .pf-v6-c-text-input-group__text-input {
-      position: absolute !important;
-      inset: 0 !important;
-      box-sizing: border-box !important;
-      width: 100% !important;
-      height: 100% !important;
-      min-width: 0 !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger--locked {
-      pointer-events: none;
-      cursor: not-allowed;
-      opacity: var(--pf-t--global--opacity--disabled, 0.6);
-    }
-
-    .widget-drawer .add-widgets-builder-header-icon-trigger--locked .pf-v6-c-text-input-group {
-      --pf-v6-c-text-input-group--BorderColor: var(--pf-t--global--border--color--disabled);
-      --pf-v6-c-text-input-group--BackgroundColor: var(--pf-t--global--background--color--disabled--default);
+      color: var(--pf-t--global--icon--color--brand--default);
     }
 
     /*

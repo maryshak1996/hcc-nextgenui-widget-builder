@@ -24,6 +24,7 @@ import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import { AngleDoubleRightIcon, OutlinedWindowRestoreIcon } from '@patternfly/react-icons';
 import { BellIcon, FilterIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
+import { RouterBreadcrumbItem } from '@app/RouterBreadcrumbItem';
 
 interface AlertRow {
   eventType: string;
@@ -222,7 +223,7 @@ const AlertManager: React.FunctionComponent = () => {
     <>
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/overview">Settings</BreadcrumbItem>
+          <RouterBreadcrumbItem to="/overview">Settings</RouterBreadcrumbItem>
           <BreadcrumbItem isActive>Alert Manager</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>

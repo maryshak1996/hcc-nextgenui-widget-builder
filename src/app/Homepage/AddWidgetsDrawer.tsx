@@ -6,7 +6,9 @@ import {
   Card,
   CardBody,
   CardHeader,
+  CardTitle,
   Content,
+  Divider,
   Dropdown,
   DropdownItem,
   DropdownList,
@@ -17,6 +19,8 @@ import {
   Flex,
   FlexItem,
   FormGroup,
+  HelperText,
+  HelperTextItem,
   List,
   ListItem,
   MenuToggle,
@@ -33,10 +37,9 @@ import {
 } from '@patternfly/react-core';
 import { CodeEditor, CodeEditorControl, Language } from '@patternfly/react-code-editor';
 import type { editor } from 'monaco-editor';
-import { CodeIcon, CopyIcon, CubesIcon, ExternalLinkAltIcon, OpenDrawerRightIcon, PanelOpenIcon, PlusCircleIcon, RedoIcon, SearchIcon, SyncAltIcon, TimesIcon, UndoIcon } from '@app/icons/rhUiIcons';
+import { AiSearchIcon, CodeIcon, CopyIcon, CubesIcon, ExternalLinkAltIcon, OpenDrawerRightIcon, PanelOpenIcon, PlusCircleIcon, RedoIcon, SearchIcon, SyncAltIcon, TimesIcon, UndoIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 import { EXAMPLE_BANK_SEARCH_PROMPTS, filterCatalogWidgetsBySearch } from '@app/Homepage/bankWidgetSearch';
-import { AiSearchInputIcon } from '@app/Homepage/AiSearchInputIcon';
 import { BankWidgetCard } from '@app/Homepage/BankWidgetCard';
 import { ADD_WIDGETS_DRAWER_STYLES } from '@app/Homepage/addWidgetsDrawerStyles';
 import { HOMEPAGE_WIDGET_CATALOG } from '@app/Homepage/homepageWidgetCatalog';
@@ -448,15 +451,28 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
   }, []);
 
   const handleWidgetBuilderAddToDashboard = useCallback(() => {
+    if (widgetBuilderPreviewError) {
+      return;
+    }
     onAddWidget({
       id: `widget-builder-${Date.now()}`,
       title: widgetBuilderTitle.trim() || WIDGET_BUILDER_DEFAULT_TITLE,
       type: 'placeholder',
       colSpan: 2,
-      rowSpan: 8
+      rowSpan: 8,
+      customBuilder: {
+        headerIconId: widgetBuilderHeaderIconId,
+        blocks: widgetBuilderPreviewModel.blocks
+      }
     });
     setWidgetBuilderAddedToDashboard(true);
-  }, [onAddWidget, widgetBuilderTitle]);
+  }, [
+    onAddWidget,
+    widgetBuilderHeaderIconId,
+    widgetBuilderPreviewError,
+    widgetBuilderPreviewModel.blocks,
+    widgetBuilderTitle
+  ]);
   const [bankSearchInput, setBankSearchInput] = useState('');
   const [bankSearchQuery, setBankSearchQuery] = useState('');
   const [isExamplePromptsExpanded, setIsExamplePromptsExpanded] = useState(false);
@@ -608,16 +624,17 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                 >
                   <FlexItem className="add-widgets-find-column">
                     <Card isFullHeight className="widget-drawer-section-card widget-drawer-subsection-card">
-                      <div className="widget-drawer-subsection-heading">
+                      <CardTitle className="widget-drawer-subsection-card-title">
                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                          <span className="widget-drawer-subsection-heading__icon" aria-hidden>
-                            <SearchIcon />
+                          <span className="widget-drawer-subsection-card-title__icon" aria-hidden>
+                            <AiSearchIcon />
                           </span>
                           <Title headingLevel="h2" size="xl">
                             Find widgets
                           </Title>
                         </Flex>
-                      </div>
+                      </CardTitle>
+                      <Divider />
                       <CardBody id="add-widgets-preco-section">
                           <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }} style={{ width: '100%' }}>
                             <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }} style={{ width: '100%' }}>
@@ -635,8 +652,8 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                   <TextInputGroupMain
                                     inputId="add-widgets-bank-search"
                                     icon={
-                                      <span className="add-widgets-bank-search-ai-icon" aria-hidden>
-                                        <AiSearchInputIcon width={16} height={16} />
+                                      <span className="add-widgets-bank-search-icon" aria-hidden>
+                                        <SearchIcon />
                                       </span>
                                     }
                                     placeholder="What do you need your widget to do?"
@@ -651,6 +668,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                     name="add-widgets-bank-search"
                                     type="text"
                                     aria-label="What you need your widget to do; press Enter to search"
+                                    aria-describedby="add-widgets-bank-search-hint"
                                   />
                                   {!!bankSearchInput && (
                                     <TextInputGroupUtilities>
@@ -665,16 +683,11 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                   )}
                                 </TextInputGroup>
                               </form>
-                              <Content
-                                component="p"
-                                style={{
-                                  color: 'var(--pf-t--global--text--color--subtle, var(--pf-v6-global--Color--200))',
-                                  fontSize: 'var(--pf-t--global--font--size--body--default)',
-                                  margin: 0
-                                }}
-                              >
-                                Hit &lsquo;Enter&rsquo; to send search query
-                              </Content>
+                              <HelperText>
+                                <HelperTextItem id="add-widgets-bank-search-hint">
+                                  Hit &lsquo;Enter&rsquo; to send search query
+                                </HelperTextItem>
+                              </HelperText>
                             </Flex>
                             {!bankSearchQuery.trim() && (
                               <ExpandableSection
@@ -795,16 +808,17 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                   </FlexItem>
                   <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: 0, minHeight: 0, flex: '1 1 0%' }}>
                     <Card isFullHeight className="widget-drawer-section-card widget-drawer-subsection-card add-widgets-builder-card">
-                      <div className="widget-drawer-subsection-heading">
+                      <CardTitle className="widget-drawer-subsection-card-title">
                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                          <span className="widget-drawer-subsection-heading__icon" aria-hidden>
+                          <span className="widget-drawer-subsection-card-title__icon" aria-hidden>
                             <CodeIcon />
                           </span>
                           <Title headingLevel="h2" size="xl">
                             Widget builder
                           </Title>
                         </Flex>
-                      </div>
+                      </CardTitle>
+                      <Divider />
                       <CardBody id="add-widgets-builder-section" className="add-widgets-builder-section-body">
                           <Content component="p" className="add-widgets-builder-intro">
                             Create custom widget in Markdown, YAML, or JSON. The title and icon are required before you can
@@ -825,17 +839,24 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                           <div className="add-widgets-builder-row">
                             <div className="add-widgets-builder-row__editor">
                               <div className="add-widgets-builder-editor-stack">
-                                <div className="add-widgets-builder-title-icon-row">
-                                  <div className="add-widgets-builder-title-icon-row__field add-widgets-builder-title-icon-row__field--title">
-                                    <label className="pf-v6-c-form__label" htmlFor="widget-builder-title">
-                                      <span className="pf-v6-c-form__label-text">Title</span>
-                                      <span className="pf-v6-c-form__label-required" aria-hidden="true">
-                                        {' '}
-                                        *
-                                      </span>
-                                    </label>
-                                    <div className="add-widgets-builder-title-icon-row__control">
+                                <Flex
+                                  className="add-widgets-builder-title-icon-row"
+                                  flexWrap={{ default: 'wrap' }}
+                                  spaceItems={{ default: 'spaceItemsLg' }}
+                                  alignItems={{ default: 'alignItemsFlexEnd' }}
+                                >
+                                  <FlexItem
+                                    flex={{ default: 'flex_1' }}
+                                    style={{ minWidth: 'min(100%, 12rem)' }}
+                                  >
+                                    <FormGroup
+                                      isRequired
+                                      label="Title"
+                                      fieldId="widget-builder-title"
+                                      className="add-widgets-builder-title-form-group"
+                                    >
                                       <TextInput
+                                        isRequired
                                         id="widget-builder-title"
                                         type="text"
                                         value={widgetBuilderTitle}
@@ -843,17 +864,15 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                         aria-label="Widget title shown in the preview header"
                                         isDisabled={widgetBuilderAddedToDashboard}
                                       />
-                                    </div>
-                                  </div>
-                                  <div className="add-widgets-builder-title-icon-row__field add-widgets-builder-title-icon-row__field--icon">
-                                    <label className="pf-v6-c-form__label" htmlFor="widget-builder-header-icon">
-                                      <span className="pf-v6-c-form__label-text">Icon</span>
-                                      <span className="pf-v6-c-form__label-required" aria-hidden="true">
-                                        {' '}
-                                        *
-                                      </span>
-                                    </label>
-                                    <div className="add-widgets-builder-title-icon-row__control add-widgets-builder-title-icon-row__control--icon">
+                                    </FormGroup>
+                                  </FlexItem>
+                                  <FlexItem>
+                                    <FormGroup
+                                      isRequired
+                                      label="Icon"
+                                      fieldId="widget-builder-header-icon"
+                                      className="add-widgets-builder-icon-form-group"
+                                    >
                                       <Dropdown
                                         className="add-widgets-builder-icon-dropdown"
                                         isOpen={widgetBuilderAddedToDashboard ? false : isWidgetBuilderIconMenuOpen}
@@ -867,58 +886,27 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                         shouldFocusToggleOnSelect
                                         popperProps={{ position: 'start' }}
                                         toggle={(toggleRef: React.Ref<MenuToggleElement>) => {
-                                          const SelectedIcon = getWidgetBuilderHeaderIconComponent(widgetBuilderHeaderIconId);
+                                          const SelectedIcon = getWidgetBuilderHeaderIconComponent(
+                                            widgetBuilderHeaderIconId
+                                          );
                                           const iconLabel = getWidgetBuilderHeaderIconLabel(widgetBuilderHeaderIconId);
                                           return (
-                                            <div
-                                              ref={toggleRef as React.Ref<HTMLDivElement>}
+                                            <MenuToggle
+                                              ref={toggleRef}
                                               id="widget-builder-header-icon"
-                                              className={
-                                                widgetBuilderAddedToDashboard
-                                                  ? 'add-widgets-builder-header-icon-trigger add-widgets-builder-header-icon-trigger--locked'
-                                                  : 'add-widgets-builder-header-icon-trigger'
+                                              className="add-widgets-builder-header-icon-toggle"
+                                              isExpanded={
+                                                widgetBuilderAddedToDashboard ? false : isWidgetBuilderIconMenuOpen
                                               }
-                                              role="button"
-                                              tabIndex={widgetBuilderAddedToDashboard ? -1 : 0}
-                                              aria-haspopup="listbox"
-                                              aria-expanded={widgetBuilderAddedToDashboard ? false : isWidgetBuilderIconMenuOpen}
-                                              aria-disabled={widgetBuilderAddedToDashboard}
-                                              aria-label={`Icon: ${iconLabel}. Open icon menu.`}
+                                              isDisabled={widgetBuilderAddedToDashboard}
                                               onClick={toggleWidgetBuilderIconMenu}
-                                              onKeyDown={(event) => {
-                                                if (widgetBuilderAddedToDashboard) {
-                                                  return;
-                                                }
-                                                if (event.key === 'Enter' || event.key === ' ') {
-                                                  event.preventDefault();
-                                                  toggleWidgetBuilderIconMenu();
-                                                }
-                                              }}
+                                              aria-label={`Icon: ${iconLabel}. Open icon menu.`}
                                             >
-                                              <TextInputGroup>
-                                                <TextInputGroupMain
-                                                  icon={
-                                                    <SelectedIcon
-                                                      style={{
-                                                        width: '1.125rem',
-                                                        height: '1.125rem',
-                                                        color: 'var(--pf-t--global--icon--color--brand--default)'
-                                                      }}
-                                                      aria-hidden
-                                                    />
-                                                  }
-                                                  value=""
-                                                  onChange={() => {}}
-                                                  aria-label=""
-                                                  inputProps={{
-                                                    readOnly: true,
-                                                    tabIndex: -1,
-                                                    'aria-hidden': true,
-                                                    style: { pointerEvents: 'none' as const }
-                                                  }}
-                                                />
-                                              </TextInputGroup>
-                                            </div>
+                                              <SelectedIcon
+                                                className="add-widgets-builder-header-icon-toggle__icon"
+                                                aria-hidden
+                                              />
+                                            </MenuToggle>
                                           );
                                         }}
                                       >
@@ -937,9 +925,9 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                           ))}
                                         </DropdownList>
                                       </Dropdown>
-                                    </div>
-                                  </div>
-                                </div>
+                                    </FormGroup>
+                                  </FlexItem>
+                                </Flex>
                                 <FormGroup
                                   className="add-widgets-builder-form-group"
                                   fieldId="widget-builder-code-editor"

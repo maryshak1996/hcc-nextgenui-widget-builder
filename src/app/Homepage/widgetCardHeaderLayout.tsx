@@ -7,6 +7,8 @@ import { scheduleDeferredResizeObserverWork } from '@app/useDeferredResizeObserv
 export interface WidgetCardHeaderLayoutProps {
   widgetId: string;
   title: string;
+  /** Overrides the catalog lead icon (e.g. widget builder custom icon). */
+  headerLeadIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   /** Rendered after the title; stays on the same line when space allows, otherwise wraps below */
   inlineLink?: React.ReactNode;
   /** Kebab menu and drag handle — supplied by WidgetCard on editable surfaces */
@@ -79,6 +81,7 @@ function WidgetCardHeaderTitle({ title, titleClassName }: { title: string; title
 export function WidgetCardHeaderLayout({
   widgetId,
   title,
+  headerLeadIcon: HeaderLeadIcon,
   inlineLink,
   toolbar,
   titleClassName
@@ -86,7 +89,13 @@ export function WidgetCardHeaderLayout({
   return (
     <div className="widget-card__header-layout">
       <div className="widget-card__header-lead">
-        <WidgetTitleLeadIcon widgetId={widgetId} />
+        {HeaderLeadIcon ? (
+          <span className="widget-title-lead-icon" aria-hidden>
+            <HeaderLeadIcon />
+          </span>
+        ) : (
+          <WidgetTitleLeadIcon widgetId={widgetId} />
+        )}
       </div>
       <div className="widget-card__header-text">
         <WidgetCardHeaderTitle title={title} titleClassName={titleClassName} />

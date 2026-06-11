@@ -1,4 +1,5 @@
-import type { Widget } from '@app/Homepage/widgetTypes';
+import type { CustomBuilderWidgetContent, Widget } from '@app/Homepage/widgetTypes';
+import { parsePreviewBlocks } from '@app/Homepage/widgetBuilderPreviewParser';
 import { MAX_ROW_SPAN, MIN_ROW_SPAN } from '@app/Homepage/widgetTypes';
 import { clampRowSpan, migrateLegacyRowSpan } from '@app/Homepage/homepageWidgetGrid';
 import { createHomepageWidgetClones } from '@app/Homepage/homepageWidgetCatalog';
@@ -23,6 +24,21 @@ export function notifyDashboardCanvasUpdated(dashboardId: string): void {
   window.dispatchEvent(
     new CustomEvent(CANVAS_UPDATED, { detail: { dashboardId }, bubbles: false })
   );
+}
+
+function parseCustomBuilderContent(raw: unknown): CustomBuilderWidgetContent | undefined {
+  if (typeof raw !== 'object' || raw === null) {
+    return undefined;
+  }
+  const o = raw as Record<string, unknown>;
+  if (typeof o.headerIconId !== 'string' || !o.headerIconId.trim()) {
+    return undefined;
+  }
+  const blocks = parsePreviewBlocks(o.blocks);
+  if (!blocks) {
+    return undefined;
+  }
+  return { headerIconId: o.headerIconId, blocks };
 }
 
 function isValidWidget(x: unknown): x is { id: string; title: string; type: string; colSpan: number; rowSpan: number } {
@@ -50,7 +66,12 @@ function normalizeWidgetsFromUnknownArray(items: unknown[]): Widget[] | null {
     if (!isValidWidget(item)) {
       return null;
     }
-    const ext = item as { navigateTo?: unknown; footerText?: unknown };
+    const ext = item as {
+      navigateTo?: unknown;
+      footerText?: unknown;
+      defaultProductTab?: unknown;
+      customBuilder?: unknown;
+    };
     const w: Widget = {
       id: item.id,
       title: item.title,
@@ -60,6 +81,13 @@ function normalizeWidgetsFromUnknownArray(items: unknown[]): Widget[] | null {
       navigateTo: typeof ext.navigateTo === 'string' ? ext.navigateTo : undefined,
       footerText: typeof ext.footerText === 'string' ? ext.footerText : undefined
     };
+    if (ext.defaultProductTab === 'rhel' || ext.defaultProductTab === 'openshift') {
+      w.defaultProductTab = ext.defaultProductTab;
+    }
+    const customBuilder = parseCustomBuilderContent(ext.customBuilder);
+    if (customBuilder) {
+      w.customBuilder = customBuilder;
+    }
     out.push(w);
   }
   return out;

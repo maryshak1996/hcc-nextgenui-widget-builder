@@ -20,6 +20,7 @@ import {
 } from '@patternfly/react-core';
 import { ListIcon } from '@patternfly/react-icons';
 import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
+import { RouterBreadcrumbItem } from '@app/RouterBreadcrumbItem';
 
 const EventLog: React.FunctionComponent = () => {
   const [searchValue, setSearchValue] = React.useState('');
@@ -41,7 +42,7 @@ const EventLog: React.FunctionComponent = () => {
     <>
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/overview">Settings</BreadcrumbItem>
+          <RouterBreadcrumbItem to="/overview">Settings</RouterBreadcrumbItem>
           <BreadcrumbItem isActive>Event Log</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>

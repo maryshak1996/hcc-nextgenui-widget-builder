@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RouterBreadcrumbItem } from '@app/RouterBreadcrumbItem';
 import {
   Alert,
   AlertActionCloseButton,
@@ -697,8 +698,8 @@ const RoleDeleted: React.FunctionComponent = () => {
 
       <PageSection hasBodyWrapper={false}>
         <Breadcrumb>
-          <BreadcrumbItem to="/overview">Settings</BreadcrumbItem>
-          <BreadcrumbItem to="/alert-manager">Alert Manager</BreadcrumbItem>
+          <RouterBreadcrumbItem to="/overview">Settings</RouterBreadcrumbItem>
+          <RouterBreadcrumbItem to="/alert-manager">Alert Manager</RouterBreadcrumbItem>
           <BreadcrumbItem isActive>Role deleted</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>

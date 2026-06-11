@@ -123,6 +123,8 @@ import {
   SimpleContentAccessWidgetHeader,
   SIMPLE_CONTENT_ACCESS_WIDGET_STYLES
 } from '@app/Homepage/simpleContentAccessWidget';
+import { CustomBuilderWidgetBody, CUSTOM_BUILDER_WIDGET_STYLES } from '@app/Homepage/customBuilderWidget';
+import { getWidgetBuilderHeaderIconComponent } from '@app/Homepage/widgetBuilderHeaderIcons';
 import { CLUSTER_STATUS_DISPLAY_STYLES } from '@app/Homepage/clusterStatusDisplay';
 import { WidgetColSpanContext } from '@app/Homepage/widgetColSpanContext';
 import { WIDGET_DESCRIPTION_LIST_STYLES } from '@app/Homepage/widgetDescriptionList';
@@ -1578,10 +1580,33 @@ export function renderHomepageWidgetContent(
           </WidgetCard>
         );
 
-      // Placeholder widgets (Data Integrations, Alert Manager, etc.)
+      // Widget builder output and legacy placeholders
       default:
+        if (widget.customBuilder) {
+          const HeaderIcon = getWidgetBuilderHeaderIconComponent(widget.customBuilder.headerIconId);
+          return (
+            <WidgetCard
+              title={widget.title}
+              widgetId={widget.id}
+              className="widget-card--custom-builder"
+              dragHandleProps={dragHandleProps}
+              onRemove={onRemove}
+              readOnly={readOnly}
+              headerExtra={
+                <WidgetCardHeaderLayout
+                  widgetId={widget.id}
+                  title={widget.title}
+                  headerLeadIcon={HeaderIcon}
+                />
+              }
+            >
+              <CustomBuilderWidgetBody blocks={widget.customBuilder.blocks} />
+            </WidgetCard>
+          );
+        }
+
         return (
-          <WidgetCard 
+          <WidgetCard
             title={widget.title}
             widgetId={widget.id}
             dragHandleProps={dragHandleProps}
@@ -1589,9 +1614,9 @@ export function renderHomepageWidgetContent(
             readOnly={readOnly}
             footerContent={
               widget.footerText && (
-                <Button 
-                  variant="link" 
-                  iconPosition="end" 
+                <Button
+                  variant="link"
+                  iconPosition="end"
                   icon={<ArrowRightIcon />}
                   onClick={() => widget.navigateTo && navigate(widget.navigateTo)}
                 >
@@ -1600,7 +1625,10 @@ export function renderHomepageWidgetContent(
               )
             }
           >
-            <Content component="p" style={{ color: 'var(--pf-t--global--text--color--subtle, var(--pf-v6-global--Color--200))' }}>
+            <Content
+              component="p"
+              style={{ color: 'var(--pf-t--global--text--color--subtle, var(--pf-v6-global--Color--200))' }}
+            >
               Widget content will be added in a follow-up.
             </Content>
           </WidgetCard>
@@ -1690,6 +1718,7 @@ export const WIDGET_GRID_STYLES = `
     ${COST_MANAGEMENT_WIDGET_STYLES}
     ${ADVISOR_RECOMMENDATIONS_WIDGET_STYLES}
     ${VULNERABILITIES_WIDGET_STYLES}
+    ${CUSTOM_BUILDER_WIDGET_STYLES}
     ${RED_HAT_SATELLITE_WIDGET_STYLES}
     ${ACTIVATION_KEYS_WIDGET_STYLES}
     ${MANIFESTS_WIDGET_STYLES}
