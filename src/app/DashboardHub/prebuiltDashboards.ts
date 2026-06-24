@@ -35,13 +35,14 @@ interface PrebuiltDashboardDefinition {
  * Widget order for the built-in console homepage (grid auto-flow: first-fit in DOM order).
  *
  * 4-column layout:
- * - Cols 1–3: RHEL | Ansible | OpenShift, then Subscriptions (3-wide), then Events (3-wide)
+ * - Cols 1–3: RHEL | Ansible | OpenShift, then Explore capabilities (3-wide), then Subscriptions (3-wide), then Events (3-wide)
  * - Col 4: My account (top), Recently visited (below)
  */
 const CONSOLE_DEFAULT_WIDGET_IDS: readonly string[] = [
   'rhel',
   'ansible',
   'openshift',
+  'explore-capabilities',
   'subscriptions',
   'events',
   'my-account',
@@ -52,6 +53,7 @@ const CONSOLE_DEFAULT_WIDGET_SIZES: Partial<Record<string, { colSpan: ColumnSpan
   rhel: { colSpan: 1, rowSpan: 4 },
   ansible: { colSpan: 1, rowSpan: 4 },
   openshift: { colSpan: 1, rowSpan: 4 },
+  'explore-capabilities': { colSpan: 3, rowSpan: 7 },
   subscriptions: { colSpan: 3, rowSpan: 4 },
   events: { colSpan: 3, rowSpan: 7 },
   'my-account': { colSpan: 1, rowSpan: 5 },
@@ -253,7 +255,8 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
     isConsoleDefault: true,
     widgetIds: CONSOLE_DEFAULT_WIDGET_IDS,
     widgetSizes: CONSOLE_DEFAULT_WIDGET_SIZES,
-    widgetTitles: CONSOLE_DEFAULT_WIDGET_TITLES
+    widgetTitles: CONSOLE_DEFAULT_WIDGET_TITLES,
+    autoSizeWidgetIds: ['explore-capabilities']
   },
   {
     id: PREBUILT_DASHBOARD_IDS.ANSIBLE,

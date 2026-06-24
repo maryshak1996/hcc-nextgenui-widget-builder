@@ -322,10 +322,6 @@ export function measureWidgetCardFitHeight(
     parseFloat(cardStyles.borderTopWidth) + parseFloat(cardStyles.borderBottomWidth);
 
   if (naturalLayout) {
-    const cardHeight = Math.ceil(card.getBoundingClientRect().height);
-    if (cardHeight > 0) {
-      return cardHeight;
-    }
     const chromeHeight = sumElementHeights([header, divider, footer]) + bodyPadding + borderHeight;
     const bodyNaturalHeight = measurePinnedWidgetBodyNaturalHeight(bodyContent);
     return Math.ceil(chromeHeight + bodyNaturalHeight);
@@ -392,8 +388,9 @@ export function useWidgetAutoSizeMeasurement({
         return;
       }
 
-      let fitRowSpan = getRowSpanFromPixelHeight(fitHeight);
+      let fitRowSpan = getMinimumRowSpanForPixelHeight(fitHeight);
       if (
+        !wrapper.classList.contains('is-auto-sizing') &&
         widgetCardBodyHasVerticalClipping(wrapper) &&
         fitRowSpan < MAX_ROW_SPAN
       ) {
@@ -1157,9 +1154,10 @@ export function renderHomepageWidgetContent(
 
       case 'explore-capabilities':
         return (
-          <WidgetCard 
+          <WidgetCard
             title={widget.title}
             widgetId={widget.id}
+            className="widget-card--explore-capabilities"
             dragHandleProps={dragHandleProps}
             onRemove={onRemove}
             readOnly={readOnly}
@@ -1812,6 +1810,15 @@ export const WIDGET_GRID_STYLES = `
     .widget-wrapper.read-only-homepage-widget .widget-resizable-root .widget-card {
       flex: 1 1 auto;
       min-height: 0;
+    }
+
+    .widget-card--explore-capabilities .widget-card__body,
+    .widget-card--explore-capabilities .pf-v6-c-card__body {
+      flex-grow: 0 !important;
+    }
+
+    .widget-card--explore-capabilities .widget-card__body-content {
+      flex: none !important;
     }
 
     .widget-wrapper.is-dragging {

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { AngleLeftIcon, AngleRightIcon } from '@patternfly/react-icons';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
@@ -117,6 +118,7 @@ import {
   StarIcon,
   TimesIcon,
   UsersIcon,
+  WrenchIcon,
 } from '@app/icons/rhUiIcons';
 
 interface IAppLayout {
@@ -144,6 +146,27 @@ interface HelpPanelContextType {
 
 export const HelpPanelContext = React.createContext<HelpPanelContextType | undefined>(undefined);
 
+type HelpPanelFeedbackView = 'main' | 'general' | 'bug' | 'direction';
+
+type HelpPanelHistoryEntry = {
+  subTab: number | null;
+  customHelpTitle: string | null;
+  customHelpVariant: 'quickstart' | 'in-page' | null;
+  feedbackView: HelpPanelFeedbackView;
+  searchQuery: string;
+};
+
+const DASHBOARD_WIDGETS_HELP_CUSTOM_TITLE = 'Dashboard widgets';
+
+const DASHBOARD_WIDGETS_SEARCH_ENTRY = {
+  id: 'help-dashboard-widgets',
+  title: 'All dashboard widgets',
+  breadcrumb1: 'Utilities',
+  breadcrumb2: '',
+  labels: ['Console features'],
+  tab: 'Dashboard widgets'
+} as const;
+
 // Helper function to get icon based on breadcrumb text
   const getBreadcrumbIcon = (breadcrumbText: string) => {
     const iconStyle = { width: '12px', height: '12px', marginRight: '4px', verticalAlign: 'middle' };
@@ -160,6 +183,8 @@ export const HelpPanelContext = React.createContext<HelpPanelContextType | undef
         return <QuestionCircleIcon style={iconStyle} />;
       case 'Share feedback':
         return <CommentsIcon style={iconStyle} />;
+      case 'Utilities':
+        return <WrenchIcon style={iconStyle} />;
       default:
         return <CloudIcon style={iconStyle} />;
     }
@@ -331,7 +356,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [overflowTooltips] = React.useState<Array<{ selector: string; text: string }>>([]);
   
   // Feedback tab state
-  const [feedbackView, setFeedbackView] = React.useState<'main' | 'general' | 'bug' | 'direction'>('main');
+  const [feedbackView, setFeedbackView] = React.useState<HelpPanelFeedbackView>('main');
+  const helpPanelHistoryRef = React.useRef<HelpPanelHistoryEntry[]>([]);
+  const [helpPanelHistoryIndex, setHelpPanelHistoryIndex] = React.useState(0);
+  const isApplyingHelpPanelHistoryRef = React.useRef(false);
+  const prevHelpDrawerExpandedRef = React.useRef(false);
 
   // User dropdown state
   const [isUserDropdownOpen, setIsUserDropdownOpen] = React.useState(false);
@@ -575,9 +604,35 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   const [isSearchContentTypeOpen, setIsSearchContentTypeOpen] = React.useState(false);
   const [selectedSearchContentTypes, setSelectedSearchContentTypes] = React.useState<Set<string>>(new Set());
 
+  const RECENT_SEARCHES_STORAGE_KEY = 'hcc-recent-searches';
+  const MAX_RECENT_SEARCHES = 10;
+
+  const recordRecentSearch = React.useCallback((rawQuery: string) => {
+    const query = rawQuery.trim();
+    if (!query) {
+      return;
+    }
+    setRecentSearches((prev) => {
+      const match = prev.find((entry) => entry.query.toLowerCase() === query.toLowerCase());
+      const next = match
+        ? [
+            { query: match.query, count: match.count + 1 },
+            ...prev.filter((entry) => entry.query.toLowerCase() !== query.toLowerCase())
+          ]
+        : [{ query, count: 1 }, ...prev];
+      const capped = next.slice(0, MAX_RECENT_SEARCHES);
+      try {
+        localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(capped));
+      } catch (e) {
+        console.error('Failed to store recent searches', e);
+      }
+      return capped;
+    });
+  }, []);
+
   // Load recent searches from localStorage on mount
   React.useEffect(() => {
-    const stored = localStorage.getItem('hcc-recent-searches');
+    const stored = localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
     if (stored) {
       try {
         setRecentSearches(JSON.parse(stored));
@@ -586,6 +641,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       }
     }
   }, []);
+
+  const previousSearchQueryRef = React.useRef('');
+  React.useEffect(() => {
+    const previousQuery = previousSearchQueryRef.current;
+    if (previousQuery.trim() && !searchQuery.trim()) {
+      recordRecentSearch(previousQuery);
+    }
+    previousSearchQueryRef.current = searchQuery;
+  }, [searchQuery, recordRecentSearch]);
 
   // Get all searchable content from all tabs
   const getAllSearchableContent = (): Array<{
@@ -607,6 +671,18 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       tab: string;
     }>();
     
+    // Dashboard widgets in-panel help
+    if (!resultsMap.has(DASHBOARD_WIDGETS_SEARCH_ENTRY.title)) {
+      resultsMap.set(DASHBOARD_WIDGETS_SEARCH_ENTRY.title, {
+        id: DASHBOARD_WIDGETS_SEARCH_ENTRY.id,
+        title: DASHBOARD_WIDGETS_SEARCH_ENTRY.title,
+        breadcrumb1: DASHBOARD_WIDGETS_SEARCH_ENTRY.breadcrumb1,
+        breadcrumb2: DASHBOARD_WIDGETS_SEARCH_ENTRY.breadcrumb2,
+        labels: [...DASHBOARD_WIDGETS_SEARCH_ENTRY.labels],
+        tab: DASHBOARD_WIDGETS_SEARCH_ENTRY.tab
+      });
+    }
+
     // Learn tab items (51 items)
     allLearnContent.forEach(item => {
       if (!resultsMap.has(item.title)) {
@@ -1085,15 +1161,123 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     window.dispatchEvent(new Event('resize'));
   }, [helpPanelWidth, isDrawerExpanded]);
 
-  const selectHelpPanelSubTab = React.useCallback((subTabIndex: number) => {
-    setCustomHelpTitle(null);
-    setCustomHelpVariant(null);
-    setHelpPanelSubTab(subTabIndex);
-    setSearchQuery('');
-    if (subTabIndex === 4) {
-      setFeedbackView('main');
-    }
+  const captureHelpPanelState = React.useCallback((): HelpPanelHistoryEntry => ({
+    subTab: helpPanelSubTab,
+    customHelpTitle,
+    customHelpVariant,
+    feedbackView,
+    searchQuery
+  }), [helpPanelSubTab, customHelpTitle, customHelpVariant, feedbackView, searchQuery]);
+
+  const applyHelpPanelState = React.useCallback((entry: HelpPanelHistoryEntry) => {
+    setHelpPanelSubTab(entry.subTab);
+    setCustomHelpTitle(entry.customHelpTitle);
+    setCustomHelpVariant(entry.customHelpVariant);
+    setFeedbackView(entry.feedbackView);
+    setSearchQuery(entry.searchQuery);
   }, []);
+
+  const navigateHelpPanel = React.useCallback(
+    (entry: HelpPanelHistoryEntry) => {
+      if (isApplyingHelpPanelHistoryRef.current) {
+        applyHelpPanelState(entry);
+        return;
+      }
+      setHelpPanelHistoryIndex((currentIndex) => {
+        const truncated = helpPanelHistoryRef.current.slice(0, currentIndex + 1);
+        truncated.push(entry);
+        helpPanelHistoryRef.current = truncated;
+        return truncated.length - 1;
+      });
+      applyHelpPanelState(entry);
+    },
+    [applyHelpPanelState]
+  );
+
+  const goHelpPanelBack = React.useCallback(() => {
+    if (helpPanelHistoryIndex <= 0) {
+      return;
+    }
+    const nextIndex = helpPanelHistoryIndex - 1;
+    isApplyingHelpPanelHistoryRef.current = true;
+    setHelpPanelHistoryIndex(nextIndex);
+    applyHelpPanelState(helpPanelHistoryRef.current[nextIndex]);
+    window.requestAnimationFrame(() => {
+      isApplyingHelpPanelHistoryRef.current = false;
+    });
+  }, [helpPanelHistoryIndex, applyHelpPanelState]);
+
+  const goHelpPanelForward = React.useCallback(() => {
+    if (helpPanelHistoryIndex >= helpPanelHistoryRef.current.length - 1) {
+      return;
+    }
+    const nextIndex = helpPanelHistoryIndex + 1;
+    isApplyingHelpPanelHistoryRef.current = true;
+    setHelpPanelHistoryIndex(nextIndex);
+    applyHelpPanelState(helpPanelHistoryRef.current[nextIndex]);
+    window.requestAnimationFrame(() => {
+      isApplyingHelpPanelHistoryRef.current = false;
+    });
+  }, [helpPanelHistoryIndex, applyHelpPanelState]);
+
+  const canHelpPanelGoBack = helpPanelHistoryIndex > 0;
+  const canHelpPanelGoForward = helpPanelHistoryIndex < helpPanelHistoryRef.current.length - 1;
+
+  React.useEffect(() => {
+    if (isDrawerExpanded && !prevHelpDrawerExpandedRef.current) {
+      if (helpPanelHistoryRef.current.length === 0) {
+        helpPanelHistoryRef.current = [captureHelpPanelState()];
+        setHelpPanelHistoryIndex(0);
+      }
+    }
+    if (!isDrawerExpanded && prevHelpDrawerExpandedRef.current) {
+      helpPanelHistoryRef.current = [];
+      setHelpPanelHistoryIndex(0);
+    }
+    prevHelpDrawerExpandedRef.current = isDrawerExpanded;
+  }, [isDrawerExpanded, captureHelpPanelState]);
+
+  const selectHelpPanelSubTab = React.useCallback(
+    (subTabIndex: number) => {
+      navigateHelpPanel({
+        subTab: subTabIndex,
+        customHelpTitle: null,
+        customHelpVariant: null,
+        feedbackView: subTabIndex === 4 ? 'main' : feedbackView,
+        searchQuery: ''
+      });
+    },
+    [navigateHelpPanel, feedbackView]
+  );
+
+  const navigateFeedbackView = React.useCallback(
+    (view: HelpPanelFeedbackView) => {
+      navigateHelpPanel({
+        subTab: 4,
+        customHelpTitle: null,
+        customHelpVariant: null,
+        feedbackView: view,
+        searchQuery
+      });
+    },
+    [navigateHelpPanel, searchQuery]
+  );
+
+  const openDashboardWidgetsHelp = React.useCallback(() => {
+    navigateHelpPanel({
+      subTab: null,
+      customHelpTitle: DASHBOARD_WIDGETS_HELP_CUSTOM_TITLE,
+      customHelpVariant: 'in-page',
+      feedbackView,
+      searchQuery: ''
+    });
+    if (!isDrawerExpanded) {
+      setIsDrawerExpanded(true);
+    }
+    if (isNotificationDrawerOpen) {
+      setIsNotificationDrawerOpen(false);
+    }
+  }, [navigateHelpPanel, feedbackView, isDrawerExpanded, isNotificationDrawerOpen]);
 
   const onDrawerToggle = () => {
     const newDrawerState = !isDrawerExpanded;
@@ -1129,27 +1313,35 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     setIsNotificationActionsOpen(false); // Close actions dropdown when drawer closes
   };
 
-  const openHelpPanelWithTab = (title: string, options?: { variant?: 'quickstart' | 'in-page' }) => {
-    const variant = options?.variant ?? 'in-page';
-    setCustomHelpTitle(title);
-    setCustomHelpVariant(variant);
-    setHelpPanelSubTab(variant === 'quickstart' ? 1 : null);
-    setSearchQuery('');
+  const openHelpPanelWithTab = React.useCallback(
+    (title: string, options?: { variant?: 'quickstart' | 'in-page' }) => {
+      const variant = options?.variant ?? 'in-page';
+      navigateHelpPanel({
+        subTab: variant === 'quickstart' ? 1 : null,
+        customHelpTitle: title,
+        customHelpVariant: variant,
+        feedbackView,
+        searchQuery: ''
+      });
 
-    if (!isDrawerExpanded) {
-      setIsDrawerExpanded(true);
-    }
-    if (isNotificationDrawerOpen) {
-      setIsNotificationDrawerOpen(false);
-    }
-  };
+      if (!isDrawerExpanded) {
+        setIsDrawerExpanded(true);
+      }
+      if (isNotificationDrawerOpen) {
+        setIsNotificationDrawerOpen(false);
+      }
+    },
+    [navigateHelpPanel, feedbackView, isDrawerExpanded, isNotificationDrawerOpen]
+  );
 
   const openHelpPanelToShareGeneralFeedback = React.useCallback(() => {
-    setCustomHelpTitle(null);
-    setCustomHelpVariant(null);
-    setHelpPanelSubTab(4);
-    setSearchQuery('');
-    setFeedbackView('general');
+    navigateHelpPanel({
+      subTab: 4,
+      customHelpTitle: null,
+      customHelpVariant: null,
+      feedbackView: 'general',
+      searchQuery: ''
+    });
 
     if (!isDrawerExpanded) {
       setIsDrawerExpanded(true);
@@ -1157,12 +1349,14 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     if (isNotificationDrawerOpen) {
       setIsNotificationDrawerOpen(false);
     }
-  }, [isDrawerExpanded, isNotificationDrawerOpen]);
+  }, [navigateHelpPanel, isDrawerExpanded, isNotificationDrawerOpen]);
 
   const createSearchHandlers = () => {
     const onSearchSubmit = (value: string) => {
-      if (value.trim()) {
-        setSearchQuery(value.trim());
+      const trimmed = value.trim();
+      if (trimmed) {
+        setSearchQuery(trimmed);
+        recordRecentSearch(trimmed);
       }
     };
 
@@ -1173,7 +1367,11 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
       }
     };
 
-    return { onSearchSubmit, handleSearchKeyDown };
+    const handleSearchClear = () => {
+      setSearchQuery('');
+    };
+
+    return { onSearchSubmit, handleSearchKeyDown, handleSearchClear };
   };
 
 
@@ -1266,7 +1464,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
         </div>
       );
     }
-    if (title === 'Dashboard widgets') {
+    if (title === DASHBOARD_WIDGETS_HELP_CUSTOM_TITLE) {
       return <DashboardWidgetsHelpPanelContent />;
     }
     if (title === 'Configuring console event notifications in Slack') {
@@ -1435,7 +1633,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   };
 
   const renderFindHelpSubTabs = () => {
-    const { onSearchSubmit, handleSearchKeyDown } = createSearchHandlers();
+    const { onSearchSubmit, handleSearchKeyDown, handleSearchClear } = createSearchHandlers();
 
     return (
       <div
@@ -1587,7 +1785,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                 placeholder="Search documentation, APIs, and resources..."
                 value={searchQuery}
                 onChange={(_event, value) => setSearchQuery(value)}
-                onClear={() => setSearchQuery('')}
+                onClear={handleSearchClear}
                 onKeyDown={handleSearchKeyDown}
                 aria-label="Search help resources"
               />
@@ -1752,7 +1950,15 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                                   <BookmarkIcon className={`bookmark-icon ${bookmarkedItems.has(result.id) ? 'bookmarked' : ''}`} />
                                 </Button>
                               )}
-                              {result.title === 'Configuring console event notifications in Slack' ? (
+                              {result.id === 'help-dashboard-widgets' ? (
+                                <div
+                                  className="menu-item-title"
+                                  onClick={() => openDashboardWidgetsHelp()}
+                                  style={{ display: 'inline', flex: 1, cursor: 'pointer' }}
+                                >
+                                  {result.title}
+                                </div>
+                              ) : result.title === 'Configuring console event notifications in Slack' ? (
                                 <div 
                                   className="menu-item-title"
                                   onClick={() => openHelpPanelWithTab('Configuring console event notifications in Slack', { variant: 'quickstart' })}
@@ -1848,8 +2054,12 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                     {recentSearches.map((search, idx) => (
                       <React.Fragment key={`recent-search-${idx}`}>
                         {idx > 0 && <Divider component="li" />}
-                        <MenuItem 
+                        <MenuItem
                           itemId={`recent-search-${idx}`}
+                          onClick={() => {
+                            setSearchQuery(search.query);
+                            recordRecentSearch(search.query);
+                          }}
                         >
                           <div className="menu-item-title" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             {search.query}
@@ -2884,7 +3094,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   <BreadcrumbItem>
                     <a 
                       href="#" 
-                      onClick={(e) => { e.preventDefault(); setFeedbackView('main'); }}
+                      onClick={(e) => { e.preventDefault(); navigateFeedbackView('main'); }}
                       style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }}
                       onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
@@ -2908,7 +3118,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   <BreadcrumbItem>
                     <a 
                       href="#" 
-                      onClick={(e) => { e.preventDefault(); setFeedbackView('main'); }}
+                      onClick={(e) => { e.preventDefault(); navigateFeedbackView('main'); }}
                       style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }}
                       onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
@@ -2932,7 +3142,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   <BreadcrumbItem>
                     <a 
                       href="#" 
-                      onClick={(e) => { e.preventDefault(); setFeedbackView('main'); }}
+                      onClick={(e) => { e.preventDefault(); navigateFeedbackView('main'); }}
                       style={{ color: 'var(--pf-v6-global--link--Color, #0066cc)', textDecoration: 'none' }}
                       onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
@@ -2977,7 +3187,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   variant="secondary"
                   isClickable 
                   isSelectable
-                  onClick={() => setFeedbackView('general')}
+                  onClick={() => navigateFeedbackView('general')}
                   style={{ cursor: 'pointer' }}
                 >
                   <CardHeader style={{ paddingBottom: '8px' }}>
@@ -3003,7 +3213,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   variant="secondary"
                   isClickable 
                   isSelectable
-                  onClick={() => setFeedbackView('bug')}
+                  onClick={() => navigateFeedbackView('bug')}
                   style={{ cursor: 'pointer' }}
                 >
                   <CardHeader style={{ paddingBottom: '8px' }}>
@@ -3029,7 +3239,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
                   variant="secondary"
                   isClickable 
                   isSelectable
-                  onClick={() => setFeedbackView('direction')}
+                  onClick={() => navigateFeedbackView('direction')}
                   style={{ cursor: 'pointer' }}
                 >
                   <CardHeader style={{ paddingBottom: '8px' }}>
@@ -3648,6 +3858,20 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
           </Button>
         </div>
         <DrawerActions>
+          <Button
+            variant="plain"
+            aria-label="Back in help panel"
+            isDisabled={!canHelpPanelGoBack}
+            onClick={goHelpPanelBack}
+            icon={<AngleLeftIcon aria-hidden />}
+          />
+          <Button
+            variant="plain"
+            aria-label="Forward in help panel"
+            isDisabled={!canHelpPanelGoForward}
+            onClick={goHelpPanelForward}
+            icon={<AngleRightIcon aria-hidden />}
+          />
           <DrawerCloseButton onClick={onDrawerClose} />
         </DrawerActions>
       </DrawerHead>

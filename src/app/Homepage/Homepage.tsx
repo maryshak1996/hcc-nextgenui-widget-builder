@@ -34,7 +34,7 @@ import {
 } from '@app/icons/rhUiIcons';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
-import { isConsoleDefaultHubRow, isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
+import { getPrebuiltDashboardAutoSizeWidgetIds, isConsoleDefaultHubRow, isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import {
@@ -44,7 +44,7 @@ import {
   serializeDashboardConfigPayload
 } from '@app/DashboardHub/dashboardCanvasStorage';
 import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, IMPORT_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
-import type { Widget } from '@app/Homepage/widgetTypes';
+import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
 import {
   computeDashboardWidgetPlacements,
   getDashboardGridColumnCount,
@@ -117,6 +117,7 @@ const Homepage: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const { rows, setDashboardAsHomepage } = useDashboardData();
   const [displayWidgets, setDisplayWidgets] = useState<Widget[]>([]);
+  const [autoSizeWidgetIds, setAutoSizeWidgetIds] = useState<Set<string>>(() => new Set());
   const homepageWidgetsGridRef = useRef<HTMLDivElement>(null);
   const [homepageGridEl, setHomepageGridEl] = useState<HTMLDivElement | null>(null);
   const setHomepageWidgetsGridRef = useCallback((node: HTMLDivElement | null) => {
@@ -174,15 +175,40 @@ const Homepage: React.FunctionComponent = () => {
   const refreshFromStorage = useCallback(() => {
     if (!homepageDashboard) {
       setDisplayWidgets([]);
+      setAutoSizeWidgetIds(new Set());
       return;
     }
     const raw = resolveDashboardCanvasWidgets(homepageDashboard);
     if (raw && raw.length > 0) {
       setDisplayWidgets(mergeCanvasWidgetsWithCatalog(raw));
+      setAutoSizeWidgetIds(
+        isPrebuiltHubRow(homepageDashboard)
+          ? new Set(getPrebuiltDashboardAutoSizeWidgetIds(homepageDashboard.id))
+          : new Set()
+      );
     } else {
       setDisplayWidgets([]);
+      setAutoSizeWidgetIds(new Set());
     }
   }, [homepageDashboard]);
+
+  const handleAutoSizeFit = useCallback(
+    (id: string, colSpan: ColumnSpan, rowSpan: RowSpan, complete: boolean) => {
+      setDisplayWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, colSpan, rowSpan } : w)));
+      if (!complete) {
+        return;
+      }
+      setAutoSizeWidgetIds((ids) => {
+        if (!ids.has(id)) {
+          return ids;
+        }
+        const next = new Set(ids);
+        next.delete(id);
+        return next;
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     refreshFromStorage();
@@ -606,6 +632,8 @@ const Homepage: React.FunctionComponent = () => {
                       widget={widget}
                       gridWidth={homepageGridWidth}
                       placement={homepageWidgetPlacements.get(widget.id) ?? { columnStart: 1, rowStart: 1 }}
+                      autoSize={autoSizeWidgetIds.has(widget.id)}
+                      onAutoSizeFit={handleAutoSizeFit}
                     >
                       {renderHomepageWidgetContent(widget, {
                         navigate,

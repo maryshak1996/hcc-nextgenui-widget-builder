@@ -41,6 +41,7 @@ import { AiSearchIcon, CodeIcon, CopyIcon, CubesIcon, ExternalLinkAltIcon, OpenD
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
 import { EXAMPLE_BANK_SEARCH_PROMPTS, filterCatalogWidgetsBySearch } from '@app/Homepage/bankWidgetSearch';
 import { BankWidgetCard } from '@app/Homepage/BankWidgetCard';
+import { useDashboardBankBridge } from '@app/Homepage/dashboardBankBridge';
 import { ADD_WIDGETS_DRAWER_STYLES } from '@app/Homepage/addWidgetsDrawerStyles';
 import { HOMEPAGE_WIDGET_CATALOG } from '@app/Homepage/homepageWidgetCatalog';
 import type { Widget } from '@app/Homepage/widgetTypes';
@@ -250,28 +251,26 @@ function applyWidgetBuilderMonacoUndoRedo(ed: editor.IStandaloneCodeEditor | nul
   void Promise.resolve(model.redo());
 }
 
-/** Shown at the bottom when search is empty; order matches product ask. */
-const FEATURED_BANK_WIDGET_IDS: readonly string[] = [
-  'recently-visited',
-  'explore-capabilities',
-  'openshift',
-  'rhel',
-  'ansible'
+/**
+ * Default “Recommended for you” widgets — alphabetical by title.
+ * When one is added, backfill from the catalog keeps {@link RECOMMENDED_VISIBLE_TARGET} tiles visible.
+ */
+const RECOMMENDED_BANK_WIDGET_IDS: readonly string[] = [
+  'advisor-recommendations',
+  'support-cases',
+  'red-hat-ai',
+  'simple-content-access-sca',
+  'vulnerabilities'
 ];
 
-/** How many tiles to show in “Recommended for you” — matches featured ID count; backfills from catalog when some are already on the dashboard */
-const RECOMMENDED_VISIBLE_TARGET = FEATURED_BANK_WIDGET_IDS.length;
+const RECOMMENDED_VISIBLE_TARGET = RECOMMENDED_BANK_WIDGET_IDS.length;
 
-/**
- * Prioritize featured IDs still in the bank; then backfill with other widgets the user hasn’t added yet
- * (catalog order) until the slot count is filled.
- */
 function getRecommendedBankWidgets(removedWidgets: Widget[]): Widget[] {
   const availableById = new Map(removedWidgets.map((w) => [w.id, w]));
   const result: Widget[] = [];
   const seen = new Set<string>();
 
-  for (const id of FEATURED_BANK_WIDGET_IDS) {
+  for (const id of RECOMMENDED_BANK_WIDGET_IDS) {
     if (result.length >= RECOMMENDED_VISIBLE_TARGET) {
       break;
     }
@@ -296,13 +295,13 @@ function getRecommendedBankWidgets(removedWidgets: Widget[]): Widget[] {
     }
   }
 
-  return result;
+  return result.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
 }
 
 function getVisiblePreconfiguredBankWidgets(removedWidgets: Widget[], searchQuery: string): Widget[] {
   const q = searchQuery.trim();
   if (q) {
-    return filterCatalogWidgetsBySearch(removedWidgets, searchQuery);
+    return filterCatalogWidgetsBySearch(HOMEPAGE_WIDGET_CATALOG, searchQuery);
   }
   return getRecommendedBankWidgets(removedWidgets);
 }
@@ -480,6 +479,8 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
     null | { widget: Widget; phase: 'success' | 'exit' }
   >(null);
   const helpPanelContext = useContext(HelpPanelContext);
+  const dashboardBank = useDashboardBankBridge();
+  const isBankSearchActive = bankSearchQuery.trim().length > 0;
 
   const visiblePreconfigured = useMemo(
     () => getVisiblePreconfiguredBankWidgets(removedWidgets, bankSearchQuery),
@@ -494,6 +495,43 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
       return { widget, phase: 'success' };
     });
   }, []);
+
+  const renderFindWidgetsBankCard = useCallback(
+    (widget: Widget) => {
+      const isOnCanvas = dashboardBank?.canvasWidgetIds.has(widget.id) ?? false;
+      const hasBridge = dashboardBank != null;
+      const addAllowed = !isOnCanvas && hasBridge && (dashboardBank?.canAddWidgets ?? false);
+      const disabledAddTooltip = isOnCanvas
+        ? ''
+        : !hasBridge
+          ? 'Open a dashboard from Dashboard Hub to add widgets.'
+          : !dashboardBank?.canAddWidgets
+            ? 'Widgets cannot be added to the built-in Console default dashboard.'
+            : '';
+
+      return (
+        <BankWidgetCard
+          key={widget.id}
+          widget={widget}
+          onAdd={handleBankWidgetAdd}
+          onRemove={
+            isOnCanvas && dashboardBank?.canAddWidgets
+              ? (w) => dashboardBank.removeWidgetFromDashboard(w)
+              : undefined
+          }
+          isAlreadyOnDashboard={isOnCanvas}
+          addAllowed={addAllowed}
+          disabledAddTooltip={disabledAddTooltip}
+          celebrationPhase={
+            pendingBankAddCelebration?.widget.id === widget.id
+              ? pendingBankAddCelebration.phase
+              : undefined
+          }
+        />
+      );
+    },
+    [dashboardBank, handleBankWidgetAdd, pendingBankAddCelebration]
+  );
 
   useEffect(() => {
     if (!pendingBankAddCelebration || pendingBankAddCelebration.phase !== 'success') {
@@ -714,7 +752,7 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                 </List>
                               </ExpandableSection>
                             )}
-                            {removedWidgets.length === 0 ? (
+                            {!isBankSearchActive && removedWidgets.length === 0 ? (
                               <EmptyState variant="xs" headingLevel="h4" titleText="No widgets available" className="add-widgets-empty-no-widgets-available">
                                 <EmptyStateBody>
                                   All available pre-configured widgets are already displayed in your dashboard.
@@ -724,11 +762,11 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                             ) : visiblePreconfigured.length === 0 ? (
                               <EmptyState variant="xs" headingLevel="h4" titleText="No matching widgets" icon={CubesIcon}>
                                 <EmptyStateBody>
-                                  Try a different search, or check that the widget is still in the add list.
+                                  Try a different search query, or clear the search to see recommended widgets.
                                 </EmptyStateBody>
                                 {widgetBankEmptyActions}
                               </EmptyState>
-                            ) : !bankSearchQuery.trim() ? (
+                            ) : !isBankSearchActive ? (
                               <section
                                 aria-labelledby="add-widgets-recommended-label"
                                 className="add-widgets-recommended-section"
@@ -771,35 +809,13 @@ const AddWidgetsDrawer: React.FC<AddWidgetsDrawerProps> = ({
                                     </FlexItem>
                                   </Flex>
                                   <div className="removed-widgets-grid add-widgets-bank-grid">
-                                    {visiblePreconfigured.map((widget) => (
-                                      <BankWidgetCard
-                                        key={widget.id}
-                                        widget={widget}
-                                        onAdd={handleBankWidgetAdd}
-                                        celebrationPhase={
-                                          pendingBankAddCelebration?.widget.id === widget.id
-                                            ? pendingBankAddCelebration.phase
-                                            : undefined
-                                        }
-                                      />
-                                    ))}
+                                    {visiblePreconfigured.map((widget) => renderFindWidgetsBankCard(widget))}
                                   </div>
                                 </Flex>
                               </section>
                             ) : (
                               <div className="removed-widgets-grid add-widgets-bank-grid">
-                                {visiblePreconfigured.map((widget) => (
-                                  <BankWidgetCard
-                                    key={widget.id}
-                                    widget={widget}
-                                    onAdd={handleBankWidgetAdd}
-                                    celebrationPhase={
-                                      pendingBankAddCelebration?.widget.id === widget.id
-                                        ? pendingBankAddCelebration.phase
-                                        : undefined
-                                    }
-                                  />
-                                ))}
+                                {visiblePreconfigured.map((widget) => renderFindWidgetsBankCard(widget))}
                               </div>
                             )}
                           </Flex>
