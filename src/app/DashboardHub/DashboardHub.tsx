@@ -47,7 +47,8 @@ import {
   OutlinedWindowRestoreIcon,
   PencilAltIcon,
   PlusCircleIcon,
-  ThIcon
+  ThIcon,
+  ThumbtackIcon
 } from '@app/icons/rhUiIcons';
 import type { HubRow } from '@app/DashboardHub/dashboardHubMockData';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -58,7 +59,14 @@ import { isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
 import { ImportConfigStringModal } from '@app/DashboardHub/ImportConfigStringModal';
-import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, IMPORT_JSON_CONFIG_MENU_LABEL, useCopyConfigRowFeedback } from '@app/useCopyConfigFeedback';
+import { PinDashboardModal } from '@app/DashboardHub/PinDashboardModal';
+import {
+  COPY_CONFIG_STRING_TOOLTIP_CONTENT,
+  COPY_JSON_CONFIG_MENU_LABEL,
+  IMPORT_JSON_CONFIG_MENU_LABEL,
+  PIN_DASHBOARD_TO_SERVICES_MENU_LABEL,
+  useCopyConfigRowFeedback
+} from '@app/useCopyConfigFeedback';
 
 const CREATE_BLANK_DASHBOARD_FORM_ID = 'create-blank-dashboard-form';
 const CREATE_BLANK_NAME_DUPLICATE_ID = 'create-blank-name-duplicate-error';
@@ -117,6 +125,7 @@ const DashboardHub: React.FunctionComponent = () => {
   const [isImportConfigModalOpen, setIsImportConfigModalOpen] = React.useState(false);
   const [importModalInitialHomepage, setImportModalInitialHomepage] = React.useState(false);
   const [deleteTargetRow, setDeleteTargetRow] = React.useState<HubRow | null>(null);
+  const [pinModalTargetRow, setPinModalTargetRow] = React.useState<HubRow | null>(null);
   const { copiedFeedbackRowId, triggerCopiedFeedbackForRow } = useCopyConfigRowFeedback();
 
   type HubNavFromHome = { fromHome?: { openCreate?: 'blank' | 'import' | 'duplicate' } };
@@ -550,6 +559,20 @@ const DashboardHub: React.FunctionComponent = () => {
                           Duplicate dashboard
                         </span>
                       </DropdownItem>
+                      <DropdownItem
+                        key="pin-to-services"
+                        onClick={() => {
+                          setPinModalTargetRow(row);
+                          setOpenActionsRowId(null);
+                        }}
+                      >
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <ThumbtackIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                          {PIN_DASHBOARD_TO_SERVICES_MENU_LABEL}
+                        </span>
+                      </DropdownItem>
                       <DropdownItem key="copy" onClick={() => handleCopyRowConfiguration(row)}>
                         <span
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
@@ -666,6 +689,13 @@ const DashboardHub: React.FunctionComponent = () => {
         onClose={closeImportConfigModal}
         initialSetAsHomepage={importModalInitialHomepage}
         onSuccess={handleImportConfigModalSuccess}
+      />
+
+      <PinDashboardModal
+        isOpen={Boolean(pinModalTargetRow)}
+        onClose={() => setPinModalTargetRow(null)}
+        dashboardId={pinModalTargetRow?.id ?? ''}
+        dashboardName={pinModalTargetRow?.name ?? ''}
       />
 
       <DeleteDashboardModal

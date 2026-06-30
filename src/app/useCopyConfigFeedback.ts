@@ -8,6 +8,9 @@ export const COPY_JSON_CONFIG_MENU_LABEL = 'Copy JSON config';
 /** Menu / action label for importing a dashboard from pasted JSON configuration. */
 export const IMPORT_JSON_CONFIG_MENU_LABEL = 'Import JSON config';
 
+/** Menu / action label for pinning a dashboard to the services menu. */
+export const PIN_DASHBOARD_TO_SERVICES_MENU_LABEL = 'Pin dashboard to services';
+
 /** Form label for the JSON config paste field in the import modal. */
 export const IMPORT_JSON_CONFIG_PASTE_LABEL = 'Paste JSON config';
 

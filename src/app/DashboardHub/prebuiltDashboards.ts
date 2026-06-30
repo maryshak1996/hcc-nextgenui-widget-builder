@@ -260,7 +260,7 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
   },
   {
     id: PREBUILT_DASHBOARD_IDS.ANSIBLE,
-    name: 'Ansible Dashboard',
+    name: 'Ansible',
     description: 'High level overview of your Ansible usage on the Hybrid Cloud Console.',
     widgetIds: ANSIBLE_DASHBOARD_WIDGET_IDS,
     widgetSizes: ANSIBLE_DASHBOARD_WIDGET_SIZES,
@@ -268,7 +268,7 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
   },
   {
     id: PREBUILT_DASHBOARD_IDS.OPENSHIFT,
-    name: 'OpenShift Dashboard',
+    name: 'OpenShift',
     description: 'High level overview of your OpenShift usage on the Hybrid Cloud Console.',
     widgetIds: OPENSHIFT_DASHBOARD_WIDGET_IDS,
     widgetSizes: OPENSHIFT_DASHBOARD_WIDGET_SIZES,
@@ -277,7 +277,7 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
   },
   {
     id: PREBUILT_DASHBOARD_IDS.RHEL,
-    name: 'RHEL Dashboard',
+    name: 'RHEL',
     description: 'High level overview of your RHEL usage on the Hybrid Cloud Console.',
     widgetIds: RHEL_DASHBOARD_WIDGET_IDS,
     widgetSizes: RHEL_DASHBOARD_WIDGET_SIZES,
@@ -285,7 +285,7 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
   },
   {
     id: PREBUILT_DASHBOARD_IDS.SECURITY,
-    name: 'Security Dashboard',
+    name: 'Security',
     description:
       'An overview of security-related information and data with your Hybrid Cloud Console usage.',
     widgetIds: SECURITY_DASHBOARD_WIDGET_IDS,
@@ -294,7 +294,7 @@ const PREBUILT_DASHBOARD_DEFINITIONS: readonly PrebuiltDashboardDefinition[] = [
   },
   {
     id: PREBUILT_DASHBOARD_IDS.GENERAL_ADMIN,
-    name: 'General Administration Dashboard',
+    name: 'General Administration',
     description:
       'A dashboard for getting quick access to and monitoring of subscriptions management, alerting, third-party tooling configuration, and RBAC management.',
     widgetIds: GENERAL_ADMIN_DASHBOARD_WIDGET_IDS,

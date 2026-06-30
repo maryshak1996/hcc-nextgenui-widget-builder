@@ -5,6 +5,16 @@ import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { MASTHEAD_USER_DISPLAY_NAME } from '@app/mastheadUserDisplayName';
 import { DashboardWidgetsHelpPanelContent } from '@app/Homepage/DashboardWidgetsHelpPanelContent';
 import { useFavoritedServices } from '@app/favoriteServices/FavoritedServicesContext';
+import { usePinnedDashboards } from '@app/DashboardHub/PinnedDashboardsContext';
+import { PinnedDashboardNavItem } from '@app/DashboardHub/PinnedDashboardNavItem';
+import { OpenshiftBundleNav } from '@app/OpenShift/OpenshiftBundleNav';
+import { OPENSHIFT_BUNDLE_PATHS } from '@app/OpenShift/openshiftBundleNavigation';
+import type { PinDashboardServiceTypeId } from '@app/DashboardHub/pinDashboardServiceTypes';
+import {
+  resolveNavigationServiceType,
+  serviceTypeSupportsLeftNav,
+  shouldDeferBundleNavToPinnedDashboard
+} from '@app/DashboardHub/pinnedDashboardNavigation';
 import { HelpPanelChatbotPanel, HELP_PANEL_CHATBOT_STYLES } from '@app/AppLayout/HelpPanelChatbotPanel';
 import HappyRobotIcon from '@app/bgimages/happy-robot-icon.svg';
 import FeedbackIcon from '@app/bgimages/feedback-icon.svg';
@@ -521,6 +531,7 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   
   // Favorited items state
   const { favoritedIds: favoritedItems, toggleFavorite } = useFavoritedServices();
+  const { getPinnedForServiceType } = usePinnedDashboards();
   
   // Logo dropdown and expandable search state
   const [isLogoDropdownOpen, setIsLogoDropdownOpen] = React.useState(false);
@@ -950,6 +961,16 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     // IAM bundle pages
     if (['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'].includes(currentPath)) {
       return 'IAM';
+    }
+
+    // OpenShift bundle pages
+    if ((OPENSHIFT_BUNDLE_PATHS as readonly string[]).includes(currentPath)) {
+      return 'OpenShift';
+    }
+    
+    // Legacy OpenShift pinned dashboard links on Settings overview
+    if (currentPath === '/overview' && new URLSearchParams(location.search).get('bundle') === 'openshift') {
+      return 'OpenShift';
     }
     
     // No bundle (homepage, all services, etc.)
@@ -3697,11 +3718,18 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     </Masthead>
   );
 
-  const renderNavItem = (route: IAppRoute, index: number) => (
+  const renderNavItem = (
+    route: IAppRoute,
+    index: number,
+    serviceTypeId: PinDashboardServiceTypeId = 'core-console-settings'
+  ) => (
     <NavItem
       key={`${route.label}-${index}`}
       id={`${route.label}-${index}`}
-      isActive={route.path === location.pathname}
+      isActive={
+        route.path === location.pathname &&
+        !shouldDeferBundleNavToPinnedDashboard(location.pathname, location.search, serviceTypeId)
+      }
     >
       <NavLink to={route.path}>{route.label}</NavLink>
     </NavItem>
@@ -3718,30 +3746,31 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     </NavExpandable>
   );
 
-  // Define navigation groups
-  const primaryNavPages = [
-    '/overview',
-    '/alert-manager',
-    '/data-integration',
-    '/event-log',
-    '/settings/appearance',
-    '/learning-resources'
-  ];
-  const secondaryNavPages = ['/my-user-access', '/user-access', '/users', '/groups', '/roles', '/workspaces', '/red-hat-access-requests', '/authentication-policy', '/service-accounts', '/learning-resources-iam'];
+  const activeNavigationServiceType = resolveNavigationServiceType(
+    location.pathname,
+    location.search
+  );
+  const navigationServiceType: PinDashboardServiceTypeId =
+    activeNavigationServiceType ?? 'core-console-settings';
 
-  // Determine which navigation structure to show
-  const getNavigationType = () => {
-    const currentPath = location.pathname;
-    
-    if (primaryNavPages.includes(currentPath)) {
-      return 'primary';
-    } else if (secondaryNavPages.includes(currentPath)) {
-      return 'secondary';
+  const renderPinnedDashboardNavItems = (serviceTypeId: PinDashboardServiceTypeId) => {
+    if (!serviceTypeSupportsLeftNav(serviceTypeId)) {
+      return null;
     }
-    return 'primary'; // default fallback
-  };
 
-  const navigationType = getNavigationType();
+    const pinned = getPinnedForServiceType(serviceTypeId);
+    if (pinned.length === 0) {
+      return null;
+    }
+
+    return pinned.map((entry) => (
+      <PinnedDashboardNavItem
+        key={`${serviceTypeId}-${entry.dashboardId}`}
+        entry={entry}
+        serviceTypeId={serviceTypeId}
+      />
+    ));
+  };
 
   // Primary navigation structure (current navigation)
   const primaryNavRoutes = routes.filter((route): route is IAppRoute => {
@@ -3750,8 +3779,17 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
   });
 
   // Secondary navigation structure (IAM bundle)
+  const deferIamNavToPinned = shouldDeferBundleNavToPinnedDashboard(
+    location.pathname,
+    location.search,
+    'identity-access-management'
+  );
   const secondaryNavItems = [
-    { label: 'My User Access', path: '/my-user-access', isActive: location.pathname === '/my-user-access' },
+    {
+      label: 'My User Access',
+      path: '/my-user-access',
+      isActive: location.pathname === '/my-user-access' && !deferIamNavToPinned
+    },
     { 
       label: 'User Access', 
       path: '/user-access', 
@@ -3771,40 +3809,56 @@ const AppLayout: React.FunctionComponent<IAppLayout> = ({ children }) => {
     { label: 'IAM Learning', path: '/learning-resources-iam', isActive: location.pathname === '/learning-resources-iam' },
   ];
 
+  const deferOpenshiftNavToPinned = shouldDeferBundleNavToPinnedDashboard(
+    location.pathname,
+    location.search,
+    'openshift'
+  );
+
   const Navigation = (
     <Nav id="nav-primary-simple">
       <NavList id="nav-list-simple">
-        {navigationType === 'primary' ? (
-          // Show primary navigation
-          primaryNavRoutes.map((route, idx) => 
-            route.label && renderNavItem(route, idx)
-          )
+        {navigationServiceType === 'core-console-settings' ? (
+          <>
+            {primaryNavRoutes.map((route, idx) => route.label && renderNavItem(route, idx, 'core-console-settings'))}
+            {renderPinnedDashboardNavItems('core-console-settings')}
+          </>
+        ) : navigationServiceType === 'identity-access-management' ? (
+          <>
+            {secondaryNavItems.map((item, idx) =>
+              item.isExpandable ? (
+                <NavExpandable
+                  key={`secondary-expandable-${idx}`}
+                  id={`secondary-expandable-${idx}`}
+                  title={item.label}
+                  isActive={item.isActive}
+                >
+                  {item.subItems?.map((subItem, subIdx) => (
+                    <NavItem
+                      key={`secondary-sub-${idx}-${subIdx}`}
+                      id={`secondary-sub-${idx}-${subIdx}`}
+                      isActive={subItem.isActive}
+                    >
+                      <NavLink to={subItem.path}>{subItem.label}</NavLink>
+                    </NavItem>
+                  ))}
+                </NavExpandable>
+              ) : (
+                <NavItem key={`secondary-${idx}`} id={`secondary-${idx}`} isActive={item.isActive}>
+                  <NavLink to={item.path}>{item.label}</NavLink>
+                </NavItem>
+              )
+            )}
+            {renderPinnedDashboardNavItems('identity-access-management')}
+          </>
+        ) : navigationServiceType === 'openshift' ? (
+          <OpenshiftBundleNav
+            pathname={location.pathname}
+            deferOverviewToPinned={deferOpenshiftNavToPinned}
+            pinnedNavItems={renderPinnedDashboardNavItems('openshift')}
+          />
         ) : (
-          // Show secondary navigation (IAM bundle)
-          secondaryNavItems.map((item, idx) => (
-            item.isExpandable ? (
-              <NavExpandable
-                key={`secondary-expandable-${idx}`}
-                id={`secondary-expandable-${idx}`}
-                title={item.label}
-                isActive={item.isActive}
-              >
-                {item.subItems?.map((subItem, subIdx) => (
-                  <NavItem key={`secondary-sub-${idx}-${subIdx}`} id={`secondary-sub-${idx}-${subIdx}`} isActive={subItem.isActive}>
-                    <NavLink to={subItem.path}>
-                      {subItem.label}
-                    </NavLink>
-                  </NavItem>
-                ))}
-              </NavExpandable>
-            ) : (
-              <NavItem key={`secondary-${idx}`} id={`secondary-${idx}`} isActive={item.isActive}>
-                <NavLink to={item.path}>
-                  {item.label}
-                </NavLink>
-              </NavItem>
-            )
-          ))
+          primaryNavRoutes.map((route, idx) => route.label && renderNavItem(route, idx))
         )}
       </NavList>
     </Nav>

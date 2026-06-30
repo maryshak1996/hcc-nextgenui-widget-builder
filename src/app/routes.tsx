@@ -24,6 +24,8 @@ import { Workspaces } from '@app/Workspaces/Workspaces';
 import { RedHatAccessRequests } from '@app/RedHatAccessRequests/RedHatAccessRequests';
 import { AppearanceSettings } from '@app/Settings/Appearance/AppearanceSettings';
 import { GeneralSettings } from '@app/Settings/General/GeneralSettings';
+import { OpenShiftBundlePage } from '@app/OpenShift/OpenShiftBundlePage';
+import { OPENSHIFT_BUNDLE_PAGES } from '@app/OpenShift/openshiftBundleNavigation';
 import { NotFound } from '@app/NotFound/NotFound';
 
 export interface IAppRoute {
@@ -211,6 +213,17 @@ const routes: AppRouteConfig[] = [
     path: '/red-hat-access-requests',
     title: 'Red Hat Access Requests | Red Hat Hybrid Cloud Console',
   },
+  ...OPENSHIFT_BUNDLE_PAGES.map((page) => ({
+    element: (
+      <OpenShiftBundlePage
+        pageLabel={page.label}
+        showPinnedDashboard={page.showPinnedDashboard}
+      />
+    ),
+    exact: true,
+    path: page.path,
+    title: `${page.label} | OpenShift | Red Hat Hybrid Cloud Console`
+  }))
 ];
 
 const flattenedRoutes: IAppRoute[] = routes.reduce(

@@ -35,6 +35,9 @@ const IMPORT_CONFIG_PARSE_ERROR_ID = 'import-config-parse-error';
 /** Replace when the product documentation URL for JSON config import is finalized. */
 const CONFIG_STRING_HELP_PLACEHOLDER_URL = 'https://www.redhat.com/';
 
+const IMPORT_CONFIG_EDITOR_PLACEHOLDER =
+  '{\n  "dashboardId": "…",\n  "name": "…",\n  "widgets": [ … ]\n}';
+
 export type ImportConfigStringModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -54,16 +57,19 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
   const [configString, setConfigString] = React.useState('');
   const [newDashboardName, setNewDashboardName] = React.useState('');
   const [setAsHomepage, setSetAsHomepage] = React.useState(false);
+  const [isConfigEditorFocused, setIsConfigEditorFocused] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
       setConfigString('');
       setNewDashboardName('');
       setSetAsHomepage(Boolean(initialSetAsHomepage));
+      setIsConfigEditorFocused(false);
     } else {
       setConfigString('');
       setNewDashboardName('');
       setSetAsHomepage(false);
+      setIsConfigEditorFocused(false);
     }
   }, [isOpen, initialSetAsHomepage]);
 
@@ -148,11 +154,17 @@ const ImportConfigStringModal: React.FunctionComponent<ImportConfigStringModalPr
               name="import-config-string"
               value={configString}
               onChange={(_event, value) => setConfigString(value)}
+              onFocus={() => setIsConfigEditorFocused(true)}
+              onBlur={() => setIsConfigEditorFocused(false)}
               rows={10}
               resizeOrientation="vertical"
               aria-label={IMPORT_JSON_CONFIG_PASTE_LABEL}
               className="hcc-import-config-code-editor"
-              placeholder={'{\n  "dashboardId": "…",\n  "name": "…",\n  "widgets": [ … ]\n}'}
+              placeholder={
+                isConfigEditorFocused || configString.length > 0
+                  ? undefined
+                  : IMPORT_CONFIG_EDITOR_PLACEHOLDER
+              }
               validated={parsedConfig.status === 'error' ? 'error' : 'default'}
               aria-invalid={parsedConfig.status === 'error'}
               aria-describedby={

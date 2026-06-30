@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { 
   Accordion, 
   AccordionContent, 
@@ -27,9 +27,13 @@ import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import { ArrowRightIcon, EnvelopeIcon, IntegrationIcon, OutlinedWindowRestoreIcon, UserIcon } from '@patternfly/react-icons';
 import { BellIcon, CogIcon, ExternalLinkAltIcon, PlusCircleIcon, UsersIcon } from '@app/icons/rhUiIcons';
 import { HelpPanelContext } from '@app/AppLayout/AppLayout';
+import { PinnedDashboardCanvas } from '@app/DashboardHub/PinnedDashboardCanvas';
+import { parsePinnedDashboardQuery } from '@app/DashboardHub/pinnedDashboardNavigation';
 
 const Dashboard: React.FunctionComponent = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const pinnedDashboardQuery = parsePinnedDashboardQuery(searchParams.toString());
   const helpPanelContext = React.useContext(HelpPanelContext);
   const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);
   const [alertNotifiersTabKey, setAlertNotifiersTabKey] = React.useState<string | number>(0);
@@ -54,6 +58,19 @@ const Dashboard: React.FunctionComponent = () => {
       [id]: !prev[id]
     }));
   };
+
+  if (pinnedDashboardQuery?.serviceTypeId === 'openshift') {
+    return <Navigate to={`/openshift/overview?${searchParams.toString()}`} replace />;
+  }
+
+  if (pinnedDashboardQuery) {
+    return (
+      <PinnedDashboardCanvas
+        dashboardId={pinnedDashboardQuery.dashboardId}
+        serviceTypeId={pinnedDashboardQuery.serviceTypeId}
+      />
+    );
+  }
 
   return (
     <>

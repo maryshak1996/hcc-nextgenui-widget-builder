@@ -93,6 +93,7 @@ export {
   RhUiSyncIcon,
   RhUiTableIcon,
   RhUiTagIcon,
+  RhUiThumbtackIcon,
   RhUiTopologyIcon,
   RhUiTrashIcon,
   RhUiUndoIcon,
@@ -146,6 +147,7 @@ export { RhUiEditIcon as PencilAltIcon } from '@patternfly/react-icons';
 export { RhUiTrashIcon as OutlinedTrashAltIcon } from '@patternfly/react-icons';
 export { RhUiRestoreWindowIcon as OutlinedWindowRestoreIcon } from '@patternfly/react-icons';
 export { RhUiTableIcon as ThIcon } from '@patternfly/react-icons';
+export { RhUiThumbtackIcon as ThumbtackIcon } from '@patternfly/react-icons';
 export { RhUiVirtualMachineCenterIcon as VirtualMachineIcon } from '@patternfly/react-icons';
 export { RhUiArrowCircleDownIcon as ArrowCircleDownIcon } from '@patternfly/react-icons';
 export { RhUiArrowCircleUpIcon as ArrowCircleUpIcon } from '@patternfly/react-icons';

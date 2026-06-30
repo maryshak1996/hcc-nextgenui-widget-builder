@@ -30,20 +30,28 @@ import {
   RhStandardSunIcon,
   RhUiAsleepIcon,
   RhUiDarkModeIcon,
-  RhUiLightModeIcon
+  RhUiLightModeIcon,
+  ThumbtackIcon
 } from '@app/icons/rhUiIcons';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONSOLE_DEFAULT_BODY_TITLE } from '@app/DashboardHub/consoleDefaultDashboard';
 import { getPrebuiltDashboardAutoSizeWidgetIds, isConsoleDefaultHubRow, isPrebuiltHubRow } from '@app/DashboardHub/prebuiltDashboards';
 import { useDashboardData } from '@app/DashboardHub/DashboardDataContext';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
+import { PinDashboardModal } from '@app/DashboardHub/PinDashboardModal';
 import {
   mergeCanvasWidgetsWithCatalog,
   onDashboardCanvasUpdated,
   resolveDashboardCanvasWidgets,
   serializeDashboardConfigPayload
 } from '@app/DashboardHub/dashboardCanvasStorage';
-import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, IMPORT_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import {
+  COPY_CONFIG_STRING_TOOLTIP_CONTENT,
+  COPY_JSON_CONFIG_MENU_LABEL,
+  IMPORT_JSON_CONFIG_MENU_LABEL,
+  PIN_DASHBOARD_TO_SERVICES_MENU_LABEL,
+  useCopyConfigFeedback
+} from '@app/useCopyConfigFeedback';
 import type { ColumnSpan, RowSpan, Widget } from '@app/Homepage/widgetTypes';
 import {
   computeDashboardWidgetPlacements,
@@ -135,6 +143,7 @@ const Homepage: React.FunctionComponent = () => {
   const [isHomepageKebabOpen, setIsHomepageKebabOpen] = useState(false);
   const [isHomepageHeroMenuOpen, setIsHomepageHeroMenuOpen] = useState(false);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isPinDashboardModalOpen, setIsPinDashboardModalOpen] = useState(false);
   const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
 
   const closeHomepageHeroMenu = useCallback(() => {
@@ -551,6 +560,20 @@ const Homepage: React.FunctionComponent = () => {
                               Duplicate dashboard
                             </span>
                           </DropdownItem>
+                          <DropdownItem
+                            key="pin-to-services"
+                            onClick={() => {
+                              closeHomepageKebab();
+                              setIsPinDashboardModalOpen(true);
+                            }}
+                          >
+                            <span
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                              <ThumbtackIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                              {PIN_DASHBOARD_TO_SERVICES_MENU_LABEL}
+                            </span>
+                          </DropdownItem>
                           <Divider component="li" role="separator" />
                           <DropdownItem
                             key="dashboard-hub"
@@ -699,6 +722,12 @@ const Homepage: React.FunctionComponent = () => {
         initialSourceId={homepageDashboard?.id}
         initialSetAsHomepage
         onSuccess={handleDuplicateModalSuccess}
+      />
+      <PinDashboardModal
+        isOpen={isPinDashboardModalOpen && Boolean(homepageDashboard)}
+        onClose={() => setIsPinDashboardModalOpen(false)}
+        dashboardId={homepageDashboard?.id ?? ''}
+        dashboardName={homepageDashboard?.name ?? ''}
       />
     </>
   );

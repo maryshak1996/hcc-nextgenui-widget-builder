@@ -16,14 +16,27 @@ import {
 } from '@patternfly/react-core';
 import { UserIcon } from '@patternfly/react-icons';
 import { ExternalLinkAltIcon } from '@app/icons/rhUiIcons';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useSearchParams } from 'react-router-dom';
+import { PinnedDashboardCanvas } from '@app/DashboardHub/PinnedDashboardCanvas';
+import { parsePinnedDashboardQuery } from '@app/DashboardHub/pinnedDashboardNavigation';
 
 const MyUserAccess: React.FunctionComponent = () => {
+  const [searchParams] = useSearchParams();
+  const pinnedDashboardQuery = parsePinnedDashboardQuery(searchParams.toString());
   const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);
 
   const handleTabClick = (event: React.MouseEvent<HTMLElement> | React.KeyboardEvent | MouseEvent, tabIndex: string | number) => {
     setActiveTabKey(tabIndex);
   };
+
+  if (pinnedDashboardQuery?.serviceTypeId === 'identity-access-management') {
+    return (
+      <PinnedDashboardCanvas
+        dashboardId={pinnedDashboardQuery.dashboardId}
+        serviceTypeId="identity-access-management"
+      />
+    );
+  }
 
   return (
     <>

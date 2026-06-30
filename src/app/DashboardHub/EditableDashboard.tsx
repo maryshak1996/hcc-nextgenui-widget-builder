@@ -45,6 +45,7 @@ import {
   OutlinedTrashAltIcon,
   PencilAltIcon,
   PlusCircleIcon,
+  ThumbtackIcon,
   TimesCircleIcon,
   TimesIcon
 } from '@app/icons/rhUiIcons';
@@ -100,7 +101,13 @@ import {
 import { DASHBOARD_CANVAS_LAYOUT_CLASS } from '@app/DashboardHub/dashboardCanvasLayout';
 import { DeleteDashboardModal } from '@app/DashboardHub/DeleteDashboardModal';
 import { DuplicateDashboardModal } from '@app/DashboardHub/DuplicateDashboardModal';
-import { COPY_CONFIG_STRING_TOOLTIP_CONTENT, COPY_JSON_CONFIG_MENU_LABEL, useCopyConfigFeedback } from '@app/useCopyConfigFeedback';
+import { PinDashboardModal } from '@app/DashboardHub/PinDashboardModal';
+import {
+  COPY_CONFIG_STRING_TOOLTIP_CONTENT,
+  COPY_JSON_CONFIG_MENU_LABEL,
+  PIN_DASHBOARD_TO_SERVICES_MENU_LABEL,
+  useCopyConfigFeedback
+} from '@app/useCopyConfigFeedback';
 import { scheduleDeferredResizeObserverWork, useDeferredResizeObserverOffsetWidth } from '@app/useDeferredResizeObserver';
 
 type PersistIndicator = 'saved' | 'saving';
@@ -516,6 +523,7 @@ const EditableDashboard: React.FunctionComponent = () => {
   const [isKebabOpen, setIsKebabOpen] = React.useState(false);
   const { copiedTooltipVisible, triggerCopiedFeedback } = useCopyConfigFeedback();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = React.useState(false);
+  const [isPinDashboardModalOpen, setIsPinDashboardModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
 
   const [localName, setLocalName] = React.useState('');
@@ -1346,6 +1354,19 @@ const EditableDashboard: React.FunctionComponent = () => {
                             Set as homepage
                           </span>
                         </DropdownItem>
+                        <DropdownItem
+                          onClick={() => {
+                            setIsKebabOpen(false);
+                            setIsPinDashboardModalOpen(true);
+                          }}
+                        >
+                          <span
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                          >
+                            <ThumbtackIcon style={{ color: 'var(--pf-t--global--icon--Color--200)' }} />
+                            {PIN_DASHBOARD_TO_SERVICES_MENU_LABEL}
+                          </span>
+                        </DropdownItem>
                         <DropdownItem onClick={handleCopyConfigurationString}>
                           <span
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
@@ -1462,6 +1483,12 @@ const EditableDashboard: React.FunctionComponent = () => {
             initialSourceId={dashboard.id}
             initialSetAsHomepage={false}
             onSuccess={handleDuplicateModalSuccess}
+          />
+          <PinDashboardModal
+            isOpen={isPinDashboardModalOpen}
+            onClose={() => setIsPinDashboardModalOpen(false)}
+            dashboardId={dashboard.id}
+            dashboardName={dashboard.name}
           />
           <DeleteDashboardModal
             isOpen={isDeleteModalOpen}
